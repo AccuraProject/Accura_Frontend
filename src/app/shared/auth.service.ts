@@ -1,4 +1,4 @@
-import { HttpClient, HttpErrorResponse, HttpHeaders, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, tap } from 'rxjs';
 
@@ -36,25 +36,20 @@ export class AuthService {
       grantType = 'password'
     } = options;
 
-    const params = new HttpParams({
-      fromObject: {
-        grant_type: grantType,
-        username: email,
-        password,
-        scope,
-        ...(clientId ? { client_id: clientId } : {}),
-        ...(clientSecret ? { client_secret: clientSecret } : {})
-      }
-    });
-
-    const headers = new HttpHeaders({
-      'Content-Type': 'application/x-www-form-urlencoded'
-    });
+    const formData = new FormData();
+    formData.append('username', email);
+    formData.append('password', password);
+    formData.append('scope', scope);
+    formData.append('grant_type', grantType);
+    if (clientId) {
+      formData.append('client_id', clientId);
+    }
+    if (clientSecret) {
+      formData.append('client_secret', clientSecret);
+    }
 
     return this.http
-      .post<AuthResponse>(`${this.baseUrl}/auth/token`, params.toString(), {
-        headers
-      })
+      .post<AuthResponse>(`${this.baseUrl}/api/token`, formData)
       .pipe(tap((response) => this.persistSession(response, rememberMe)));
   }
 
