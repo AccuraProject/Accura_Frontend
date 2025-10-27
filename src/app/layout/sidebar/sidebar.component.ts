@@ -24,4 +24,14 @@ export class SidebarComponent {
     { icon: 'history', label: 'Historial' },
     { icon: 'settings', label: 'Configuración' }
   ];
+
+  protected mobileNavOpen = false;
+
+  protected toggleMobileNav(): void {
+    this.mobileNavOpen = !this.mobileNavOpen;
+  }
+
+  protected closeMobileNav(): void {
+    this.mobileNavOpen = false;
+  }
 }
