@@ -7,6 +7,8 @@ import { environment } from '../../environments/environment';
 export interface AuthResponse {
   access_token: string;
   token_type: string;
+  role?: string;
+  must_change_password?: boolean;
   expires_in?: number;
   refresh_token?: string;
   scope?: string;
@@ -49,7 +51,7 @@ export class AuthService {
     }
 
     return this.http
-      .post<AuthResponse>(`${this.baseUrl}/api/token`, formData)
+      .post<AuthResponse>(`${this.baseUrl}/auth/token`, formData)
       .pipe(tap((response) => this.persistSession(response, rememberMe)));
   }
 
@@ -63,6 +65,15 @@ export class AuthService {
 
     targetStorage.setItem('access_token', response.access_token);
     targetStorage.setItem('token_type', response.token_type);
+    if (response.role) {
+      targetStorage.setItem('role', response.role);
+    }
+    if (response.must_change_password !== undefined) {
+      targetStorage.setItem(
+        'must_change_password',
+        response.must_change_password ? 'true' : 'false'
+      );
+    }
     if (response.refresh_token) {
       targetStorage.setItem('refresh_token', response.refresh_token);
     }
@@ -82,6 +93,8 @@ export class AuthService {
     [window.localStorage, window.sessionStorage].forEach((storage) => {
       storage.removeItem('access_token');
       storage.removeItem('token_type');
+      storage.removeItem('role');
+      storage.removeItem('must_change_password');
       storage.removeItem('refresh_token');
       storage.removeItem('scope');
       storage.removeItem('expires_in');
