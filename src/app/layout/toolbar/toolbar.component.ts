@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, EventEmitter, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 @Component({
@@ -9,5 +9,11 @@ import { CommonModule } from '@angular/common';
   styleUrl: './toolbar.component.scss'
 })
 export class ToolbarComponent {
+  @Output() menuToggle = new EventEmitter<void>();
+
   protected readonly notifications = 4;
+
+  protected onToggleMenu(): void {
+    this.menuToggle.emit();
+  }
 }

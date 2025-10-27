@@ -1,10 +1,15 @@
 <header class="toolbar">
   <div class="toolbar__brand">
+    <button
+      class="toolbar__menu material-symbols-rounded"
+      type="button"
+      aria-label="Abrir navegación"
+      (click)="onToggleMenu()"
+    >
+      menu
+    </button>
     <div class="toolbar__logo">A</div>
-    <div>
-      <p class="toolbar__title">Accura</p>
-      <p class="toolbar__subtitle">Panel de Administración</p>
-    </div>
+    <p class="toolbar__title">Accura</p>
   </div>
 
   <div class="toolbar__actions">

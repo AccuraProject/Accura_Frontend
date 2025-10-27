@@ -5,7 +5,7 @@
       class="sidebar__link"
       [class.sidebar__link--active]="item.active"
       href="#"
-      (click)="closeMobileNav()"
+      (click)="onNavigate()"
     >
       <span class="sidebar__icon material-symbols-rounded" aria-hidden="true">
         {{ item.icon }}
@@ -14,34 +14,3 @@
     </a>
   </nav>
 </aside>
-
-<nav class="sidebar__breadcrumbs" aria-label="Ubicación">
-  <button
-    class="sidebar__breadcrumbs-toggle"
-    type="button"
-    (click)="toggleMobileNav()"
-    [attr.aria-expanded]="mobileNavOpen"
-    aria-controls="sidebar-breadcrumbs"
-  >
-    Navegación
-    <span class="material-symbols-rounded sidebar__breadcrumbs-icon" aria-hidden="true">
-      {{ mobileNavOpen ? 'unfold_less' : 'unfold_more' }}
-    </span>
-  </button>
-
-  <div
-    id="sidebar-breadcrumbs"
-    class="sidebar__breadcrumbs-trail"
-    [class.sidebar__breadcrumbs-trail--open]="mobileNavOpen"
-  >
-    <a
-      *ngFor="let item of navigation"
-      class="sidebar__breadcrumb"
-      [class.sidebar__breadcrumb--active]="item.active"
-      href="#"
-      (click)="closeMobileNav()"
-    >
-      {{ item.label }}
-    </a>
-  </div>
-</nav>

@@ -1,7 +1,15 @@
 <div class="layout">
-  <app-toolbar />
+  <app-toolbar (menuToggle)="toggleMobileNav()"></app-toolbar>
   <div class="layout__body">
-    <app-sidebar />
+    <app-sidebar
+      [mobileNavOpen]="mobileNavOpen"
+      (requestClose)="closeMobileNav()"
+    ></app-sidebar>
+    <div
+      class="layout__backdrop"
+      [class.layout__backdrop--visible]="mobileNavOpen"
+      (click)="closeMobileNav()"
+    ></div>
 
     <main class="layout__content">
       <section class="page-header">

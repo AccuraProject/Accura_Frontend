@@ -29,6 +29,8 @@ interface QuickAction {
   styleUrl: './main-layout.component.scss'
 })
 export class MainLayoutComponent {
+  protected mobileNavOpen = false;
+
   protected readonly stats: StatisticCard[] = [
     { title: 'Total Usuarios', value: '24', change: '+8 vs mes pasado' },
     { title: 'Plantillas Activas', value: '12', change: '3 desactivadas', highlight: true },
@@ -48,4 +50,12 @@ export class MainLayoutComponent {
     { label: 'Crear Plantilla', description: 'Diseñar nueva configuración' },
     { label: 'Ver Historial de Cargas', description: 'Monitorear ejecuciones recientes' }
   ];
+
+  protected toggleMobileNav(): void {
+    this.mobileNavOpen = !this.mobileNavOpen;
+  }
+
+  protected closeMobileNav(): void {
+    this.mobileNavOpen = false;
+  }
 }

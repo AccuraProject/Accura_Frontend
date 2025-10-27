@@ -17,6 +17,10 @@
   min-height: 0;
 }
 
+.layout__backdrop {
+  display: none;
+}
+
 .layout__content {
   flex: 1;
   padding: 2.5rem clamp(1.5rem, 4vw, 3.5rem);
@@ -251,5 +255,22 @@
 @media (max-width: 820px) {
   .layout__body {
     flex-direction: column;
+    position: relative;
+  }
+
+  .layout__backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 15;
+    background: rgba(15, 23, 42, 0.32);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+
+  .layout__backdrop--visible {
+    opacity: 1;
+    pointer-events: auto;
   }
 }

@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 interface NavigationItem {
@@ -15,6 +15,9 @@ interface NavigationItem {
   styleUrl: './sidebar.component.scss'
 })
 export class SidebarComponent {
+  @Input() mobileNavOpen = false;
+  @Output() requestClose = new EventEmitter<void>();
+
   protected readonly navigation: NavigationItem[] = [
     { icon: 'home', label: 'Inicio', active: true },
     { icon: 'group', label: 'Usuarios' },
@@ -25,13 +28,7 @@ export class SidebarComponent {
     { icon: 'settings', label: 'Configuración' }
   ];
 
-  protected mobileNavOpen = false;
-
-  protected toggleMobileNav(): void {
-    this.mobileNavOpen = !this.mobileNavOpen;
-  }
-
-  protected closeMobileNav(): void {
-    this.mobileNavOpen = false;
+  protected onNavigate(): void {
+    this.requestClose.emit();
   }
 }
