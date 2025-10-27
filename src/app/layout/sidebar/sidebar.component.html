@@ -1,0 +1,26 @@
+<aside class="sidebar">
+  <div class="sidebar__header">
+    <div class="sidebar__logo">A</div>
+    <div>
+      <p class="sidebar__brand">Accura</p>
+      <p class="sidebar__tagline">Control Center</p>
+    </div>
+  </div>
+
+  <nav class="sidebar__nav">
+    <a
+      *ngFor="let item of navigation"
+      class="sidebar__link"
+      [class.sidebar__link--active]="item.active"
+      href="#"
+    >
+      <span class="sidebar__icon" aria-hidden="true"></span>
+      <span>{{ item.label }}</span>
+    </a>
+  </nav>
+
+  <div class="sidebar__footer">
+    <p class="sidebar__title">Soporte</p>
+    <p class="sidebar__subtitle">soporte@accura.com</p>
+  </div>
+</aside>
