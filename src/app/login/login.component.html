@@ -57,14 +57,11 @@
         }
 
         <button class="submit" type="submit" [disabled]="loginForm.invalid || isSubmitting()">
-          @if(!isSubmitting()){
-          <span>Iniciar Sesión</span>
-          }@else{
+          <span *ngIf="!isSubmitting(); else loading">Iniciar Sesión</span>
           <ng-template #loading>
             <span class="spinner" aria-hidden="true"></span>
             <span>Iniciando...</span>
           </ng-template>
-          }
         </button>
       </form>
     </section>

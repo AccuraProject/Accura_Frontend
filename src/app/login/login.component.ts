@@ -11,7 +11,7 @@ import { AuthService } from '../shared/auth.service';
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './login.component.html',
-  styleUrl: './login.component.scss'
+  styleUrl: './login.component.scss',
 })
 export class LoginComponent {
   private readonly fb = inject(FormBuilder);
@@ -20,7 +20,7 @@ export class LoginComponent {
   readonly loginForm = this.fb.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],
     password: ['', Validators.required],
-    rememberMe: [false]
+    rememberMe: [false],
   });
 
   readonly isSubmitting = signal(false);
@@ -28,16 +28,14 @@ export class LoginComponent {
   readonly successMessage = signal<string | null>(null);
 
   constructor() {
-    this.loginForm.valueChanges
-      .pipe(takeUntilDestroyed())
-      .subscribe(() => {
-        if (this.serverError()) {
-          this.serverError.set(null);
-        }
-        if (this.successMessage()) {
-          this.successMessage.set(null);
-        }
-      });
+    this.loginForm.valueChanges.pipe(takeUntilDestroyed()).subscribe(() => {
+      if (this.serverError()) {
+        this.serverError.set(null);
+      }
+      if (this.successMessage()) {
+        this.successMessage.set(null);
+      }
+    });
   }
 
   onSubmit(): void {
@@ -61,7 +59,7 @@ export class LoginComponent {
         },
         error: (error: unknown) => {
           this.serverError.set(this.authService.getErrorMessage(error));
-        }
+        },
       });
   }
 
