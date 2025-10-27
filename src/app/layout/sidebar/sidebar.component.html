@@ -14,7 +14,9 @@
       [class.sidebar__link--active]="item.active"
       href="#"
     >
-      <span class="sidebar__icon" aria-hidden="true"></span>
+      <span class="sidebar__icon material-symbols-rounded" aria-hidden="true">
+        {{ item.icon }}
+      </span>
       <span>{{ item.label }}</span>
     </a>
   </nav>

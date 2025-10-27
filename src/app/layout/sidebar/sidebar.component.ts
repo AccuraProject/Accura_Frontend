@@ -17,10 +17,10 @@ interface NavigationItem {
 export class SidebarComponent {
   protected readonly navigation: NavigationItem[] = [
     { icon: 'home', label: 'Inicio', active: true },
-    { icon: 'users', label: 'Usuarios' },
-    { icon: 'shield', label: 'Reglas de Validación' },
-    { icon: 'file', label: 'Plantillas' },
-    { icon: 'lock', label: 'Permisos' },
+    { icon: 'group', label: 'Usuarios' },
+    { icon: 'check_box', label: 'Reglas de Validación' },
+    { icon: 'docs', label: 'Plantillas' },
+    { icon: 'shield', label: 'Permisos' },
     { icon: 'history', label: 'Historial' },
     { icon: 'settings', label: 'Configuración' }
   ];
