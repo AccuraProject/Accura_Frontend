@@ -21,7 +21,9 @@
             formControlName="email"
             autocomplete="email"
           />
-          <small *ngIf="showEmailError()">Ingresa un correo electrónico válido.</small>
+          @if(showEmailError()){
+          <small>Ingresa un correo electrónico válido.</small>
+          }
         </div>
 
         <div class="form-field" [class.form-field--invalid]="showPasswordError()">
@@ -33,28 +35,36 @@
             formControlName="password"
             autocomplete="current-password"
           />
-          <small *ngIf="showPasswordError()">La contraseña es obligatoria.</small>
+          @if(showPasswordError()){
+          <small>La contraseña es obligatoria.</small>
+          }
         </div>
 
         <div class="form-extras">
-          <label class="remember">
-            <input type="checkbox" formControlName="rememberMe" />
-            <span>Recordarme</span>
-          </label>
-          <a class="forgot-password" href="#" rel="noopener noreferrer">¿Olvidaste tu contraseña?</a>
+          <a class="forgot-password" href="#" rel="noopener noreferrer">
+            ¿Olvidaste tu contraseña?
+          </a>
         </div>
 
-        <div class="feedback" *ngIf="serverError() || successMessage()">
-          <p class="feedback__error" *ngIf="serverError()">{{ serverError() }}</p>
-          <p class="feedback__success" *ngIf="successMessage()">{{ successMessage() }}</p>
+        @if(serverError() || successMessage()){
+        <div class="feedback">
+          @if (serverError()) {
+          <small class="feedback__error">{{ serverError() }}</small>
+          } @if (successMessage()) {
+          <small class="feedback__success">{{ successMessage() }}</small>
+          }
         </div>
+        }
 
         <button class="submit" type="submit" [disabled]="loginForm.invalid || isSubmitting()">
-          <span *ngIf="!isSubmitting(); else loading">Iniciar Sesión</span>
+          @if(!isSubmitting()){
+          <span>Iniciar Sesión</span>
+          }@else{
           <ng-template #loading>
             <span class="spinner" aria-hidden="true"></span>
             <span>Iniciando...</span>
           </ng-template>
+          }
         </button>
       </form>
     </section>
