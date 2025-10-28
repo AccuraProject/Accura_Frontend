@@ -150,23 +150,43 @@ button {
   transform: translateY(-1px);
 }
 
+body.modal-open {
+  overflow: hidden;
+}
+
+body.modal-open app-main-layout .layout {
+  overflow: visible;
+}
+
+body.modal-open app-main-layout .layout__content {
+  overflow: hidden;
+}
+
 .modal {
   position: fixed;
   inset: 0;
+  width: 100vw;
+  height: 100vh;
   z-index: 999;
   display: grid;
   place-items: center;
+  padding: clamp(1rem, 3vw, 2rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .modal__overlay {
-  position: absolute;
+  position: fixed;
   inset: 0;
+  width: 100vw;
+  height: 100vh;
   background: rgba(15, 23, 42, 0.45);
   backdrop-filter: blur(2px);
 }
 
 .modal__content {
   position: relative;
+  z-index: 1;
   width: min(440px, 90vw);
   border-radius: 20px;
   background: rgba(255, 255, 255, 0.98);

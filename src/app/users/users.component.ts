@@ -1,5 +1,5 @@
-import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, Inject, OnDestroy, Renderer2 } from '@angular/core';
+import { CommonModule, DOCUMENT } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
 
 interface UserRow {
@@ -17,7 +17,7 @@ interface UserRow {
   templateUrl: './users.component.html',
   styleUrl: './users.component.scss'
 })
-export class UsersComponent {
+export class UsersComponent implements OnDestroy {
   protected searchTerm = '';
   protected modalOpen = false;
 
@@ -72,13 +72,17 @@ export class UsersComponent {
     });
   }
 
+  constructor(private renderer: Renderer2, @Inject(DOCUMENT) private document: Document) {}
+
   protected openModal(): void {
     this.newUser = this.getEmptyUser();
     this.modalOpen = true;
+    this.toggleBodyScroll(true);
   }
 
   protected closeModal(form?: NgForm): void {
     this.modalOpen = false;
+    this.toggleBodyScroll(false);
     this.newUser = this.getEmptyUser();
     form?.resetForm({
       name: this.newUser.name,
@@ -149,5 +153,17 @@ export class UsersComponent {
       status: '',
       createdAt: ''
     };
+  }
+
+  ngOnDestroy(): void {
+    this.toggleBodyScroll(false);
+  }
+
+  private toggleBodyScroll(disable: boolean): void {
+    if (disable) {
+      this.renderer.addClass(this.document.body, 'modal-open');
+    } else {
+      this.renderer.removeClass(this.document.body, 'modal-open');
+    }
   }
 }
