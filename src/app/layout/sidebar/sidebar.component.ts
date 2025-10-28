@@ -29,7 +29,7 @@ export class SidebarComponent {
     { icon: 'docs', label: 'Plantillas', route: '/plantillas' },
     { icon: 'shield', label: 'Permisos', route: '/permisos' },
     { icon: 'history', label: 'Historial', route: '/historial' },
-    { icon: 'settings', label: 'Configuración' }
+    { icon: 'settings', label: 'Configuración', route: '/configuracion' }
   ];
 
   protected navigate(item: NavigationItem): void {

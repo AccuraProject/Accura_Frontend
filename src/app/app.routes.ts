@@ -8,6 +8,7 @@ import { ValidationRulesComponent } from './validation-rules/validation-rules.co
 import { PermissionsComponent } from './permissions/permissions.component';
 import { TemplateManagementComponent } from './templates/template-management.component';
 import { HistoryComponent } from './history/history.component';
+import { SettingsComponent } from './settings/settings.component';
 
 export const routes: Routes = [
   {
@@ -20,6 +21,7 @@ export const routes: Routes = [
       { path: 'permisos', component: PermissionsComponent },
       { path: 'plantillas', component: TemplateManagementComponent },
       { path: 'historial', component: HistoryComponent },
+      { path: 'configuracion', component: SettingsComponent },
     ]
   },
   {
