@@ -3,24 +3,8 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, tap } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
-
-export interface AuthResponse {
-  access_token: string;
-  token_type: string;
-  role?: string;
-  must_change_password?: boolean;
-  expires_in?: number;
-  refresh_token?: string;
-  scope?: string;
-}
-
-export interface LoginOptions {
-  rememberMe?: boolean;
-  scope?: string;
-  clientId?: string;
-  clientSecret?: string;
-  grantType?: string;
-}
+import { AuthResponse } from '../models/auth-response.model';
+import { LoginOptions } from '../models/login-options.model';
 
 @Injectable({
   providedIn: 'root'
