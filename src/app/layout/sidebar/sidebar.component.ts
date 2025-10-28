@@ -27,7 +27,7 @@ export class SidebarComponent {
     { icon: 'group', label: 'Usuarios', route: '/usuarios' },
     { icon: 'check_box', label: 'Reglas de Validación', route: '/reglas-validacion' },
     { icon: 'docs', label: 'Plantillas' },
-    { icon: 'shield', label: 'Permisos' },
+    { icon: 'shield', label: 'Permisos', route: '/permisos' },
     { icon: 'history', label: 'Historial' },
     { icon: 'settings', label: 'Configuración' }
   ];
