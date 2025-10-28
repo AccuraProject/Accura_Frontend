@@ -1,0 +1,111 @@
+:host {
+  display: block;
+}
+
+.dialog {
+  width: min(480px, 90vw);
+  background: rgba(255, 255, 255, 0.98);
+  border-radius: 24px;
+  box-shadow: 0 32px 80px rgba(15, 23, 42, 0.25);
+  padding: 2.25rem;
+  display: grid;
+  gap: 1.75rem;
+}
+
+.dialog__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.5rem;
+}
+
+.dialog__header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.dialog__header p {
+  margin: 0.5rem 0 0;
+  color: #475569;
+  font-size: 0.95rem;
+}
+
+.dialog__close {
+  border-radius: 16px;
+  background: rgba(99, 102, 241, 0.12);
+  color: #4338ca;
+}
+
+.dialog__close:hover {
+  background: rgba(99, 102, 241, 0.2);
+}
+
+.dialog__form {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.dialog__field {
+  width: 100%;
+}
+
+.dialog__field.mat-mdc-form-field {
+  --mdc-filled-text-field-container-color: #f8fafc;
+  --mdc-filled-text-field-focus-active-indicator-color: #6366f1;
+  --mdc-filled-text-field-hover-active-indicator-color: rgba(99, 102, 241, 0.35);
+  --mdc-filled-text-field-focus-label-text-color: #4338ca;
+  --mdc-filled-text-field-input-text-color: #0f172a;
+  --mdc-filled-text-field-label-text-color: #475569;
+  --mdc-filled-text-field-caret-color: #6366f1;
+  --mdc-filled-text-field-active-indicator-color: rgba(99, 102, 241, 0.25);
+  border-radius: 16px;
+}
+
+.dialog__field .mdc-text-field {
+  border-radius: 16px 16px 0 0;
+}
+
+.dialog__field--invalid.mat-mdc-form-field {
+  --mdc-filled-text-field-focus-active-indicator-color: #dc2626;
+  --mdc-filled-text-field-hover-active-indicator-color: rgba(220, 38, 38, 0.35);
+  --mdc-filled-text-field-active-indicator-color: rgba(220, 38, 38, 0.25);
+}
+
+.dialog__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding-top: 0.5rem;
+}
+
+.dialog__actions button {
+  border-radius: 16px;
+  padding: 0.75rem 1.75rem;
+  font-weight: 600;
+}
+
+.dialog__actions button.mat-mdc-outlined-button,
+.dialog__actions button.mat-mdc-stroked-button {
+  border-color: rgba(99, 102, 241, 0.4);
+  color: #4338ca;
+  background: rgba(248, 250, 252, 0.9);
+}
+
+.dialog__actions button.mat-mdc-raised-button,
+.dialog__actions button.mat-mdc-flat-button {
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 45%, #ec4899 100%);
+  color: #ffffff;
+  box-shadow: 0 16px 32px rgba(99, 102, 241, 0.25);
+}
+
+.dialog__actions button .mat-ripple-element,
+.dialog__actions button .mat-mdc-button-touch-target,
+.dialog__actions button .mat-mdc-focus-indicator {
+  display: none;
+}
+
+:host ::ng-deep .mat-mdc-select-panel {
+  border-radius: 16px;
+}

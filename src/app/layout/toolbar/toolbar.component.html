@@ -1,25 +1,26 @@
-<header class="toolbar">
+<mat-toolbar class="toolbar">
   <div class="toolbar__brand">
     <button
-      class="toolbar__menu material-symbols-rounded"
+      mat-icon-button
+      class="toolbar__menu"
       type="button"
       aria-label="Abrir navegación"
       (click)="onToggleMenu()"
     >
-      menu
+      <mat-icon fontSet="material-symbols-rounded">menu</mat-icon>
     </button>
     <div class="toolbar__logo">A</div>
     <p class="toolbar__title">Accura</p>
   </div>
 
   <div class="toolbar__actions">
-    <button class="toolbar__icon" type="button" aria-label="Notificaciones">
-      🔔
+    <button mat-icon-button class="toolbar__icon" type="button" aria-label="Notificaciones">
+      <mat-icon fontSet="material-symbols-rounded">notifications</mat-icon>
       <span class="toolbar__badge" aria-hidden="true">{{ notifications }}</span>
     </button>
-    <button class="toolbar__profile" type="button">
+    <button mat-button class="toolbar__profile" type="button">
       <span class="toolbar__avatar">AB</span>
       <span class="toolbar__name">Cerrar Sesión</span>
     </button>
   </div>
-</header>
+</mat-toolbar>

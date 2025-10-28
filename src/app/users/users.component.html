@@ -6,187 +6,85 @@
       Administra los accesos, roles y estados de los colaboradores desde un único lugar.
     </p>
   </div>
-  <button class="page-header__cta" type="button" (click)="openModal()">
-    <span class="material-symbols-rounded">add</span>
+  <button mat-flat-button color="primary" class="page-header__cta" type="button" (click)="openModal()">
+    <mat-icon fontSet="material-symbols-rounded">add</mat-icon>
     Crear Usuario
   </button>
 </section>
 
-<section class="users-panel">
+<mat-card class="users-panel">
   <header class="users-panel__header">
     <div>
       <h2>Usuarios</h2>
       <p>Lista de usuarios registrados en la plataforma</p>
     </div>
-    <label class="users-panel__search">
-      <span class="material-symbols-rounded" aria-hidden="true">search</span>
+    <mat-form-field appearance="outline" class="users-panel__search">
+      <mat-icon matPrefix fontSet="material-symbols-rounded" aria-hidden="true">search</mat-icon>
       <input
+        matInput
         type="search"
         placeholder="Buscar por nombre, correo o rol..."
         [(ngModel)]="searchTerm"
         name="search"
+        autocomplete="off"
       />
-    </label>
+    </mat-form-field>
   </header>
 
   <div class="users-table__wrapper" *ngIf="filteredUsers as items">
-    <table class="users-table">
-      <thead>
-        <tr>
-          <th>Nombre</th>
-          <th>Rol</th>
-          <th>Estado</th>
-          <th>Fecha de Creación</th>
-          <th class="users-table__actions-column">Acciones</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let user of items; trackBy: trackByEmail">
-          <td>
-            <div class="users-table__identity">
-              <span class="users-table__avatar" aria-hidden="true">
-                {{ getInitials(user.name) }}
-              </span>
-              <div>
-                <p class="users-table__name">{{ user.name }}</p>
-                <p class="users-table__email">{{ user.email }}</p>
-              </div>
+    <table mat-table [dataSource]="items" class="users-table" [trackBy]="trackByEmail">
+      <ng-container matColumnDef="name">
+        <th mat-header-cell *matHeaderCellDef>Nombre</th>
+        <td mat-cell *matCellDef="let user">
+          <div class="users-table__identity">
+            <span class="users-table__avatar" aria-hidden="true">
+              {{ getInitials(user.name) }}
+            </span>
+            <div>
+              <p class="users-table__name">{{ user.name }}</p>
+              <p class="users-table__email">{{ user.email }}</p>
             </div>
-          </td>
-          <td>
-            <span class="badge" [ngClass]="roleClass(user.role)">{{ user.role }}</span>
-          </td>
-          <td>
-            <span class="badge" [ngClass]="statusClass(user.status)">{{ user.status }}</span>
-          </td>
-          <td>
-            <span class="users-table__date">{{ user.createdAt }}</span>
-          </td>
-          <td class="users-table__actions-column">
-            <button class="icon-button" type="button" aria-label="Abrir acciones">
-              <span class="material-symbols-rounded" aria-hidden="true">more_vert</span>
-            </button>
-          </td>
-        </tr>
-        <tr *ngIf="items.length === 0">
-          <td colspan="5" class="users-table__empty">
-            <span class="material-symbols-rounded" aria-hidden="true">search_off</span>
-            <p>No se encontraron usuarios para la búsqueda realizada.</p>
-          </td>
-        </tr>
-      </tbody>
+          </div>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="role">
+        <th mat-header-cell *matHeaderCellDef>Rol</th>
+        <td mat-cell *matCellDef="let user">
+          <span class="badge" [ngClass]="roleClass(user.role)">{{ user.role }}</span>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="status">
+        <th mat-header-cell *matHeaderCellDef>Estado</th>
+        <td mat-cell *matCellDef="let user">
+          <span class="badge" [ngClass]="statusClass(user.status)">{{ user.status }}</span>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="createdAt">
+        <th mat-header-cell *matHeaderCellDef>Fecha de Creación</th>
+        <td mat-cell *matCellDef="let user">
+          <span class="users-table__date">{{ user.createdAt }}</span>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef class="users-table__actions-column">Acciones</th>
+        <td mat-cell *matCellDef="let user" class="users-table__actions-column">
+          <button mat-icon-button class="icon-button" type="button" aria-label="Abrir acciones">
+            <mat-icon fontSet="material-symbols-rounded" aria-hidden="true">more_vert</mat-icon>
+          </button>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
     </table>
+
+    <div class="users-table__empty" *ngIf="items.length === 0">
+      <mat-icon fontSet="material-symbols-rounded" aria-hidden="true">search_off</mat-icon>
+      <p>No se encontraron usuarios para la búsqueda realizada.</p>
+    </div>
   </div>
-</section>
-
-<div class="modal" *ngIf="modalOpen">
-  <div class="modal__overlay" (click)="closeModal()"></div>
-  <div class="modal__content" role="dialog" aria-modal="true">
-    <header class="modal__header">
-      <div>
-        <h3>Crear Nuevo Usuario</h3>
-        <p>Completa los datos del nuevo usuario para agregarlo a la plataforma</p>
-      </div>
-      <button class="icon-button" type="button" (click)="closeModal()" aria-label="Cerrar">
-        <span class="material-symbols-rounded" aria-hidden="true">close</span>
-      </button>
-    </header>
-
-    <form #userForm="ngForm" class="modal__form" (ngSubmit)="createUser(userForm)" novalidate>
-      <label
-        class="modal__field"
-        [class.modal__field--invalid]="nameModel.invalid && (nameModel.touched || userForm.submitted)"
-      >
-        <span>Nombre Completo</span>
-        <input
-          type="text"
-          name="name"
-          [(ngModel)]="newUser.name"
-          required
-          minlength="3"
-          #nameModel="ngModel"
-          [attr.aria-invalid]="nameModel.invalid && (nameModel.touched || userForm.submitted) ? 'true' : 'false'"
-          placeholder="Juan Pérez"
-        />
-        <small class="modal__error" *ngIf="nameModel.errors?.['required'] && (nameModel.touched || userForm.submitted)">
-          El nombre es obligatorio.
-        </small>
-        <small class="modal__error" *ngIf="nameModel.errors?.['minlength'] && (nameModel.touched || userForm.submitted)">
-          Ingresa al menos 3 caracteres.
-        </small>
-      </label>
-
-      <label
-        class="modal__field"
-        [class.modal__field--invalid]="emailModel.invalid && (emailModel.touched || userForm.submitted)"
-      >
-        <span>Correo Electrónico</span>
-        <input
-          type="email"
-          name="email"
-          [(ngModel)]="newUser.email"
-          required
-          email
-          #emailModel="ngModel"
-          [attr.aria-invalid]="emailModel.invalid && (emailModel.touched || userForm.submitted) ? 'true' : 'false'"
-          placeholder="juan@example.com"
-        />
-        <small class="modal__error" *ngIf="emailModel.errors?.['required'] && (emailModel.touched || userForm.submitted)">
-          El correo electrónico es obligatorio.
-        </small>
-        <small class="modal__error" *ngIf="emailModel.errors?.['email'] && (emailModel.touched || userForm.submitted)">
-          Ingresa un correo electrónico válido.
-        </small>
-      </label>
-
-      <label
-        class="modal__field"
-        [class.modal__field--invalid]="roleModel.invalid && (roleModel.touched || userForm.submitted)"
-      >
-        <span>Rol</span>
-        <select
-          name="role"
-          [(ngModel)]="newUser.role"
-          required
-          #roleModel="ngModel"
-          [attr.aria-invalid]="roleModel.invalid && (roleModel.touched || userForm.submitted) ? 'true' : 'false'"
-        >
-          <option value="" disabled>Selecciona un rol</option>
-          <option *ngFor="let role of roles" [value]="role">{{ role }}</option>
-        </select>
-        <small class="modal__error" *ngIf="roleModel.errors?.['required'] && (roleModel.touched || userForm.submitted)">
-          Selecciona un rol para el usuario.
-        </small>
-      </label>
-
-      <label
-        class="modal__field"
-        [class.modal__field--invalid]="statusModel.invalid && (statusModel.touched || userForm.submitted)"
-      >
-        <span>Estado</span>
-        <select
-          name="status"
-          [(ngModel)]="newUser.status"
-          required
-          #statusModel="ngModel"
-          [attr.aria-invalid]="statusModel.invalid && (statusModel.touched || userForm.submitted) ? 'true' : 'false'"
-        >
-          <option value="" disabled>Selecciona un estado</option>
-          <option *ngFor="let state of statuses" [value]="state">{{ state }}</option>
-        </select>
-        <small class="modal__error" *ngIf="statusModel.errors?.['required'] && (statusModel.touched || userForm.submitted)">
-          Selecciona un estado para el usuario.
-        </small>
-      </label>
-
-      <footer class="modal__actions">
-        <button class="modal__button modal__button--ghost" type="button" (click)="closeModal(userForm)">
-          Cancelar
-        </button>
-        <button class="modal__button" type="submit" [disabled]="userForm.invalid">
-          Crear Usuario
-        </button>
-      </footer>
-    </form>
-  </div>
-</div>
+</mat-card>

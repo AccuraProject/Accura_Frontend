@@ -1,6 +1,9 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
+import { MatListModule } from '@angular/material/list';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
 
 interface NavigationItem {
   icon: string;
@@ -12,7 +15,7 @@ interface NavigationItem {
 @Component({
   selector: 'app-sidebar',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, MatListModule, MatButtonModule, MatIconModule],
   templateUrl: './sidebar.component.html',
   styleUrl: './sidebar.component.scss'
 })

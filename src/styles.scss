@@ -1,3 +1,28 @@
+@use '@angular/material' as mat;
+
+@include mat.core();
+
+$accura-primary: mat.define-palette(mat.$indigo-palette, 500);
+$accura-accent: mat.define-palette(mat.$pink-palette, A200);
+$accura-warn: mat.define-palette(mat.$red-palette, 600);
+
+$accura-theme: mat.define-theme((
+  color: (
+    theme-type: light,
+    primary: $accura-primary,
+    secondary: $accura-accent,
+    tertiary: mat.define-palette(mat.$deep-purple-palette, 500),
+    warn: $accura-warn
+  ),
+  typography: mat.define-typography-config((
+    font-family: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif'
+  )),
+  density: 0
+));
+
+@include mat.all-component-themes($accura-theme);
+@include mat.typography-hierarchy($accura-theme);
+
 * {
   box-sizing: border-box;
 }
@@ -73,6 +98,10 @@ button {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
+.page-header__cta :where(.mat-mdc-button-touch-target, .mat-mdc-focus-indicator, .mat-ripple-element) {
+  display: none;
+}
+
 .page-header__cta:hover {
   transform: translateY(-1px);
   box-shadow: 0 20px 48px rgba(99, 102, 241, 0.28);
@@ -144,6 +173,10 @@ button {
   font: inherit;
 }
 
+.icon-button :where(.mat-mdc-button-touch-target, .mat-mdc-focus-indicator, .mat-ripple-element) {
+  display: none;
+}
+
 .icon-button:hover {
   background: rgba(99, 102, 241, 0.12);
   color: #312e81;
@@ -160,6 +193,17 @@ body.modal-open app-main-layout .layout {
 
 body.modal-open app-main-layout .layout__content {
   overflow: hidden;
+}
+
+.create-user-dialog .mat-mdc-dialog-surface {
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.cdk-overlay-dark-backdrop.create-user-dialog-backdrop {
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(2px);
 }
 
 .modal {

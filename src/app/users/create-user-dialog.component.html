@@ -1,0 +1,58 @@
+<div class="dialog">
+  <header class="dialog__header">
+    <div>
+      <h2>Crear Nuevo Usuario</h2>
+      <p>Completa los datos del nuevo usuario para agregarlo a la plataforma</p>
+    </div>
+    <button mat-icon-button type="button" class="dialog__close" (click)="close()" aria-label="Cerrar">
+      <mat-icon fontSet="material-symbols-rounded" aria-hidden="true">close</mat-icon>
+    </button>
+  </header>
+
+  <form class="dialog__form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+    <mat-form-field appearance="fill" class="dialog__field" [class.dialog__field--invalid]="showError('name')">
+      <mat-label>Nombre Completo</mat-label>
+      <input matInput formControlName="name" placeholder="Juan Pérez" autocomplete="name" />
+      <mat-error *ngIf="form.controls.name.hasError('required')">El nombre es obligatorio.</mat-error>
+      <mat-error *ngIf="form.controls.name.hasError('minlength')">Ingresa al menos 3 caracteres.</mat-error>
+    </mat-form-field>
+
+    <mat-form-field
+      appearance="fill"
+      class="dialog__field"
+      [class.dialog__field--invalid]="showError('email')"
+    >
+      <mat-label>Correo Electrónico</mat-label>
+      <input matInput type="email" formControlName="email" placeholder="juan@example.com" autocomplete="email" />
+      <mat-error *ngIf="form.controls.email.hasError('required')">El correo electrónico es obligatorio.</mat-error>
+      <mat-error *ngIf="form.controls.email.hasError('email')">Ingresa un correo electrónico válido.</mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="fill" class="dialog__field" [class.dialog__field--invalid]="showError('role')">
+      <mat-label>Rol</mat-label>
+      <mat-select formControlName="role">
+        <mat-option value="" disabled>Selecciona un rol</mat-option>
+        <mat-option *ngFor="let role of data.roles" [value]="role">{{ role }}</mat-option>
+      </mat-select>
+      <mat-error>Selecciona un rol para el usuario.</mat-error>
+    </mat-form-field>
+
+    <mat-form-field
+      appearance="fill"
+      class="dialog__field"
+      [class.dialog__field--invalid]="showError('status')"
+    >
+      <mat-label>Estado</mat-label>
+      <mat-select formControlName="status">
+        <mat-option value="" disabled>Selecciona un estado</mat-option>
+        <mat-option *ngFor="let status of data.statuses" [value]="status">{{ status }}</mat-option>
+      </mat-select>
+      <mat-error>Selecciona un estado para el usuario.</mat-error>
+    </mat-form-field>
+
+    <footer class="dialog__actions">
+      <button mat-stroked-button color="primary" type="button" (click)="close()">Cancelar</button>
+      <button mat-flat-button color="primary" type="submit" [disabled]="form.invalid">Crear Usuario</button>
+    </footer>
+  </form>
+</div>

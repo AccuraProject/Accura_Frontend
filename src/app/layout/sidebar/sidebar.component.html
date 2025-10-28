@@ -1,6 +1,7 @@
 <aside class="sidebar" [class.sidebar--open]="mobileNavOpen">
-  <nav class="sidebar__nav" aria-label="Navegación principal">
+  <mat-nav-list class="sidebar__nav" aria-label="Navegación principal">
     <button
+      mat-list-item
       *ngFor="let item of navigation"
       class="sidebar__link"
       type="button"
@@ -8,10 +9,10 @@
       [class.sidebar__link--active]="isActive(item)"
       [attr.aria-current]="isActive(item) ? 'page' : null"
     >
-      <span class="sidebar__icon material-symbols-rounded" aria-hidden="true">
+      <mat-icon class="sidebar__icon" fontSet="material-symbols-rounded" aria-hidden="true">
         {{ item.icon }}
-      </span>
-      <span>{{ item.label }}</span>
+      </mat-icon>
+      <span class="sidebar__label">{{ item.label }}</span>
     </button>
-  </nav>
+  </mat-nav-list>
 </aside>

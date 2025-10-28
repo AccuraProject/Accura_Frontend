@@ -51,20 +51,27 @@
   box-shadow: 0 14px 35px rgba(79, 70, 229, 0.12);
 }
 
-.login-card__header {
-  margin-bottom: 1.75rem;
+.login-card :where(.mat-mdc-card-title, .mat-mdc-card-subtitle) {
+  font-family: inherit;
 }
 
-.login-card__header h2 {
-  margin: 0;
+.login-card .mat-mdc-card-title {
   font-size: 1.75rem;
   font-weight: 600;
   color: #111827;
 }
 
-.login-card__header p {
-  margin: 0.5rem 0 0;
+.login-card .mat-mdc-card-subtitle {
+  margin-top: 0.5rem;
   color: #6b7280;
+}
+
+.login-card__header {
+  margin-bottom: 1.75rem;
+}
+
+.login-card__header .mat-mdc-card-header-text {
+  margin: 0;
 }
 
 form {
@@ -73,39 +80,35 @@ form {
 }
 
 .form-field {
-  display: grid;
-  gap: 0.5rem;
-}
-
-.form-field label {
-  font-weight: 500;
-  color: #111827;
-}
-
-.form-field input {
   width: 100%;
-  padding: 0.875rem 1rem;
+}
+
+.form-field.mat-mdc-form-field {
+  --mdc-filled-text-field-container-color: #f9fafb;
+  --mdc-filled-text-field-focus-active-indicator-color: #6366f1;
+  --mdc-filled-text-field-hover-active-indicator-color: rgba(99, 102, 241, 0.4);
+  --mdc-filled-text-field-focus-label-text-color: #4338ca;
+  --mdc-filled-text-field-input-text-color: #111827;
+  --mdc-filled-text-field-label-text-color: #4b5563;
+  --mdc-filled-text-field-caret-color: #6366f1;
+  --mdc-filled-text-field-active-indicator-color: rgba(99, 102, 241, 0.35);
   border-radius: 14px;
-  border: 1px solid #e5e7eb;
-  background: #f9fafb;
-  transition: border 0.2s ease, box-shadow 0.2s ease;
-  font-size: 1rem;
 }
 
-.form-field input:focus {
-  outline: none;
-  border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
-  background: #ffffff;
+.form-field .mdc-text-field {
+  border-radius: 14px 14px 0 0;
+  padding-inline: 0;
 }
 
-.form-field small {
-  color: #dc2626;
+.form-field .mdc-line-ripple::before,
+.form-field .mdc-line-ripple::after {
+  border-bottom-width: 2px;
 }
 
-.form-field--invalid input {
-  border-color: #dc2626;
-  background: #fef2f2;
+.form-field--invalid.mat-mdc-form-field {
+  --mdc-filled-text-field-focus-active-indicator-color: #dc2626;
+  --mdc-filled-text-field-hover-active-indicator-color: rgba(220, 38, 38, 0.4);
+  --mdc-filled-text-field-active-indicator-color: rgba(220, 38, 38, 0.25);
 }
 
 .form-extras {
@@ -116,24 +119,13 @@ form {
   flex-wrap: wrap;
 }
 
-.remember {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.95rem;
-  color: #4b5563;
-}
-
-.remember input {
-  width: 1rem;
-  height: 1rem;
-}
-
 .forgot-password {
   font-size: 0.95rem;
   color: #6366f1;
   font-weight: 500;
   text-decoration: none;
+  padding: 0;
+  min-width: 0;
 }
 
 .forgot-password:hover {
@@ -158,7 +150,6 @@ form {
 }
 
 .submit {
-  border: none;
   border-radius: 16px;
   padding: 0.95rem 1.25rem;
   font-size: 1rem;
@@ -181,21 +172,14 @@ form {
 .submit:not(:disabled):hover {
   transform: translateY(-1px);
   box-shadow: 0 16px 32px rgba(99, 102, 241, 0.28);
-}
-
-.spinner {
-  width: 1.25rem;
-  height: 1.25rem;
-  border-radius: 9999px;
-  border: 3px solid rgba(255, 255, 255, 0.4);
-  border-top-color: #ffffff;
-  animation: spin 0.75s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
+  .mat-ripple-element {
+    display: none;
   }
+}
+
+.submit__spinner {
+  --mdc-circular-progress-active-indicator-color: #ffffff;
+  margin-inline-end: 0.75rem;
 }
 
 @media (max-width: 768px) {

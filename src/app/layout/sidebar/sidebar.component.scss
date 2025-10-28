@@ -19,6 +19,11 @@
 .sidebar__nav {
   display: grid;
   gap: 0.4rem;
+  padding: 0;
+}
+
+.sidebar__nav .mat-mdc-list-item {
+  border-radius: 14px;
 }
 
 .sidebar__link {
@@ -37,6 +42,16 @@
   text-align: left;
   cursor: pointer;
   font: inherit;
+}
+
+.sidebar__label {
+  flex: 1;
+}
+
+.sidebar__link .mat-ripple-element,
+.sidebar__link .mat-mdc-focus-indicator,
+.sidebar__link .mat-mdc-button-touch-target {
+  display: none;
 }
 
 .sidebar__link:hover {
