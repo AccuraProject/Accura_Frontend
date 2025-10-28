@@ -1,0 +1,18 @@
+<section class="template-delete">
+  <header>
+    <span class="material-symbols-rounded" aria-hidden="true">warning</span>
+    <div>
+      <h2>Eliminar Plantilla</h2>
+      <p>¿Estás seguro de que deseas eliminar la plantilla <strong>{{ data.name }}</strong>?</p>
+    </div>
+  </header>
+
+  <p class="template-delete__alert">
+    Esta acción eliminará permanentemente la plantilla y todos los datos asociados. No se podrá deshacer.
+  </p>
+
+  <footer>
+    <button type="button" class="button button--ghost" (click)="cancel()">Cancelar</button>
+    <button type="button" class="button button--danger" (click)="confirm()">Eliminar Plantilla</button>
+  </footer>
+</section>

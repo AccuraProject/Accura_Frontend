@@ -1,0 +1,39 @@
+<section class="template-detail">
+  <header class="template-detail__header">
+    <div>
+      <h2>{{ data.name }}</h2>
+      <p>{{ data.description }}</p>
+    </div>
+    <span class="badge" [ngClass]="{
+      'badge--active': data.status === 'Publicado',
+      'badge--draft': data.status === 'Borrador',
+      'badge--inactive': data.status === 'Inactivo'
+    }">
+      {{ data.status }}
+    </span>
+  </header>
+
+  <dl class="template-detail__meta">
+    <div>
+      <dt>Versión</dt>
+      <dd>{{ data.version }}</dd>
+    </div>
+    <div>
+      <dt>Última Actualización</dt>
+      <dd>{{ data.lastUpdated }}</dd>
+    </div>
+    <div>
+      <dt>Fecha de Creación</dt>
+      <dd>{{ data.createdAt }}</dd>
+    </div>
+    <div>
+      <dt>Número de Columnas</dt>
+      <dd>{{ data.columns }}</dd>
+    </div>
+  </dl>
+
+  <footer class="template-detail__footer">
+    <span class="material-symbols-rounded" aria-hidden="true">info</span>
+    <p>Esta información corresponde al último estado registrado de la plantilla.</p>
+  </footer>
+</section>
