@@ -1,0 +1,116 @@
+<header class="modal__header">
+  <div>
+    <h3>Gestionar Permisos</h3>
+    <p>
+      Selecciona las plantillas que {{ data.user.name }} podrá utilizar. Las plantillas inactivas se
+      muestran como referencia.
+    </p>
+  </div>
+  <button class="icon-button" type="button" (click)="cancel()" aria-label="Cerrar">
+    <span class="material-symbols-rounded" aria-hidden="true">close</span>
+  </button>
+</header>
+
+<div mat-dialog-content class="manage-dialog">
+  <section class="manage-dialog__user">
+    <span class="manage-dialog__avatar" aria-hidden="true">{{ getInitials(data.user.name) }}</span>
+    <div>
+      <h4>{{ data.user.name }}</h4>
+      <p>{{ data.user.email }}</p>
+    </div>
+  </section>
+
+  <p class="manage-dialog__hint">
+    Solo las plantillas activas estarán disponibles para el usuario.
+  </p>
+
+  <section class="manage-dialog__section">
+    <header>
+      <div>
+        <h5>Plantillas Activas</h5>
+        <p>Plantillas actualmente asignadas al usuario</p>
+      </div>
+      <span class="manage-dialog__counter">{{ activeTemplates.length }}</span>
+    </header>
+
+    <ng-container *ngIf="activeTemplates.length; else emptyActive">
+      <ul class="template-list">
+        <li *ngFor="let template of activeTemplates; trackBy: trackByTemplateId">
+          <label class="template-option">
+            <input
+              type="checkbox"
+              [checked]="isTemplateSelected(template.id)"
+              (change)="toggleTemplate(template.id, $any($event.target).checked)"
+            />
+            <div class="template-option__content">
+              <div class="template-option__header">
+                <span class="template-option__code">{{ template.code }}</span>
+                <span class="template-option__name">{{ template.name }}</span>
+              </div>
+              <p>{{ template.description }}</p>
+            </div>
+            <span class="template-option__action">Quitar</span>
+          </label>
+        </li>
+      </ul>
+    </ng-container>
+  </section>
+
+  <section class="manage-dialog__section">
+    <header>
+      <div>
+        <h5>Plantillas Inactivas</h5>
+        <p>Activa nuevas plantillas para otorgar acceso</p>
+      </div>
+      <span class="manage-dialog__counter manage-dialog__counter--secondary">
+        {{ inactiveTemplates.length }}
+      </span>
+    </header>
+
+    <ng-container *ngIf="inactiveTemplates.length; else emptyInactive">
+      <ul class="template-list">
+        <li *ngFor="let template of inactiveTemplates; trackBy: trackByTemplateId">
+          <label class="template-option template-option--inactive">
+            <input
+              type="checkbox"
+              [checked]="isTemplateSelected(template.id)"
+              (change)="toggleTemplate(template.id, $any($event.target).checked)"
+            />
+            <div class="template-option__content">
+              <div class="template-option__header">
+                <span class="template-option__code">{{ template.code }}</span>
+                <span class="template-option__name">{{ template.name }}</span>
+              </div>
+              <p>{{ template.description }}</p>
+            </div>
+            <span class="template-option__action template-option__action--add">Asignar</span>
+          </label>
+        </li>
+      </ul>
+    </ng-container>
+  </section>
+
+  <ng-template #emptyActive>
+    <div class="template-placeholder">
+      <span class="material-symbols-rounded" aria-hidden="true">inbox</span>
+      <p>Este usuario no tiene plantillas activas.</p>
+    </div>
+  </ng-template>
+
+  <ng-template #emptyInactive>
+    <div class="template-placeholder template-placeholder--muted">
+      <span class="material-symbols-rounded" aria-hidden="true">check_small</span>
+      <p>Todas las plantillas disponibles están activas.</p>
+    </div>
+  </ng-template>
+</div>
+
+<footer mat-dialog-actions class="modal__actions">
+  <span class="manage-dialog__selected">Plantillas seleccionadas: {{ selectedCount }}</span>
+  <button class="modal__button modal__button--ghost" type="button" (click)="cancel()">
+    Cancelar
+  </button>
+  <button class="modal__button" type="button" (click)="submit()" [disabled]="!hasChanges">
+    Guardar Permisos
+  </button>
+</footer>
