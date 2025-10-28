@@ -26,8 +26,8 @@ interface UserRow {
 export class UsersComponent {
   protected searchTerm = '';
 
-  protected readonly roles = ['Administrador', 'Cliente', 'Analista'];
-  protected readonly statuses = ['Activo', 'Inactivo', 'Suspendido'];
+  protected readonly roles = ['Administrador', 'Cliente'];
+  protected readonly statuses = ['Activo', 'Inactivo'];
 
   protected users: UserRow[] = [
     {
@@ -50,13 +50,6 @@ export class UsersComponent {
       role: 'Cliente',
       status: 'Inactivo',
       createdAt: '2024-12-28'
-    },
-    {
-      name: 'Ana Martínez',
-      email: 'ana@example.com',
-      role: 'Analista',
-      status: 'Activo',
-      createdAt: '2024-12-18'
     }
   ];
 

@@ -25,7 +25,7 @@
 
 .layout__content {
   flex: 1;
-  padding: 2.5rem clamp(1.5rem, 4vw, 3.5rem);
+  padding: 2rem clamp(1.5rem, 2.5vw, 2.5rem);
   background: radial-gradient(circle at top right, rgba(99, 102, 241, 0.08), transparent 45%),
     rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(14px);
