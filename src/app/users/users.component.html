@@ -63,9 +63,24 @@
             <span class="users-table__date">{{ user.createdAt }}</span>
           </td>
           <td class="users-table__actions-column">
-            <button class="icon-button" type="button" aria-label="Abrir acciones">
+            <button
+              class="icon-button"
+              type="button"
+              aria-label="Abrir acciones"
+              [matMenuTriggerFor]="actionsMenu"
+            >
               <span class="material-symbols-rounded" aria-hidden="true">more_vert</span>
             </button>
+            <mat-menu #actionsMenu="matMenu">
+              <button mat-menu-item type="button" (click)="openEditDialog(user)">
+                <span class="material-symbols-rounded" aria-hidden="true">edit</span>
+                <span>Editar</span>
+              </button>
+              <button mat-menu-item type="button" (click)="openDeleteDialog(user)">
+                <span class="material-symbols-rounded" aria-hidden="true">delete</span>
+                <span>Eliminar</span>
+              </button>
+            </mat-menu>
           </td>
         </tr>
         <tr *ngIf="items.length === 0">

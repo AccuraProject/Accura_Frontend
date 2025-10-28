@@ -6,6 +6,8 @@ import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/materia
 export interface UserFormDialogData {
   roles: string[];
   statuses: string[];
+  mode?: 'create' | 'edit';
+  user?: UserFormDialogResult;
 }
 
 export interface UserFormDialogResult {
@@ -24,8 +26,12 @@ export interface UserFormDialogResult {
 export class UserFormDialogComponent {
   protected readonly roles: string[];
   protected readonly statuses: string[];
+  protected readonly isEditMode: boolean;
+  protected readonly title: string;
+  protected readonly description: string;
+  protected readonly actionLabel: string;
 
-  protected formModel: UserFormDialogResult = this.getEmptyForm();
+  protected formModel: UserFormDialogResult;
 
   constructor(
     private readonly dialogRef: MatDialogRef<UserFormDialogComponent, UserFormDialogResult>,
@@ -33,6 +39,15 @@ export class UserFormDialogComponent {
   ) {
     this.roles = data.roles;
     this.statuses = data.statuses;
+    this.isEditMode = data.mode === 'edit';
+
+    this.title = this.isEditMode ? 'Editar Usuario' : 'Crear Nuevo Usuario';
+    this.description = this.isEditMode
+      ? 'Actualiza los datos del usuario seleccionado. El correo electrónico no puede modificarse desde esta vista.'
+      : 'Completa los datos del nuevo usuario para agregarlo a la plataforma';
+    this.actionLabel = this.isEditMode ? 'Guardar Cambios' : 'Crear Usuario';
+
+    this.formModel = data.user ? { ...data.user } : this.getEmptyForm();
   }
 
   protected submit(form: NgForm): void {
@@ -50,7 +65,6 @@ export class UserFormDialogComponent {
   }
 
   protected cancel(form: NgForm): void {
-    form.resetForm(this.getEmptyForm());
     this.dialogRef.close();
   }
 

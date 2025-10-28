@@ -2,11 +2,16 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { MatMenuModule } from '@angular/material/menu';
 import {
   UserFormDialogComponent,
   UserFormDialogData,
   UserFormDialogResult
 } from './user-form-dialog.component';
+import {
+  UserDeleteDialogComponent,
+  UserDeleteDialogData
+} from './user-delete-dialog.component';
 
 interface UserRow {
   name: string;
@@ -19,7 +24,7 @@ interface UserRow {
 @Component({
   selector: 'app-users',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatDialogModule],
+  imports: [CommonModule, FormsModule, MatDialogModule, MatMenuModule],
   templateUrl: './users.component.html',
   styleUrl: './users.component.scss'
 })
@@ -81,7 +86,8 @@ export class UsersComponent {
         disableClose: true,
         data: {
           roles: this.roles,
-          statuses: this.statuses
+          statuses: this.statuses,
+          mode: 'create'
         }
       }
     );
@@ -95,6 +101,63 @@ export class UsersComponent {
     });
   }
 
+  protected openEditDialog(user: UserRow): void {
+    const dialogRef = this.dialog.open<
+      UserFormDialogComponent,
+      UserFormDialogData,
+      UserFormDialogResult
+    >(
+      UserFormDialogComponent,
+      {
+        disableClose: true,
+        data: {
+          roles: this.roles,
+          statuses: this.statuses,
+          mode: 'edit',
+          user: {
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            status: user.status
+          }
+        }
+      }
+    );
+
+    dialogRef.afterClosed().subscribe((result: UserFormDialogResult | undefined) => {
+      if (!result) {
+        return;
+      }
+
+      this.updateUserEntry(user.email, result);
+    });
+  }
+
+  protected openDeleteDialog(user: UserRow): void {
+    const dialogRef = this.dialog.open<
+      UserDeleteDialogComponent,
+      UserDeleteDialogData,
+      boolean
+    >(
+      UserDeleteDialogComponent,
+      {
+        disableClose: true,
+        data: {
+          name: user.name,
+          email: user.email
+        }
+      }
+    );
+
+    dialogRef.afterClosed().subscribe((shouldDelete: boolean | undefined) => {
+      if (!shouldDelete) {
+        return;
+      }
+
+      this.removeUserEntry(user.email);
+    });
+  }
+
   private addUserEntry(formData: UserFormDialogResult): void {
     const entry: UserRow = {
       name: formData.name.trim(),
@@ -105,6 +168,25 @@ export class UsersComponent {
     };
 
     this.users = [entry, ...this.users];
+  }
+
+  private updateUserEntry(email: string, formData: UserFormDialogResult): void {
+    this.users = this.users.map((user) => {
+      if (user.email !== email) {
+        return user;
+      }
+
+      return {
+        ...user,
+        name: formData.name.trim(),
+        role: formData.role,
+        status: formData.status
+      };
+    });
+  }
+
+  private removeUserEntry(email: string): void {
+    this.users = this.users.filter((user) => user.email !== email);
   }
 
   protected trackByEmail(_: number, user: UserRow): string {

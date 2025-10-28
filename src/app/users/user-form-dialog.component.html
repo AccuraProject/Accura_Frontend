@@ -1,7 +1,7 @@
 <header mat-dialog-title class="modal__header">
   <div>
-    <h3>Crear Nuevo Usuario</h3>
-    <p>Completa los datos del nuevo usuario para agregarlo a la plataforma</p>
+    <h3>{{ title }}</h3>
+    <p>{{ description }}</p>
   </div>
   <button class="icon-button" type="button" (click)="cancel(userForm)" aria-label="Cerrar">
     <span class="material-symbols-rounded" aria-hidden="true">close</span>
@@ -52,6 +52,7 @@
         required
         email
         #emailModel="ngModel"
+        [readonly]="isEditMode"
         [attr.aria-invalid]="
           emailModel.invalid && (emailModel.touched || userForm.submitted) ? 'true' : 'false'
         "
@@ -62,6 +63,9 @@
       </small>
       <small *ngIf="emailModel.errors?.['email'] && (emailModel.touched || userForm.submitted)">
         Ingresa un correo electrónico válido.
+      </small>
+      <small *ngIf="isEditMode" class="modal__hint">
+        Este campo solo puede cambiarse desde la configuración avanzada del usuario.
       </small>
     </div>
 
@@ -121,5 +125,5 @@
   <button class="modal__button modal__button--ghost" type="button" (click)="cancel(userForm)">
     Cancelar
   </button>
-  <button class="modal__button" type="submit" [disabled]="userForm.invalid">Crear Usuario</button>
+  <button class="modal__button" type="submit" [disabled]="userForm.invalid">{{ actionLabel }}</button>
 </footer>

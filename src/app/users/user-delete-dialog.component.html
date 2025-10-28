@@ -1,0 +1,32 @@
+<header mat-dialog-title class="modal__header">
+  <div>
+    <h3>Eliminar Usuario</h3>
+    <p>Esta acción no se puede deshacer</p>
+  </div>
+  <button class="icon-button" type="button" (click)="cancel()" aria-label="Cerrar">
+    <span class="material-symbols-rounded" aria-hidden="true">close</span>
+  </button>
+</header>
+
+<div mat-dialog-content>
+  <div class="modal__alert" role="alert">
+    <span class="material-symbols-rounded" aria-hidden="true">warning</span>
+    <div>
+      <p class="modal__alert-title">
+        ¿Estás seguro de que deseas eliminar al usuario <strong>{{ data.name }}</strong>?
+      </p>
+      <p class="modal__alert-text">
+        {{ data.email }}. Esta acción eliminará permanentemente todos los datos asociados a este usuario.
+      </p>
+    </div>
+  </div>
+</div>
+
+<footer mat-dialog-actions class="modal__actions">
+  <button class="modal__button modal__button--ghost" type="button" (click)="cancel()">
+    Cancelar
+  </button>
+  <button class="modal__button modal__button--danger" type="button" (click)="confirm()">
+    Eliminar Usuario
+  </button>
+</footer>
