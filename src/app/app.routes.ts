@@ -9,6 +9,7 @@ import { PermissionsComponent } from './permissions/permissions.component';
 import { TemplateManagementComponent } from './templates/template-management.component';
 import { HistoryComponent } from './history/history.component';
 import { SettingsComponent } from './settings/settings.component';
+import { ClientHomeComponent } from './client-home/client-home.component';
 
 export const routes: Routes = [
   {
@@ -22,6 +23,7 @@ export const routes: Routes = [
       { path: 'plantillas', component: TemplateManagementComponent },
       { path: 'historial', component: HistoryComponent },
       { path: 'configuracion', component: SettingsComponent },
+      { path: 'cliente/inicio', component: ClientHomeComponent },
     ]
   },
   {

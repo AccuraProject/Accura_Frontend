@@ -1,0 +1,75 @@
+<section class="hero">
+  <div>
+    <p class="hero__pretitle">Mi Panel</p>
+    <h1 class="hero__title">Bienvenido a tu espacio de trabajo en Accura</h1>
+    <p class="hero__subtitle">
+      Revisa tus plantillas, gestiona tus cargas y monitorea los resultados en un solo lugar.
+    </p>
+  </div>
+  <div class="hero__badge" aria-label="Perfil de cliente">Cliente</div>
+</section>
+
+<section class="guide">
+  <header class="guide__header">
+    <div>
+      <h2 class="guide__title">Guía de Usuario</h2>
+      <p class="guide__subtitle">Aprende a usar Accura con estos 3 pasos</p>
+    </div>
+  </header>
+  <div class="guide__steps">
+    <article class="step" *ngFor="let step of onboardingSteps">
+      <span class="step__number" aria-hidden="true">{{ step.order }}</span>
+      <div class="step__content">
+        <h3 class="step__title">{{ step.title }}</h3>
+        <p class="step__description">{{ step.description }}</p>
+      </div>
+    </article>
+  </div>
+</section>
+
+<section class="summary">
+  <article class="summary-card" *ngFor="let card of summaryCards">
+    <header class="summary-card__header">
+      <span class="material-symbols-rounded summary-card__icon" aria-hidden="true">
+        {{ card.icon }}
+      </span>
+      <h3 class="summary-card__title">{{ card.title }}</h3>
+    </header>
+    <p class="summary-card__value">{{ card.value }}</p>
+    <p class="summary-card__description">{{ card.description }}</p>
+  </article>
+</section>
+
+<section class="overview">
+  <article class="panel">
+    <header class="panel__header">
+      <div>
+        <h2 class="panel__title">Cargas Recientes</h2>
+        <p class="panel__subtitle">Últimas validaciones realizadas por tu equipo</p>
+      </div>
+      <a class="panel__link" href="#" aria-label="Ver historial de cargas">Ver historial</a>
+    </header>
+    <ul class="uploads" aria-label="Listado de cargas recientes">
+      <li class="uploads__item" *ngFor="let upload of recentUploads">
+        <span class="uploads__indicator uploads__indicator--{{ upload.state }}" aria-hidden="true"></span>
+        <div class="uploads__details">
+          <p class="uploads__name">{{ upload.name }}</p>
+          <p class="uploads__meta">{{ upload.timestamp }}</p>
+        </div>
+        <p class="uploads__status" [attr.data-state]="upload.state">{{ upload.status }}</p>
+      </li>
+    </ul>
+  </article>
+
+  <article class="panel panel--highlight">
+    <header class="panel__header">
+      <div>
+        <p class="panel__eyebrow">Plantilla destacada</p>
+        <h2 class="panel__title">{{ featuredTemplate.name }}</h2>
+      </div>
+    </header>
+    <p class="panel__description">{{ featuredTemplate.description }}</p>
+    <p class="panel__details">{{ featuredTemplate.details }}</p>
+    <button class="panel__button" type="button">{{ featuredTemplate.cta }}</button>
+  </article>
+</section>
