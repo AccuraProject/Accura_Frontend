@@ -80,11 +80,17 @@ export class UsersComponent {
   protected closeModal(form?: NgForm): void {
     this.modalOpen = false;
     this.newUser = this.getEmptyUser();
-    form?.resetForm({ role: this.roles[0], status: this.statuses[0] });
+    form?.resetForm({
+      name: this.newUser.name,
+      email: this.newUser.email,
+      role: this.newUser.role,
+      status: this.newUser.status
+    });
   }
 
   protected createUser(form: NgForm): void {
     if (form.invalid) {
+      form.form.markAllAsTouched();
       return;
     }
 
@@ -139,8 +145,8 @@ export class UsersComponent {
     return {
       name: '',
       email: '',
-      role: this.roles[0],
-      status: this.statuses[0],
+      role: '',
+      status: '',
       createdAt: ''
     };
   }

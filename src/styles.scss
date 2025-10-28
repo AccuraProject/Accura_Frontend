@@ -153,7 +153,7 @@ button {
 .modal {
   position: fixed;
   inset: 0;
-  z-index: 50;
+  z-index: 999;
   display: grid;
   place-items: center;
 }
@@ -218,6 +218,7 @@ button {
   font-family: inherit;
   background: rgba(248, 250, 252, 0.8);
   color: #1f2937;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 }
 
 .modal__field input:focus,
@@ -225,6 +226,29 @@ button {
   outline: none;
   border-color: rgba(99, 102, 241, 0.55);
   box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.12);
+}
+
+.modal__field--invalid span {
+  color: #dc2626;
+}
+
+.modal__field--invalid input,
+.modal__field--invalid select {
+  border-color: #dc2626;
+  background: rgba(254, 226, 226, 0.5);
+  box-shadow: 0 0 0 4px rgba(248, 113, 113, 0.18);
+}
+
+.modal__field--invalid input:focus,
+.modal__field--invalid select:focus {
+  border-color: #dc2626;
+  box-shadow: 0 0 0 4px rgba(248, 113, 113, 0.3);
+}
+
+.modal__error {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #dc2626;
 }
 
 .modal__actions {
