@@ -1,0 +1,28 @@
+<header class="toolbar">
+  <div class="toolbar__brand">
+    <button
+      class="toolbar__menu material-symbols-rounded"
+      type="button"
+      aria-label="Abrir navegación"
+      (click)="onToggleMenu()"
+    >
+      menu
+    </button>
+    <div class="toolbar__logo">A</div>
+    <p class="toolbar__title">Accura</p>
+  </div>
+
+  <div class="toolbar__actions">
+    <button class="toolbar__icon" type="button" aria-label="Buscar">
+      🔍
+    </button>
+    <button class="toolbar__icon" type="button" aria-label="Notificaciones">
+      🔔
+      <span class="toolbar__badge" aria-hidden="true">{{ notifications }}</span>
+    </button>
+    <button class="toolbar__profile" type="button">
+      <span class="toolbar__avatar">AB</span>
+      <span class="toolbar__name">Cerrar Sesión</span>
+    </button>
+  </div>
+</header>
