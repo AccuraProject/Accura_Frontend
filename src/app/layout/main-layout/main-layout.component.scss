@@ -94,11 +94,29 @@
   box-shadow: 0 20px 48px rgba(236, 72, 153, 0.18);
 }
 
+.stats__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
 .stats__title {
   margin: 0;
   font-size: 0.95rem;
   color: #6b7280;
   font-weight: 600;
+}
+
+.stats__icon {
+  flex-shrink: 0;
+  font-size: 1.75rem;
+  line-height: 1;
+  color: #6366f1;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 45%, #ec4899 100%);
+  -webkit-text-fill-color: transparent;
+  -webkit-background-clip: text;
+  background-clip: text;
 }
 
 .stats__value {

@@ -7,6 +7,7 @@ interface StatisticCard {
   title: string;
   value: string;
   change: string;
+  icon: string;
   highlight?: boolean;
 }
 
@@ -32,10 +33,16 @@ export class MainLayoutComponent {
   protected mobileNavOpen = false;
 
   protected readonly stats: StatisticCard[] = [
-    { title: 'Total Usuarios', value: '24', change: '+8 vs mes pasado' },
-    { title: 'Plantillas Activas', value: '12', change: '3 desactivadas', highlight: true },
-    { title: 'Cargas Hoy', value: '48', change: '+22 vs ayer' },
-    { title: 'Validaciones Exitosas', value: '452', change: '95% efectividad' }
+    { title: 'Total Usuarios', value: '24', change: '+8 vs mes pasado', icon: 'group' },
+    {
+      title: 'Plantillas Activas',
+      value: '12',
+      change: '3 desactivadas',
+      icon: 'docs',
+      highlight: true
+    },
+    { title: 'Cargas Hoy', value: '48', change: '+22 vs ayer', icon: 'upload' },
+    { title: 'Validaciones Exitosas', value: '452', change: '95% efectividad', icon: 'check_circle' }
   ];
 
   protected readonly activity: ActivityItem[] = [

@@ -26,7 +26,10 @@
           class="stats__card"
           [class.stats__card--highlight]="stat.highlight"
         >
-          <p class="stats__title">{{ stat.title }}</p>
+          <div class="stats__header">
+            <p class="stats__title">{{ stat.title }}</p>
+            <span class="material-symbols-rounded stats__icon">{{ stat.icon }}</span>
+          </div>
           <p class="stats__value">{{ stat.value }}</p>
           <p class="stats__change">{{ stat.change }}</p>
         </article>
