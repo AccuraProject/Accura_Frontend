@@ -4,7 +4,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { finalize } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
-import { AuthService } from '../shared/auth.service';
+import { AuthService } from '../core/services/auth.service';
 
 @Component({
   selector: 'app-login',

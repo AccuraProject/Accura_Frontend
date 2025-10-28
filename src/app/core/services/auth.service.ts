@@ -2,7 +2,7 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, tap } from 'rxjs';
 
-import { environment } from '../../environments/environment';
+import { environment } from '../../../environments/environment';
 
 export interface AuthResponse {
   access_token: string;
