@@ -5,6 +5,7 @@ import { Observable, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { AuthResponse } from '../models/auth-response.model';
 import { LoginOptions } from '../models/login-options.model';
+import type { SessionSnapshot } from '../store/session/session.reducer';
 
 @Injectable({
   providedIn: 'root'
@@ -69,6 +70,25 @@ export class AuthService {
     }
   }
 
+  getStoredSession(): SessionSnapshot | null {
+    const storage = this.getExistingStorage();
+    if (!storage) {
+      return null;
+    }
+
+    const accessToken = storage.getItem('access_token');
+    if (!accessToken) {
+      return null;
+    }
+
+    return {
+      accessToken,
+      tokenType: storage.getItem('token_type'),
+      role: storage.getItem('role'),
+      mustChangePassword: this.parseBoolean(storage.getItem('must_change_password')),
+    };
+  }
+
   clearSession(): void {
     if (typeof window === 'undefined') {
       return;
@@ -115,5 +135,29 @@ export class AuthService {
     }
 
     return persistent ? window.localStorage : window.sessionStorage;
+  }
+
+  private getExistingStorage(): Storage | null {
+    if (typeof window === 'undefined') {
+      return null;
+    }
+
+    if (window.localStorage.getItem('access_token')) {
+      return window.localStorage;
+    }
+
+    if (window.sessionStorage.getItem('access_token')) {
+      return window.sessionStorage;
+    }
+
+    return null;
+  }
+
+  private parseBoolean(value: string | null): boolean | null {
+    if (value === null) {
+      return null;
+    }
+
+    return value === 'true';
   }
 }

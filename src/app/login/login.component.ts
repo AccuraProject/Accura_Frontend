@@ -3,8 +3,11 @@ import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { finalize } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Router } from '@angular/router';
+import { Store } from '@ngrx/store';
 
 import { AuthService } from '../core/services/auth.service';
+import { SessionActions } from '../core/store/session/session.actions';
 
 @Component({
   selector: 'app-login',
@@ -16,6 +19,8 @@ import { AuthService } from '../core/services/auth.service';
 export class LoginComponent {
   private readonly fb = inject(FormBuilder);
   private readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
+  private readonly store = inject(Store);
 
   readonly loginForm = this.fb.nonNullable.group({
     email: ['', [Validators.required, Validators.email]],
@@ -54,8 +59,18 @@ export class LoginComponent {
       .login(email, password, { rememberMe })
       .pipe(finalize(() => this.isSubmitting.set(false)))
       .subscribe({
-        next: () => {
-          this.successMessage.set('Sesión iniciada correctamente.');
+        next: (response) => {
+          this.store.dispatch(SessionActions.loginSuccess({ response }));
+
+          if (response.role === 'admin') {
+            this.successMessage.set('Sesión iniciada correctamente.');
+            this.router.navigate(['/']);
+            return;
+          }
+
+          this.authService.clearSession();
+          this.store.dispatch(SessionActions.logout());
+          this.serverError.set('Tu cuenta no tiene permisos para acceder a la aplicación.');
         },
         error: (error: unknown) => {
           this.serverError.set(this.authService.getErrorMessage(error));

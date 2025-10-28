@@ -9,11 +9,14 @@ import { PermissionsComponent } from './permissions/permissions.component';
 import { TemplateManagementComponent } from './templates/template-management.component';
 import { HistoryComponent } from './history/history.component';
 import { SettingsComponent } from './settings/settings.component';
+import { authGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
   {
     path: '',
     component: MainLayoutComponent,
+    canActivate: [authGuard],
+    canActivateChild: [authGuard],
     children: [
       { path: '', component: DashboardComponent },
       { path: 'usuarios', component: UsersComponent },
