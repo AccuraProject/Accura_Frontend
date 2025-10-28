@@ -1,0 +1,62 @@
+<header class="modal__header">
+  <div>
+    <h3>{{ title }}</h3>
+    <p>{{ description }}</p>
+  </div>
+  <button class="icon-button" type="button" (click)="close()" aria-label="Cerrar">
+    <span class="material-symbols-rounded" aria-hidden="true">close</span>
+  </button>
+</header>
+
+<div mat-dialog-content>
+  <div class="modal__placeholder">
+    <span class="material-symbols-rounded" aria-hidden="true">auto_fix_high</span>
+    <div>
+      <p class="modal__placeholder-title">Formulario en construcción</p>
+      <p class="modal__placeholder-text">
+        Pronto podrás definir los campos y condiciones de la regla desde este espacio. Mientras tanto, revisa un
+        resumen de la configuración actual.
+      </p>
+    </div>
+  </div>
+
+  <section class="rule-preview">
+    <article class="rule-preview__item">
+      <span class="rule-preview__label">Nombre de la Regla</span>
+      <p class="rule-preview__value">{{ formModel.name }}</p>
+    </article>
+    <article class="rule-preview__item">
+      <span class="rule-preview__label">Tipo de Dato</span>
+      <p class="rule-preview__value">{{ formModel.dataType }}</p>
+    </article>
+    <article class="rule-preview__item">
+      <span class="rule-preview__label">Obligatoria</span>
+      <p class="rule-preview__value">{{ formModel.mandatory ? 'Sí' : 'No' }}</p>
+    </article>
+    <article class="rule-preview__item">
+      <span class="rule-preview__label">Estado</span>
+      <p class="rule-preview__value">{{ statusLabel }}</p>
+    </article>
+    <article class="rule-preview__item">
+      <span class="rule-preview__label">Mensaje de Error</span>
+      <p class="rule-preview__value">{{ formModel.errorMessage }}</p>
+    </article>
+    <article class="rule-preview__item">
+      <span class="rule-preview__label">Plantilla / Tipo de Documento</span>
+      <p class="rule-preview__value">{{ formModel.documentType }}</p>
+    </article>
+    <article class="rule-preview__item">
+      <span class="rule-preview__label">Descripción</span>
+      <p class="rule-preview__value">{{ formModel.description }}</p>
+    </article>
+  </section>
+</div>
+
+<footer mat-dialog-actions class="modal__actions">
+  <button class="modal__button modal__button--ghost" type="button" (click)="close()">
+    Cerrar
+  </button>
+  <button class="modal__button" type="button" (click)="save()" disabled>
+    {{ actionLabel }}
+  </button>
+</footer>

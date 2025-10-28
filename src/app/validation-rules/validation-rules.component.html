@@ -1,0 +1,124 @@
+<section class="page-header">
+  <div>
+    <p class="page-header__pretitle">Reglas de Validación</p>
+    <h1 class="page-header__title">Define reglas globales para validar los datos cargados</h1>
+    <p class="page-header__subtitle">
+      Configura validaciones reutilizables para asegurar la calidad de los datos en tus plantillas y procesos.
+    </p>
+  </div>
+  <button class="page-header__cta" type="button" (click)="openCreateDialog()">
+    <span class="material-symbols-rounded">add</span>
+    Crear Regla
+  </button>
+</section>
+
+<section class="validation-summary">
+  <article class="summary-card">
+    <header>
+      <p>Total de Reglas</p>
+      <span class="material-symbols-rounded" aria-hidden="true">auto_awesome</span>
+    </header>
+    <strong>{{ totalRules }}</strong>
+    <span>Reglas configuradas</span>
+  </article>
+  <article class="summary-card">
+    <header>
+      <p>Reglas Activas</p>
+      <span class="material-symbols-rounded" aria-hidden="true">task_alt</span>
+    </header>
+    <strong>{{ activeRules }}</strong>
+    <span>Disponibles para validar</span>
+  </article>
+  <article class="summary-card">
+    <header>
+      <p>Tipos de Datos</p>
+      <span class="material-symbols-rounded" aria-hidden="true">category</span>
+    </header>
+    <strong>{{ dataTypesCount }}</strong>
+    <span>Categorías cubiertas</span>
+  </article>
+  <article class="summary-card">
+    <header>
+      <p>Tipos de Documentos</p>
+      <span class="material-symbols-rounded" aria-hidden="true">draft</span>
+    </header>
+    <strong>{{ documentTypesCount }}</strong>
+    <span>Plantillas asociadas</span>
+  </article>
+</section>
+
+<section class="validation-panel">
+  <header class="validation-panel__header">
+    <div>
+      <h2>Reglas de Validación Globales</h2>
+      <p>Configura reglas que puedes asignar a columnas de plantillas según su tipo de dato.</p>
+    </div>
+    <label class="validation-panel__search">
+      <span class="material-symbols-rounded" aria-hidden="true">search</span>
+      <input
+        type="search"
+        placeholder="Buscar por nombre, tipo, estado o plantilla..."
+        [(ngModel)]="searchTerm"
+        name="search"
+      />
+    </label>
+  </header>
+
+  <div class="validation-table__wrapper" *ngIf="filteredRules as items">
+    <table class="validation-table">
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Tipo de Dato</th>
+          <th>Obligatoria</th>
+          <th>Mensaje de Error</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let rule of items; trackBy: trackByRuleId">
+          <td>
+            <div class="validation-table__name">
+              <p class="validation-table__title">{{ rule.name }}</p>
+              <p class="validation-table__meta">{{ rule.documentType }}</p>
+            </div>
+          </td>
+          <td>
+            <span class="validation-table__text">{{ rule.dataType }}</span>
+          </td>
+          <td>
+            <span class="badge" [ngClass]="rule.mandatory ? 'badge--active' : 'badge--inactive'">
+              {{ mandatoryLabel(rule) }}
+            </span>
+          </td>
+          <td>
+            <span class="validation-table__message">{{ rule.errorMessage }}</span>
+          </td>
+          <td>
+            <span class="badge" [ngClass]="statusClass(rule.status)">{{ rule.status }}</span>
+          </td>
+          <td class="validation-table__actions">
+            <button class="icon-button icon-button--ghost" type="button" (click)="openEditDialog(rule)" aria-label="Editar">
+              <span class="material-symbols-rounded" aria-hidden="true">edit</span>
+            </button>
+            <button
+              class="icon-button icon-button--danger"
+              type="button"
+              (click)="openDeleteDialog(rule)"
+              aria-label="Eliminar"
+            >
+              <span class="material-symbols-rounded" aria-hidden="true">delete</span>
+            </button>
+          </td>
+        </tr>
+        <tr *ngIf="items.length === 0">
+          <td colspan="6" class="validation-table__empty">
+            <span class="material-symbols-rounded" aria-hidden="true">search_off</span>
+            <p>No se encontraron reglas para la búsqueda realizada.</p>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
