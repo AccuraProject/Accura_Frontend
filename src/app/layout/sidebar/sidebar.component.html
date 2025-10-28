@@ -1,16 +1,17 @@
 <aside class="sidebar" [class.sidebar--open]="mobileNavOpen">
   <nav class="sidebar__nav" aria-label="Navegación principal">
-    <a
+    <button
       *ngFor="let item of navigation"
       class="sidebar__link"
-      [class.sidebar__link--active]="item.active"
-      href="#"
-      (click)="onNavigate()"
+      type="button"
+      (click)="navigate(item)"
+      [class.sidebar__link--active]="isActive(item)"
+      [attr.aria-current]="isActive(item) ? 'page' : null"
     >
       <span class="sidebar__icon material-symbols-rounded" aria-hidden="true">
         {{ item.icon }}
       </span>
       <span>{{ item.label }}</span>
-    </a>
+    </button>
   </nav>
 </aside>
