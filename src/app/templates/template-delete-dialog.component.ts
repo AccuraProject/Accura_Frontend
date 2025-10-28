@@ -10,8 +10,7 @@ export interface TemplateDeleteDialogData {
   selector: 'app-template-delete-dialog',
   standalone: true,
   imports: [CommonModule, MatDialogModule],
-  templateUrl: './template-delete-dialog.component.html',
-  styleUrl: './template-delete-dialog.component.scss'
+  templateUrl: './template-delete-dialog.component.html'
 })
 export class TemplateDeleteDialogComponent {
   constructor(
