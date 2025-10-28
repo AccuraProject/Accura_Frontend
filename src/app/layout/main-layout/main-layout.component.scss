@@ -175,6 +175,7 @@
 }
 
 .timeline {
+  position: relative;
   list-style: none;
   margin: 0;
   padding: 0;
@@ -183,18 +184,36 @@
 }
 
 .timeline__item {
+  position: relative;
   display: grid;
   grid-template-columns: auto 1fr;
+  align-items: flex-start;
   gap: 1rem;
 }
 
 .timeline__marker {
+  position: relative;
   width: 12px;
   height: 12px;
   border-radius: 999px;
   margin-top: 0.3rem;
   background: linear-gradient(135deg, #6366f1 0%, #ec4899 100%);
   box-shadow: 0 0 0 6px rgba(99, 102, 241, 0.1);
+}
+
+.timeline__marker::after {
+  content: "";
+  position: absolute;
+  top: 12px;
+  bottom: -1.25rem;
+  left: 50%;
+  width: 2px;
+  transform: translateX(-50%);
+  background: linear-gradient(180deg, rgba(99, 102, 241, 0.35) 0%, rgba(236, 72, 153, 0.35) 100%);
+}
+
+.timeline__item:last-child .timeline__marker::after {
+  display: none;
 }
 
 .timeline__title {
