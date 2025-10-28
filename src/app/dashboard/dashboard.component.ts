@@ -54,7 +54,7 @@ export class DashboardComponent {
 
   protected readonly quickActions: QuickAction[] = [
     { label: 'Gestionar Usuarios', description: 'Administrar roles y accesos', route: '/usuarios' },
-    { label: 'Crear Plantilla', description: 'Diseñar nueva configuración' },
+    { label: 'Crear Plantilla', description: 'Diseñar nueva configuración', route: '/plantillas' },
     { label: 'Ver Historial de Cargas', description: 'Monitorear ejecuciones recientes' }
   ];
 
