@@ -25,7 +25,6 @@ export class SidebarComponent {
   protected readonly navigation: NavigationItem[] = [
     { icon: 'home', label: 'Inicio', route: '/', exact: true },
     { icon: 'group', label: 'Usuarios', route: '/usuarios' },
-    { icon: 'docs', label: 'Plantillas', route: '/plantillas' },
     { icon: 'check_box', label: 'Reglas de Validación', route: '/reglas-validacion' },
     { icon: 'docs', label: 'Plantillas', route: '/plantillas' },
     { icon: 'shield', label: 'Permisos', route: '/permisos' },
