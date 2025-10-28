@@ -1,8 +1,15 @@
-import { Component, signal } from '@angular/core';
+import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormsModule } from '@angular/forms';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 
-interface ManagedUser {
+import {
+  SettingsManageUserDialogComponent,
+  SettingsManageUserDialogResult
+} from './settings-manage-user-dialog.component';
+
+export interface ManagedUser {
   name: string;
   username: string;
   email: string;
@@ -12,15 +19,13 @@ interface ManagedUser {
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, MatDialogModule],
   templateUrl: './settings.component.html',
   styleUrl: './settings.component.scss'
 })
 export class SettingsComponent {
   protected readonly personalInfoForm: FormGroup;
   protected readonly changePasswordForm: FormGroup;
-  protected readonly userPasswordForm: FormGroup;
-  protected readonly userEmailForm: FormGroup;
 
   protected readonly users: ManagedUser[] = [
     { name: 'Administrador', username: 'admin', email: 'deviyadsegh@gmail.com', role: 'Administrador' },
@@ -30,10 +35,8 @@ export class SettingsComponent {
   ];
 
   protected searchTerm = '';
-  protected readonly selectedUser = signal<ManagedUser | null>(null);
-  protected readonly manageModalOpen = signal(false);
 
-  constructor(private readonly formBuilder: FormBuilder) {
+  constructor(private readonly formBuilder: FormBuilder, private readonly dialog: MatDialog) {
     this.personalInfoForm = this.formBuilder.group({
       fullName: ['Administrador', [Validators.required]],
       username: ['admin', [Validators.required]],
@@ -44,15 +47,6 @@ export class SettingsComponent {
       currentPassword: ['', Validators.required],
       newPassword: ['', [Validators.required, Validators.minLength(8)]],
       confirmPassword: ['', [Validators.required, Validators.minLength(8)]]
-    });
-
-    this.userPasswordForm = this.formBuilder.group({
-      newPassword: ['', [Validators.required, Validators.minLength(8)]],
-      confirmPassword: ['', [Validators.required, Validators.minLength(8)]]
-    });
-
-    this.userEmailForm = this.formBuilder.group({
-      email: ['', [Validators.required, Validators.email]]
     });
   }
 
@@ -90,43 +84,40 @@ export class SettingsComponent {
     this.changePasswordForm.reset();
   }
 
-  protected openManageModal(user: ManagedUser): void {
-    this.selectedUser.set(user);
-    this.manageModalOpen.set(true);
-    this.userPasswordForm.reset();
-    this.userEmailForm.reset({ email: user.email });
+  protected openManageDialog(user: ManagedUser): void {
+    this.dialog
+      .open(SettingsManageUserDialogComponent, {
+        width: '540px',
+        data: { user },
+        autoFocus: false
+      })
+      .afterClosed()
+      .subscribe((result: SettingsManageUserDialogResult | undefined) => {
+        if (!result) {
+          return;
+        }
+
+        if (result.action === 'password') {
+          console.info('Actualizar contraseña de usuario', result);
+        }
+
+        if (result.action === 'email') {
+          console.info('Actualizar correo de usuario', result);
+        }
+      });
   }
 
-  protected closeManageModal(): void {
-    this.manageModalOpen.set(false);
-    this.selectedUser.set(null);
+  protected trackByUsername(_: number, user: ManagedUser): string {
+    return user.username;
   }
 
-  protected submitUserPassword(): void {
-    if (this.userPasswordForm.invalid || !this.selectedUser()) {
-      this.userPasswordForm.markAllAsTouched();
-      return;
-    }
-
-    console.info('Actualizar contraseña de usuario', {
-      user: this.selectedUser(),
-      ...this.userPasswordForm.value
-    });
-    this.userPasswordForm.reset();
-    this.closeManageModal();
-  }
-
-  protected submitUserEmail(): void {
-    if (this.userEmailForm.invalid || !this.selectedUser()) {
-      this.userEmailForm.markAllAsTouched();
-      return;
-    }
-
-    console.info('Actualizar correo de usuario', {
-      user: this.selectedUser(),
-      ...this.userEmailForm.value
-    });
-    this.userEmailForm.markAsPristine();
-    this.closeManageModal();
+  protected userInitials(user: ManagedUser): string {
+    return user.name
+      .split(' ')
+      .filter((part) => !!part)
+      .map((part) => part[0])
+      .join('')
+      .slice(0, 2)
+      .toUpperCase();
   }
 }

@@ -1,0 +1,100 @@
+<header class="modal__header">
+  <div>
+    <h3>Gestionar usuario</h3>
+    <p>Actualiza la contraseña o correo electrónico de {{ user.name }}.</p>
+  </div>
+  <button class="icon-button" type="button" (click)="close()" aria-label="Cerrar">
+    <span class="material-symbols-rounded" aria-hidden="true">close</span>
+  </button>
+</header>
+
+<div mat-dialog-content class="manage-user-dialog">
+  <div class="manage-user-dialog__identity">
+    <span class="manage-user-dialog__avatar" aria-hidden="true">{{ initials }}</span>
+    <div>
+      <p class="manage-user-dialog__name">{{ user.name }}</p>
+      <p class="manage-user-dialog__meta">{{ user.username }} · {{ user.email }}</p>
+    </div>
+  </div>
+
+  <form class="manage-user-dialog__section" [formGroup]="passwordForm" (ngSubmit)="submitPassword()">
+    <h4>Actualizar contraseña</h4>
+    <div class="manage-user-dialog__fields">
+      <div class="form-field" [class.form-field--invalid]="showFieldError(passwordForm, 'newPassword')">
+        <label for="newPassword">Nueva contraseña</label>
+        <input
+          id="newPassword"
+          type="password"
+          formControlName="newPassword"
+          placeholder="••••••••"
+          autocomplete="new-password"
+        />
+        <small *ngIf="passwordForm.get('newPassword')?.hasError('required') && showFieldError(passwordForm, 'newPassword')">
+          Ingresa una contraseña.
+        </small>
+        <small *ngIf="passwordForm.get('newPassword')?.hasError('minlength') && showFieldError(passwordForm, 'newPassword')">
+          Debe tener al menos 8 caracteres.
+        </small>
+      </div>
+
+      <div
+        class="form-field"
+        [class.form-field--invalid]="showFieldError(passwordForm, 'confirmPassword') || passwordMismatch"
+      >
+        <label for="confirmPassword">Confirmar contraseña</label>
+        <input
+          id="confirmPassword"
+          type="password"
+          formControlName="confirmPassword"
+          placeholder="••••••••"
+          autocomplete="new-password"
+        />
+        <small
+          *ngIf="
+            passwordForm.get('confirmPassword')?.hasError('required') &&
+            showFieldError(passwordForm, 'confirmPassword')
+          "
+        >
+          Confirma la nueva contraseña.
+        </small>
+        <small
+          *ngIf="
+            passwordForm.get('confirmPassword')?.hasError('minlength') &&
+            showFieldError(passwordForm, 'confirmPassword')
+          "
+        >
+          Debe tener al menos 8 caracteres.
+        </small>
+        <small *ngIf="passwordMismatch">Las contraseñas no coinciden.</small>
+      </div>
+    </div>
+
+    <div class="manage-user-dialog__actions">
+      <button class="modal__button" type="submit">Actualizar contraseña</button>
+    </div>
+  </form>
+
+  <form class="manage-user-dialog__section" [formGroup]="emailForm" (ngSubmit)="submitEmail()">
+    <h4>Actualizar correo electrónico</h4>
+    <div class="manage-user-dialog__fields manage-user-dialog__fields--single">
+      <div class="form-field" [class.form-field--invalid]="showFieldError(emailForm, 'email')">
+        <label for="email">Nuevo correo electrónico</label>
+        <input id="email" type="email" formControlName="email" placeholder="usuario@correo.com" autocomplete="email" />
+        <small *ngIf="emailForm.get('email')?.hasError('required') && showFieldError(emailForm, 'email')">
+          Ingresa un correo electrónico.
+        </small>
+        <small *ngIf="emailForm.get('email')?.hasError('email') && showFieldError(emailForm, 'email')">
+          Ingresa un formato válido.
+        </small>
+      </div>
+    </div>
+
+    <div class="manage-user-dialog__actions manage-user-dialog__actions--align-start">
+      <button class="modal__button" type="submit">Actualizar correo</button>
+    </div>
+  </form>
+</div>
+
+<footer mat-dialog-actions class="modal__actions">
+  <button class="modal__button modal__button--ghost" type="button" (click)="close()">Cerrar</button>
+</footer>
