@@ -1,0 +1,108 @@
+<form #userForm="ngForm" class="modal__form" (ngSubmit)="submit(userForm)" novalidate>
+  <header mat-dialog-title class="modal__header">
+    <div>
+      <h3>Crear Nuevo Usuario</h3>
+      <p>Completa los datos del nuevo usuario para agregarlo a la plataforma</p>
+    </div>
+    <button class="icon-button" type="button" (click)="cancel(userForm)" aria-label="Cerrar">
+      <span class="material-symbols-rounded" aria-hidden="true">close</span>
+    </button>
+  </header>
+
+  <div mat-dialog-content>
+    <label
+      class="modal__field"
+      [class.modal__field--invalid]="nameModel.invalid && (nameModel.touched || userForm.submitted)"
+    >
+      <span>Nombre Completo</span>
+      <input
+        type="text"
+        name="name"
+        [(ngModel)]="formModel.name"
+        required
+        minlength="3"
+        #nameModel="ngModel"
+        [attr.aria-invalid]="nameModel.invalid && (nameModel.touched || userForm.submitted) ? 'true' : 'false'"
+        placeholder="Juan Pérez"
+      />
+      <small class="modal__error" *ngIf="nameModel.errors?.['required'] && (nameModel.touched || userForm.submitted)">
+        El nombre es obligatorio.
+      </small>
+      <small class="modal__error" *ngIf="nameModel.errors?.['minlength'] && (nameModel.touched || userForm.submitted)">
+        Ingresa al menos 3 caracteres.
+      </small>
+    </label>
+
+    <label
+      class="modal__field"
+      [class.modal__field--invalid]="emailModel.invalid && (emailModel.touched || userForm.submitted)"
+    >
+      <span>Correo Electrónico</span>
+      <input
+        type="email"
+        name="email"
+        [(ngModel)]="formModel.email"
+        required
+        email
+        #emailModel="ngModel"
+        [attr.aria-invalid]="emailModel.invalid && (emailModel.touched || userForm.submitted) ? 'true' : 'false'"
+        placeholder="juan@example.com"
+      />
+      <small class="modal__error" *ngIf="emailModel.errors?.['required'] && (emailModel.touched || userForm.submitted)">
+        El correo electrónico es obligatorio.
+      </small>
+      <small class="modal__error" *ngIf="emailModel.errors?.['email'] && (emailModel.touched || userForm.submitted)">
+        Ingresa un correo electrónico válido.
+      </small>
+    </label>
+
+    <label
+      class="modal__field"
+      [class.modal__field--invalid]="roleModel.invalid && (roleModel.touched || userForm.submitted)"
+    >
+      <span>Rol</span>
+      <select
+        name="role"
+        [(ngModel)]="formModel.role"
+        required
+        #roleModel="ngModel"
+        [attr.aria-invalid]="roleModel.invalid && (roleModel.touched || userForm.submitted) ? 'true' : 'false'"
+      >
+        <option value="" disabled>Selecciona un rol</option>
+        <option *ngFor="let role of roles" [value]="role">{{ role }}</option>
+      </select>
+      <small class="modal__error" *ngIf="roleModel.errors?.['required'] && (roleModel.touched || userForm.submitted)">
+        Selecciona un rol para el usuario.
+      </small>
+    </label>
+
+    <label
+      class="modal__field"
+      [class.modal__field--invalid]="statusModel.invalid && (statusModel.touched || userForm.submitted)"
+    >
+      <span>Estado</span>
+      <select
+        name="status"
+        [(ngModel)]="formModel.status"
+        required
+        #statusModel="ngModel"
+        [attr.aria-invalid]="statusModel.invalid && (statusModel.touched || userForm.submitted) ? 'true' : 'false'"
+      >
+        <option value="" disabled>Selecciona un estado</option>
+        <option *ngFor="let state of statuses" [value]="state">{{ state }}</option>
+      </select>
+      <small class="modal__error" *ngIf="statusModel.errors?.['required'] && (statusModel.touched || userForm.submitted)">
+        Selecciona un estado para el usuario.
+      </small>
+    </label>
+  </div>
+
+  <footer mat-dialog-actions class="modal__actions">
+    <button class="modal__button modal__button--ghost" type="button" (click)="cancel(userForm)">
+      Cancelar
+    </button>
+    <button class="modal__button" type="submit" [disabled]="userForm.invalid">
+      Crear Usuario
+    </button>
+  </footer>
+</form>

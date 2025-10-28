@@ -1,6 +1,12 @@
-import { Component, Inject, OnDestroy, Renderer2 } from '@angular/core';
-import { CommonModule, DOCUMENT } from '@angular/common';
-import { FormsModule, NgForm } from '@angular/forms';
+import { Component } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import {
+  UserFormDialogComponent,
+  UserFormDialogData,
+  UserFormDialogResult
+} from './user-form-dialog.component';
 
 interface UserRow {
   name: string;
@@ -13,13 +19,12 @@ interface UserRow {
 @Component({
   selector: 'app-users',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, MatDialogModule],
   templateUrl: './users.component.html',
   styleUrl: './users.component.scss'
 })
-export class UsersComponent implements OnDestroy {
+export class UsersComponent {
   protected searchTerm = '';
-  protected modalOpen = false;
 
   protected readonly roles = ['Administrador', 'Cliente', 'Analista'];
   protected readonly statuses = ['Activo', 'Inactivo', 'Suspendido'];
@@ -55,8 +60,6 @@ export class UsersComponent implements OnDestroy {
     }
   ];
 
-  protected newUser = this.getEmptyUser();
-
   protected get filteredUsers(): UserRow[] {
     const term = this.searchTerm.trim().toLowerCase();
     if (!term) {
@@ -72,42 +75,43 @@ export class UsersComponent implements OnDestroy {
     });
   }
 
-  constructor(private renderer: Renderer2, @Inject(DOCUMENT) private document: Document) {}
+  constructor(private readonly dialog: MatDialog) {}
 
-  protected openModal(): void {
-    this.newUser = this.getEmptyUser();
-    this.modalOpen = true;
-    this.toggleBodyScroll(true);
-  }
+  protected openCreateDialog(): void {
+    const dialogRef = this.dialog.open<
+      UserFormDialogComponent,
+      UserFormDialogData,
+      UserFormDialogResult
+    >(
+      UserFormDialogComponent,
+      {
+        disableClose: true,
+        data: {
+          roles: this.roles,
+          statuses: this.statuses
+        }
+      }
+    );
 
-  protected closeModal(form?: NgForm): void {
-    this.modalOpen = false;
-    this.toggleBodyScroll(false);
-    this.newUser = this.getEmptyUser();
-    form?.resetForm({
-      name: this.newUser.name,
-      email: this.newUser.email,
-      role: this.newUser.role,
-      status: this.newUser.status
+    dialogRef.afterClosed().subscribe((result: UserFormDialogResult | undefined) => {
+      if (!result) {
+        return;
+      }
+
+      this.addUserEntry(result);
     });
   }
 
-  protected createUser(form: NgForm): void {
-    if (form.invalid) {
-      form.form.markAllAsTouched();
-      return;
-    }
-
+  private addUserEntry(formData: UserFormDialogResult): void {
     const entry: UserRow = {
-      name: this.newUser.name.trim(),
-      email: this.newUser.email.trim(),
-      role: this.newUser.role,
-      status: this.newUser.status,
+      name: formData.name.trim(),
+      email: formData.email.trim(),
+      role: formData.role,
+      status: formData.status,
       createdAt: new Date().toISOString().slice(0, 10)
     };
 
     this.users = [entry, ...this.users];
-    this.closeModal(form);
   }
 
   protected trackByEmail(_: number, user: UserRow): string {
@@ -142,28 +146,6 @@ export class UsersComponent implements OnDestroy {
         return 'badge--suspended';
       default:
         return 'badge--inactive';
-    }
-  }
-
-  private getEmptyUser(): UserRow {
-    return {
-      name: '',
-      email: '',
-      role: '',
-      status: '',
-      createdAt: ''
-    };
-  }
-
-  ngOnDestroy(): void {
-    this.toggleBodyScroll(false);
-  }
-
-  private toggleBodyScroll(disable: boolean): void {
-    if (disable) {
-      this.renderer.addClass(this.document.body, 'modal-open');
-    } else {
-      this.renderer.removeClass(this.document.body, 'modal-open');
     }
   }
 }
