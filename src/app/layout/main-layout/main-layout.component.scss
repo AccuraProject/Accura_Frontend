@@ -5,16 +5,18 @@
 }
 
 .layout {
-  min-height: 100vh;
+  height: 100vh;
   display: flex;
   flex-direction: column;
   color: #0f172a;
+  overflow: hidden;
 }
 
 .layout__body {
   display: flex;
   flex: 1;
   min-height: 0;
+  overflow: hidden;
 }
 
 .layout__backdrop {
@@ -30,6 +32,8 @@
   background: radial-gradient(circle at top right, rgba(99, 102, 241, 0.08), transparent 45%),
     rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(14px);
+  overflow-y: auto;
+  height: 100%;
 }
 
 .page-header {
