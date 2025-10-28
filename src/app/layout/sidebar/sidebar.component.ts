@@ -28,7 +28,7 @@ export class SidebarComponent {
     { icon: 'check_box', label: 'Reglas de Validación', route: '/reglas-validacion' },
     { icon: 'docs', label: 'Plantillas', route: '/plantillas' },
     { icon: 'shield', label: 'Permisos', route: '/permisos' },
-    { icon: 'history', label: 'Historial' },
+    { icon: 'history', label: 'Historial', route: '/historial' },
     { icon: 'settings', label: 'Configuración' }
   ];
 

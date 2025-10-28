@@ -7,6 +7,7 @@ import { UsersComponent } from './users/users.component';
 import { ValidationRulesComponent } from './validation-rules/validation-rules.component';
 import { PermissionsComponent } from './permissions/permissions.component';
 import { TemplateManagementComponent } from './templates/template-management.component';
+import { HistoryComponent } from './history/history.component';
 
 export const routes: Routes = [
   {
@@ -18,6 +19,7 @@ export const routes: Routes = [
       { path: 'reglas-validacion', component: ValidationRulesComponent },
       { path: 'permisos', component: PermissionsComponent },
       { path: 'plantillas', component: TemplateManagementComponent },
+      { path: 'historial', component: HistoryComponent },
     ]
   },
   {

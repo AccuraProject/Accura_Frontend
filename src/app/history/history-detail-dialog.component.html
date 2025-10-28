@@ -1,0 +1,66 @@
+<section class="history-detail">
+  <header class="history-detail__header">
+    <div class="history-detail__status">
+      <span class="material-symbols-rounded" [class]="statusIconClass" aria-hidden="true">{{ statusIcon }}</span>
+      <div>
+        <h2>Detalles de Carga</h2>
+        <p>Información completa sobre el archivo cargado</p>
+      </div>
+    </div>
+    <button type="button" class="history-detail__close" (click)="close()" aria-label="Cerrar">
+      <span class="material-symbols-rounded" aria-hidden="true">close</span>
+    </button>
+  </header>
+
+  <div class="history-detail__file">
+    <div class="history-detail__file-icon">
+      <span class="material-symbols-rounded" aria-hidden="true">description</span>
+    </div>
+    <div>
+      <h3>{{ data.fileName }}</h3>
+      <p>{{ data.templateName }}</p>
+    </div>
+    <span class="history-detail__badge" [class]="statusBadgeClass">{{ data.status }}</span>
+  </div>
+
+  <section class="history-detail__grid">
+    <article>
+      <h4>Fecha de Carga</h4>
+      <p>{{ data.uploadedAt | date: 'dd MMMM y, HH:mm' }}</p>
+    </article>
+    <article>
+      <h4>Procesado Por</h4>
+      <p>{{ data.processedBy }}</p>
+    </article>
+    <article>
+      <h4>Inicio de Validación</h4>
+      <p>{{ data.validationStartedAt | date: 'dd MMMM y, HH:mm' }}</p>
+    </article>
+    <article>
+      <h4>Tiempo Total</h4>
+      <p>{{ data.processingTime }}</p>
+    </article>
+  </section>
+
+  <section class="history-detail__summary">
+    <h4>Resumen de Validación</h4>
+    <div class="history-detail__cards">
+      <article>
+        <span>Filas Validadas</span>
+        <strong>{{ data.validatedRows | number }}</strong>
+      </article>
+      <article>
+        <span>Filas con Errores</span>
+        <strong>{{ data.errorRows | number }}</strong>
+      </article>
+      <article>
+        <span>Tasa de Éxito</span>
+        <strong>{{ data.successRate | percent:'1.0-2' }}</strong>
+      </article>
+      <article>
+        <span>Total de Filas</span>
+        <strong>{{ data.totalRows | number }}</strong>
+      </article>
+    </div>
+  </section>
+</section>
