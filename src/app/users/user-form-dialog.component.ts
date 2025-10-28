@@ -43,8 +43,8 @@ export class UserFormDialogComponent {
 
     this.title = this.isEditMode ? 'Editar Usuario' : 'Crear Nuevo Usuario';
     this.description = this.isEditMode
-      ? 'Actualiza los datos del usuario seleccionado. El correo electrónico no puede modificarse desde esta vista.'
-      : 'Completa los datos del nuevo usuario para agregarlo a la plataforma';
+      ? 'Actualiza los datos del usuario seleccionado.'
+      : 'Completa los datos del nuevo usuario para agregarlo a la plataforma.';
     this.actionLabel = this.isEditMode ? 'Guardar Cambios' : 'Crear Usuario';
 
     this.formModel = data.user ? { ...data.user } : this.getEmptyForm();

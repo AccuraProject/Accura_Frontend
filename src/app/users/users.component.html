@@ -73,12 +73,16 @@
             </button>
             <mat-menu #actionsMenu="matMenu">
               <button mat-menu-item type="button" (click)="openEditDialog(user)">
-                <span class="material-symbols-rounded" aria-hidden="true">edit</span>
-                <span>Editar</span>
+                <div class="menu-item-text">
+                  <span class="material-symbols-rounded" aria-hidden="true">edit</span>
+                  <span>Editar</span>
+                </div>
               </button>
               <button mat-menu-item type="button" (click)="openDeleteDialog(user)">
-                <span class="material-symbols-rounded" aria-hidden="true">delete</span>
-                <span>Eliminar</span>
+                <div class="menu-item-text text-danger">
+                  <span class="material-symbols-rounded" aria-hidden="true">delete</span>
+                  <span>Eliminar</span>
+                </div>
               </button>
             </mat-menu>
           </td>
@@ -93,4 +97,3 @@
     </table>
   </div>
 </section>
-
