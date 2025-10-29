@@ -11,7 +11,7 @@
         <p>Ingresa tus credenciales para acceder a la plataforma</p>
       </header>
 
-      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" novalidate>
+      <form class="form" [formGroup]="loginForm" (ngSubmit)="onSubmit()" novalidate>
         <div class="form-field" [class.form-field--invalid]="showEmailError()">
           <label for="email">Correo Electrónico</label>
           <input
