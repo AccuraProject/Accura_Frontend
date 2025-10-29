@@ -174,7 +174,7 @@
       <input
         type="search"
         name="search"
-        placeholder="Buscar por nombre, usuario o correo..."
+        placeholder="Buscar por nombre, correo o rol..."
         [(ngModel)]="searchTerm"
       />
     </label>
@@ -184,10 +184,10 @@
     <table class="settings-users__table">
       <thead>
         <tr>
-          <th>Usuario</th>
           <th>Nombre</th>
-          <th>Correo</th>
           <th>Rol</th>
+          <th>Estado</th>
+          <th>Fecha de Creación</th>
           <th class="settings-users__actions-column">Acciones</th>
         </tr>
       </thead>
@@ -199,25 +199,24 @@
                 userInitials(user)
               }}</span>
               <div>
-                <p class="settings-users__username">{{ user.username }}</p>
                 <p class="settings-users__name">{{ user.name }}</p>
+                <p class="settings-users__email">{{ user.email }}</p>
               </div>
             </div>
-          </td>
-          <td class="settings-users__name-column">{{ user.name }}</td>
-          <td>
-            <span class="settings-users__email">{{ user.email }}</span>
           </td>
           <td>
             <span
               class="badge"
-              [ngClass]="{
-                'badge--admin': user.role === 'Administrador',
-                'badge--client': user.role === 'Cliente'
-              }"
+              [ngClass]="roleClass(user.role)"
             >
               {{ user.role }}
             </span>
+          </td>
+          <td>
+            <span class="badge" [ngClass]="statusClass(user.status)">{{ user.status }}</span>
+          </td>
+          <td>
+            <span class="settings-users__date">{{ user.createdAt }}</span>
           </td>
           <td class="settings-users__actions-column">
             <button class="settings-users__manage" type="button" (click)="openManageDialog(user)">

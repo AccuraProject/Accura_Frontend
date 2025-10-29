@@ -283,31 +283,26 @@
   font-size: 0.95rem;
 }
 
-.settings-users__username {
+.settings-users__name {
   margin: 0;
   font-weight: 600;
   color: #111827;
 }
 
-.settings-users__name {
+.settings-users__email {
   margin: 0.2rem 0 0;
   color: #64748b;
   font-size: 0.85rem;
-}
-
-.settings-users__name-column {
-  color: #111827;
-  font-weight: 500;
-}
-
-.settings-users__email {
-  color: #475569;
 }
 
 .settings-users__actions-column {
   width: 1%;
   white-space: nowrap;
   text-align: right;
+}
+
+.settings-users__date {
+  color: #475569;
 }
 
 .settings-users__manage {

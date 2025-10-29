@@ -26,6 +26,8 @@ export interface ManagedUser {
   username: string;
   email: string;
   role: string;
+  status: string;
+  createdAt: string;
 }
 
 @Component({
@@ -85,7 +87,7 @@ export class SettingsComponent implements OnInit {
     }
 
     return this.users.filter((user) =>
-      [user.name, user.username, user.email, user.role].some((value) =>
+      [user.name, user.email, user.role, user.status].some((value) =>
         value.toLowerCase().includes(query)
       )
     );
@@ -199,6 +201,24 @@ export class SettingsComponent implements OnInit {
       .toUpperCase();
   }
 
+  protected roleClass(role: string): string {
+    switch (role) {
+      case 'Administrador':
+        return 'badge--admin';
+      default:
+        return 'badge--client';
+    }
+  }
+
+  protected statusClass(status: string): string {
+    switch (status) {
+      case 'Activo':
+        return 'badge--active';
+      default:
+        return 'badge--inactive';
+    }
+  }
+
   protected showPersonalInfoError(controlName: 'fullName' | 'email'): boolean {
     const control = this.personalInfoForm.get(controlName);
     if (!control) {
@@ -242,7 +262,9 @@ export class SettingsComponent implements OnInit {
       name: user.name,
       username: this.getUsernameFromEmail(user.email),
       email: user.email,
-      role: this.getRoleDisplayName(user.role)
+      role: this.getRoleDisplayName(user.role),
+      status: this.getStatusLabel(user.is_active),
+      createdAt: this.formatDate(user.created_at)
     };
   }
 
@@ -260,7 +282,24 @@ export class SettingsComponent implements OnInit {
       return 'Sin rol';
     }
 
-    return role.alias?.trim() || role.name?.trim() || 'Sin rol';
+    return role.name?.trim() || role.alias?.trim() || 'Sin rol';
+  }
+
+  private getStatusLabel(isActive: boolean): string {
+    return isActive ? 'Activo' : 'Inactivo';
+  }
+
+  private formatDate(value: string | null | undefined): string {
+    if (!value) {
+      return '';
+    }
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return '';
+    }
+
+    return new Intl.DateTimeFormat('es-ES').format(date);
   }
 
   private handleCurrentUserChange(user: CurrentUserResponse | null): void {
