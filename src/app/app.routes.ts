@@ -10,6 +10,8 @@ import { TemplateManagementComponent } from './templates/template-management.com
 import { HistoryComponent } from './history/history.component';
 import { SettingsComponent } from './settings/settings.component';
 import { authGuard } from './core/guards/auth.guard';
+import { PasswordUpdateComponent } from './password-update/password-update.component';
+import { passwordUpdateGuard } from './core/guards/password-update.guard';
 
 export const routes: Routes = [
   {
@@ -34,6 +36,11 @@ export const routes: Routes = [
   {
     path: 'login',
     component: LoginComponent
+  },
+  {
+    path: 'cambiar-contrasena',
+    component: PasswordUpdateComponent,
+    canActivate: [passwordUpdateGuard],
   },
   {
     path: '**',

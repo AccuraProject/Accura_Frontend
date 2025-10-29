@@ -8,6 +8,7 @@ import {
   CreatedUserResponse,
   CreateUserPayload,
   CurrentUserResponse,
+  ResetPasswordPayload,
   UpdateUserPayload,
   UserCreatedByMeResponse
 } from '../models/user.model';
@@ -91,6 +92,26 @@ export class UserService {
         });
 
         return this.http.put<CurrentUserResponse>(`${this.baseUrl}/users/${userId}`, payload, {
+          headers
+        });
+      })
+    );
+  }
+
+  resetPassword(userId: number, payload: ResetPasswordPayload): Observable<void> {
+    return this.store.select(selectSessionState).pipe(
+      take(1),
+      switchMap((session) => {
+        if (!session.accessToken) {
+          return throwError(() => new Error('No hay un token de autenticación disponible.'));
+        }
+
+        const tokenType = session.tokenType ?? 'Bearer';
+        const headers = new HttpHeaders({
+          Authorization: `${tokenType} ${session.accessToken}`
+        });
+
+        return this.http.post<void>(`${this.baseUrl}/users/${userId}/reset-password`, payload, {
           headers
         });
       })

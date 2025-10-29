@@ -40,3 +40,7 @@ export interface UpdateUserPayload {
   password?: string;
   current_password?: string;
 }
+
+export interface ResetPasswordPayload {
+  password: string;
+}

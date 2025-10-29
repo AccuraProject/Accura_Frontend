@@ -42,6 +42,7 @@ const reducer = createReducer(
     (state: SessionState, { user }: { user: CurrentUserResponse }): SessionState => ({
       ...state,
       user,
+      mustChangePassword: user.must_change_password,
     })
   ),
   on(SessionActions.logout, (): SessionState => initialState)

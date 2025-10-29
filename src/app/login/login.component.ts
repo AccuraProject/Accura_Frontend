@@ -76,6 +76,15 @@ export class LoginComponent {
         next: ({ response, user }) => {
           if (response.role === 'admin' || response.role === 'user') {
             this.store.dispatch(SessionActions.loadCurrentUserSuccess({ user }));
+
+            const mustChangePassword =
+              response.must_change_password ?? user.must_change_password ?? false;
+
+            if (mustChangePassword) {
+              this.router.navigate(['/cambiar-contrasena']);
+              return;
+            }
+
             this.successMessage.set('Sesión iniciada correctamente.');
             this.router.navigate(['/']);
             return;

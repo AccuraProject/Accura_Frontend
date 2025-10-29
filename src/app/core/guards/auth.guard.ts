@@ -5,7 +5,11 @@ import { combineLatest } from 'rxjs';
 import { map, take } from 'rxjs/operators';
 
 import { SessionActions } from '../store/session/session.actions';
-import { selectSessionIsAuthenticated, selectSessionRole } from '../store/session/session.selectors';
+import {
+  selectSessionIsAuthenticated,
+  selectSessionMustChangePassword,
+  selectSessionRole,
+} from '../store/session/session.selectors';
 
 type AllowedRole = 'admin' | 'user';
 
@@ -16,19 +20,24 @@ export const authGuard: CanActivateFn = (route) => {
   return combineLatest([
     store.select(selectSessionIsAuthenticated),
     store.select(selectSessionRole),
+    store.select(selectSessionMustChangePassword),
   ]).pipe(
     take(1),
-    map(([isAuthenticated, role]) => {
-      if (isAuthenticated && role) {
-        if (!isAllowedRole(role)) {
-          logout(store);
-          return createLoginUrlTree(router);
-        }
-
-        return ensureRoleAccess(route, role, router);
+    map(([isAuthenticated, role, mustChangePassword]) => {
+      if (!isAuthenticated) {
+        return createLoginUrlTree(router);
       }
 
-      return createLoginUrlTree(router);
+      if (mustChangePassword) {
+        return router.createUrlTree(['/cambiar-contrasena']);
+      }
+
+      if (!role || !isAllowedRole(role)) {
+        logout(store);
+        return createLoginUrlTree(router);
+      }
+
+      return ensureRoleAccess(route, role, router);
     })
   );
 };
