@@ -1,6 +1,14 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  AbstractControl,
+  FormBuilder,
+  FormGroup,
+  ReactiveFormsModule,
+  ValidationErrors,
+  ValidatorFn,
+  Validators
+} from '@angular/forms';
 import { FormsModule } from '@angular/forms';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -43,6 +51,8 @@ export class SettingsComponent implements OnInit {
 
   protected personalInfoAlert: PersonalInfoAlert | null = null;
   protected personalInfoSubmitting = false;
+  protected changePasswordAlert: ChangePasswordAlert | null = null;
+  protected changePasswordSubmitting = false;
 
   protected users: ManagedUser[] = [];
 
@@ -50,6 +60,7 @@ export class SettingsComponent implements OnInit {
 
   private currentUser: CurrentUserResponse | null = null;
   private personalInfoSubmitted = false;
+  private changePasswordSubmitted = false;
 
   constructor(
     private readonly formBuilder: FormBuilder,
@@ -66,8 +77,18 @@ export class SettingsComponent implements OnInit {
     this.changePasswordForm = this.formBuilder.group({
       currentPassword: ['', Validators.required],
       newPassword: ['', [Validators.required, Validators.minLength(8)]],
-      confirmPassword: ['', [Validators.required, Validators.minLength(8)]]
+      confirmPassword: [
+        '',
+        [Validators.required, Validators.minLength(8), this.confirmPasswordValidator()]
+      ]
     });
+
+    this.changePasswordForm
+      .get('newPassword')
+      ?.valueChanges.pipe(takeUntilDestroyed())
+      .subscribe(() => {
+        this.changePasswordForm.get('confirmPassword')?.updateValueAndValidity({ onlySelf: true });
+      });
 
     this.store
       .select(selectSessionUser)
@@ -155,13 +176,57 @@ export class SettingsComponent implements OnInit {
   }
 
   protected submitChangePassword(): void {
+    this.changePasswordSubmitted = true;
+
     if (this.changePasswordForm.invalid) {
       this.changePasswordForm.markAllAsTouched();
       return;
     }
 
-    console.info('Actualizar contraseña', this.changePasswordForm.value);
-    this.changePasswordForm.reset();
+    if (!this.currentUser) {
+      this.changePasswordAlert = {
+        type: 'error',
+        title: 'No se pudo actualizar la contraseña',
+        message: 'No se encontró información del usuario en sesión. Inténtalo nuevamente.'
+      };
+      return;
+    }
+
+    const payload: UpdateUserPayload = {
+      current_password: this.changePasswordForm.get('currentPassword')?.value ?? '',
+      password: this.changePasswordForm.get('newPassword')?.value ?? ''
+    };
+
+    this.changePasswordSubmitting = true;
+    this.changePasswordAlert = null;
+
+    this.userService
+      .updateUser(this.currentUser.id, payload)
+      .pipe(finalize(() => (this.changePasswordSubmitting = false)))
+      .subscribe({
+        next: (user) => {
+          this.currentUser = user;
+          this.store.dispatch(SessionActions.loadCurrentUserSuccess({ user }));
+
+          this.changePasswordForm.reset();
+          this.changePasswordForm.markAsPristine();
+          this.changePasswordForm.markAsUntouched();
+          this.changePasswordSubmitted = false;
+
+          this.changePasswordAlert = {
+            type: 'success',
+            title: 'Contraseña actualizada',
+            message: 'Tu contraseña se actualizó correctamente.'
+          };
+        },
+        error: (error: unknown) => {
+          this.changePasswordAlert = {
+            type: 'error',
+            title: 'No se pudo actualizar la contraseña',
+            message: this.userService.getErrorMessage(error)
+          };
+        }
+      });
   }
 
   protected openManageDialog(user: ManagedUser): void {
@@ -219,6 +284,29 @@ export class SettingsComponent implements OnInit {
     }
   }
 
+  protected showChangePasswordError(
+    controlName: 'currentPassword' | 'newPassword' | 'confirmPassword'
+  ): boolean {
+    const control = this.changePasswordForm.get(controlName);
+    if (!control) {
+      return false;
+    }
+
+    return control.invalid && (control.dirty || control.touched || this.changePasswordSubmitted);
+  }
+
+  protected hasChangePasswordError(
+    controlName: 'currentPassword' | 'newPassword' | 'confirmPassword',
+    errorCode: string
+  ): boolean {
+    const control = this.changePasswordForm.get(controlName);
+    if (!control) {
+      return false;
+    }
+
+    return control.hasError(errorCode);
+  }
+
   protected showPersonalInfoError(controlName: 'fullName' | 'email'): boolean {
     const control = this.personalInfoForm.get(controlName);
     if (!control) {
@@ -239,6 +327,10 @@ export class SettingsComponent implements OnInit {
 
   protected dismissPersonalInfoAlert(): void {
     this.personalInfoAlert = null;
+  }
+
+  protected dismissChangePasswordAlert(): void {
+    this.changePasswordAlert = null;
   }
 
   private loadUsers(): void {
@@ -306,9 +398,12 @@ export class SettingsComponent implements OnInit {
     this.currentUser = user;
     this.personalInfoSubmitted = false;
     this.personalInfoAlert = null;
+    this.changePasswordSubmitted = false;
+    this.changePasswordAlert = null;
 
     if (!user) {
       this.personalInfoForm.reset({ fullName: '', email: '', role: '' });
+      this.changePasswordForm.reset();
       return;
     }
 
@@ -322,10 +417,36 @@ export class SettingsComponent implements OnInit {
     );
     this.personalInfoForm.markAsPristine();
     this.personalInfoForm.markAsUntouched();
+    this.changePasswordForm.reset();
+    this.changePasswordForm.markAsPristine();
+    this.changePasswordForm.markAsUntouched();
+  }
+
+  private confirmPasswordValidator(): ValidatorFn {
+    return (control: AbstractControl): ValidationErrors | null => {
+      if (!control.parent) {
+        return null;
+      }
+
+      const newPassword = control.parent.get('newPassword')?.value;
+      const confirmPassword = control.value;
+
+      if (!confirmPassword || !newPassword) {
+        return null;
+      }
+
+      return newPassword === confirmPassword ? null : { passwordMismatch: true };
+    };
   }
 }
 
 interface PersonalInfoAlert {
+  type: 'success' | 'error';
+  title: string;
+  message: string;
+}
+
+interface ChangePasswordAlert {
   type: 'success' | 'error';
   title: string;
   message: string;

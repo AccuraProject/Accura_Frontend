@@ -35,6 +35,8 @@ export type UserCreatedByMeResponse = UserDetail;
 export type CurrentUserResponse = UserDetail;
 
 export interface UpdateUserPayload {
-  name: string;
-  email: string;
+  name?: string;
+  email?: string;
+  password?: string;
+  current_password?: string;
 }

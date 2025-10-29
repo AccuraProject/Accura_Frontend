@@ -136,8 +136,38 @@
       [formGroup]="changePasswordForm"
       (ngSubmit)="submitChangePassword()"
     >
+      <div class="settings-form__alert" *ngIf="changePasswordAlert as alert">
+        <div
+          class="modal__alert"
+          [ngClass]="{
+            'modal__alert--success': alert.type === 'success',
+            'modal__alert--error': alert.type === 'error'
+          }"
+          role="alert"
+        >
+          <span class="material-symbols-rounded" aria-hidden="true">
+            {{ alert.type === 'success' ? 'check_circle' : 'error' }}
+          </span>
+          <div>
+            <p class="modal__alert-title">{{ alert.title }}</p>
+            <p class="modal__alert-text">{{ alert.message }}</p>
+          </div>
+          <button
+            class="icon-button settings-form__alert-close"
+            type="button"
+            (click)="dismissChangePasswordAlert()"
+            aria-label="Cerrar alerta"
+          >
+            <span class="material-symbols-rounded" aria-hidden="true">close</span>
+          </button>
+        </div>
+      </div>
+
       <div class="settings-form__fields">
-        <div class="form-field settings-field--full">
+        <div
+          class="form-field settings-field--full"
+          [class.form-field--invalid]="showChangePasswordError('currentPassword')"
+        >
           <label for="password">Contraseña actual</label>
           <input
             id="password"
@@ -145,10 +175,22 @@
             formControlName="currentPassword"
             placeholder="••••••••"
             autocomplete="current-password"
+            [attr.aria-invalid]="showChangePasswordError('currentPassword') ? 'true' : 'false'"
           />
+          <small
+            *ngIf="
+              hasChangePasswordError('currentPassword', 'required') &&
+              showChangePasswordError('currentPassword')
+            "
+          >
+            La contraseña actual es obligatoria.
+          </small>
         </div>
 
-        <div class="form-field">
+        <div
+          class="form-field"
+          [class.form-field--invalid]="showChangePasswordError('newPassword')"
+        >
           <label for="new-password">Nueva contraseña</label>
           <input
             id="new-password"
@@ -156,10 +198,24 @@
             formControlName="newPassword"
             placeholder="••••••••"
             autocomplete="new-password"
+            [attr.aria-invalid]="showChangePasswordError('newPassword') ? 'true' : 'false'"
           />
+          <small
+            *ngIf="hasChangePasswordError('newPassword', 'required') && showChangePasswordError('newPassword')"
+          >
+            La nueva contraseña es obligatoria.
+          </small>
+          <small
+            *ngIf="hasChangePasswordError('newPassword', 'minlength') && showChangePasswordError('newPassword')"
+          >
+            Ingresa al menos 8 caracteres.
+          </small>
         </div>
 
-        <div class="form-field">
+        <div
+          class="form-field"
+          [class.form-field--invalid]="showChangePasswordError('confirmPassword')"
+        >
           <label for="confirm-password">Confirmar contraseña</label>
           <input
             id="confirm-password"
@@ -167,12 +223,43 @@
             formControlName="confirmPassword"
             placeholder="••••••••"
             autocomplete="new-password"
+            [attr.aria-invalid]="showChangePasswordError('confirmPassword') ? 'true' : 'false'"
           />
+          <small
+            *ngIf="
+              hasChangePasswordError('confirmPassword', 'required') &&
+              showChangePasswordError('confirmPassword')
+            "
+          >
+            Confirma tu nueva contraseña.
+          </small>
+          <small
+            *ngIf="
+              hasChangePasswordError('confirmPassword', 'minlength') &&
+              showChangePasswordError('confirmPassword')
+            "
+          >
+            Ingresa al menos 8 caracteres.
+          </small>
+          <small
+            *ngIf="
+              hasChangePasswordError('confirmPassword', 'passwordMismatch') &&
+              showChangePasswordError('confirmPassword')
+            "
+          >
+            Las contraseñas no coinciden.
+          </small>
         </div>
       </div>
 
       <div class="settings-form__actions">
-        <button class="settings-form__button" type="submit">Actualizar contraseña</button>
+        <button
+          class="settings-form__button"
+          type="submit"
+          [disabled]="changePasswordForm.invalid || changePasswordSubmitting"
+        >
+          Actualizar contraseña
+        </button>
       </div>
     </form>
   </article>
