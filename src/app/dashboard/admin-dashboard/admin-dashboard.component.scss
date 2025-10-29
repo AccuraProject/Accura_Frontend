@@ -3,22 +3,6 @@
   gap: 2.75rem;
 }
 
-.page-header__pretitle {
-  margin: 0;
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: #6366f1;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-
-.page-header__title {
-  margin: 0.5rem 0 0;
-  font-size: clamp(1.9rem, 3.6vw, 2.4rem);
-  font-weight: 700;
-  color: #0f172a;
-}
-
 .stats {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
