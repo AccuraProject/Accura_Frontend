@@ -6,16 +6,21 @@ import { MatMenuModule } from '@angular/material/menu';
 import {
   UserFormDialogComponent,
   UserFormDialogData,
-  UserFormDialogResult
+  UserFormDialogValue,
+  UserRoleOption,
 } from './user-form-dialog.component';
 import {
   UserDeleteDialogComponent,
-  UserDeleteDialogData
+  UserDeleteDialogData,
 } from './user-delete-dialog.component';
+
+import { UserService } from '../core/services/user.service';
+import { CreatedUserResponse } from '../core/models/user.model';
 
 interface UserRow {
   name: string;
   email: string;
+  roleId: number;
   role: string;
   status: string;
   createdAt: string;
@@ -26,37 +31,28 @@ interface UserRow {
   standalone: true,
   imports: [CommonModule, FormsModule, MatDialogModule, MatMenuModule],
   templateUrl: './users.component.html',
-  styleUrl: './users.component.scss'
+  styleUrl: './users.component.scss',
 })
 export class UsersComponent {
   protected searchTerm = '';
 
-  protected readonly roles = ['Administrador', 'Cliente'];
-  protected readonly statuses = ['Activo', 'Inactivo'];
-
-  protected users: UserRow[] = [
-    {
-      name: 'Juan Pérez',
-      email: 'juan@example.com',
-      role: 'Administrador',
-      status: 'Activo',
-      createdAt: '2025-01-12'
-    },
-    {
-      name: 'María García',
-      email: 'maria@example.com',
-      role: 'Cliente',
-      status: 'Activo',
-      createdAt: '2025-01-08'
-    },
-    {
-      name: 'Carlos López',
-      email: 'carlos@example.com',
-      role: 'Cliente',
-      status: 'Inactivo',
-      createdAt: '2024-12-28'
-    }
+  protected readonly roles: UserRoleOption[] = [
+    { id: 1, label: 'Administrador' },
+    { id: 2, label: 'Cliente' },
   ];
+
+  protected users: UserRow[] = [];
+
+  constructor(
+    private readonly dialog: MatDialog,
+    private readonly userService: UserService,
+  ) {
+    this.users = [
+      this.createUserRow('Juan Pérez', 'juan@example.com', 1, 'Activo', '2025-01-12'),
+      this.createUserRow('María García', 'maria@example.com', 2, 'Activo', '2025-01-08'),
+      this.createUserRow('Carlos López', 'carlos@example.com', 2, 'Inactivo', '2024-12-28'),
+    ];
+  }
 
   protected get filteredUsers(): UserRow[] {
     const term = this.searchTerm.trim().toLowerCase();
@@ -73,31 +69,50 @@ export class UsersComponent {
     });
   }
 
-  constructor(private readonly dialog: MatDialog) {}
-
   protected openCreateDialog(): void {
     const dialogRef = this.dialog.open<
       UserFormDialogComponent,
       UserFormDialogData,
-      UserFormDialogResult
+      UserFormDialogValue
     >(
       UserFormDialogComponent,
       {
         disableClose: true,
         data: {
           roles: this.roles,
-          statuses: this.statuses,
-          mode: 'create'
-        }
-      }
+          mode: 'create',
+        },
+      },
     );
 
-    dialogRef.afterClosed().subscribe((result: UserFormDialogResult | undefined) => {
+    dialogRef.afterClosed().subscribe((result: UserFormDialogValue | undefined) => {
       if (!result) {
         return;
       }
 
-      this.addUserEntry(result);
+      this.userService
+        .createUser({
+          name: result.name,
+          email: result.email,
+          role_id: result.roleId,
+        })
+        .subscribe({
+          next: (createdUser: CreatedUserResponse) => {
+            this.addUserEntry(createdUser);
+            console.info(
+              'Usuario creado correctamente. Contraseña temporal:',
+              createdUser.temporary_password,
+            );
+          },
+          error: (error: unknown) => {
+            const message = this.userService.getErrorMessage(error);
+            if (typeof window !== 'undefined') {
+              window.alert(message);
+            } else {
+              console.error(message);
+            }
+          },
+        });
     });
   }
 
@@ -105,26 +120,24 @@ export class UsersComponent {
     const dialogRef = this.dialog.open<
       UserFormDialogComponent,
       UserFormDialogData,
-      UserFormDialogResult
+      UserFormDialogValue
     >(
       UserFormDialogComponent,
       {
         disableClose: true,
         data: {
           roles: this.roles,
-          statuses: this.statuses,
           mode: 'edit',
           user: {
             name: user.name,
             email: user.email,
-            role: user.role,
-            status: user.status
-          }
-        }
-      }
+            roleId: user.roleId,
+          },
+        },
+      },
     );
 
-    dialogRef.afterClosed().subscribe((result: UserFormDialogResult | undefined) => {
+    dialogRef.afterClosed().subscribe((result: UserFormDialogValue | undefined) => {
       if (!result) {
         return;
       }
@@ -144,9 +157,9 @@ export class UsersComponent {
         disableClose: true,
         data: {
           name: user.name,
-          email: user.email
-        }
-      }
+          email: user.email,
+        },
+      },
     );
 
     dialogRef.afterClosed().subscribe((shouldDelete: boolean | undefined) => {
@@ -158,29 +171,31 @@ export class UsersComponent {
     });
   }
 
-  private addUserEntry(formData: UserFormDialogResult): void {
-    const entry: UserRow = {
-      name: formData.name.trim(),
-      email: formData.email.trim(),
-      role: formData.role,
-      status: formData.status,
-      createdAt: new Date().toISOString().slice(0, 10)
-    };
+  private addUserEntry(createdUser: CreatedUserResponse): void {
+    const entry = this.createUserRow(
+      createdUser.name,
+      createdUser.email,
+      createdUser.role_id,
+      createdUser.is_active ? 'Activo' : 'Inactivo',
+      new Date().toISOString().slice(0, 10),
+    );
 
     this.users = [entry, ...this.users];
   }
 
-  private updateUserEntry(email: string, formData: UserFormDialogResult): void {
+  private updateUserEntry(email: string, formData: UserFormDialogValue): void {
     this.users = this.users.map((user) => {
       if (user.email !== email) {
         return user;
       }
 
+      const roleId = formData.roleId;
+
       return {
         ...user,
-        name: formData.name.trim(),
-        role: formData.role,
-        status: formData.status
+        name: formData.name,
+        roleId,
+        role: this.getRoleLabel(roleId),
       };
     });
   }
@@ -222,5 +237,26 @@ export class UsersComponent {
       default:
         return 'badge--inactive';
     }
+  }
+
+  private createUserRow(
+    name: string,
+    email: string,
+    roleId: number,
+    status: string,
+    createdAt: string,
+  ): UserRow {
+    return {
+      name,
+      email,
+      roleId,
+      role: this.getRoleLabel(roleId),
+      status,
+      createdAt,
+    };
+  }
+
+  private getRoleLabel(roleId: number): string {
+    return this.roles.find((role) => role.id === roleId)?.label ?? 'Cliente';
   }
 }

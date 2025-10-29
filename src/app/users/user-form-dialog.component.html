@@ -77,45 +77,18 @@
       <select
         id="role"
         name="role"
-        [(ngModel)]="formModel.role"
+        [(ngModel)]="formModel.roleId"
         required
         #roleModel="ngModel"
         [attr.aria-invalid]="
           roleModel.invalid && (roleModel.touched || userForm.submitted) ? 'true' : 'false'
         "
       >
-        <option value="">Selecciona</option>
-        <option *ngFor="let role of roles" [value]="role">{{ role }}</option>
+        <option [ngValue]="null">Selecciona</option>
+        <option *ngFor="let role of roles" [ngValue]="role.id">{{ role.label }}</option>
       </select>
       <small *ngIf="roleModel.errors?.['required'] && (roleModel.touched || userForm.submitted)">
         Selecciona un rol para el usuario.
-      </small>
-    </div>
-
-    <div
-      class="form-field"
-      [class.form-field--invalid]="
-        statusModel.invalid && (statusModel.touched || userForm.submitted)
-      "
-    >
-      <label for="status">Estado</label>
-      <select
-        id="status"
-        name="status"
-        [(ngModel)]="formModel.status"
-        required
-        #statusModel="ngModel"
-        [attr.aria-invalid]="
-          statusModel.invalid && (statusModel.touched || userForm.submitted) ? 'true' : 'false'
-        "
-      >
-        <option value="">Selecciona</option>
-        <option *ngFor="let state of statuses" [value]="state">{{ state }}</option>
-      </select>
-      <small
-        *ngIf="statusModel.errors?.['required'] && (statusModel.touched || userForm.submitted)"
-      >
-        Selecciona un estado para el usuario.
       </small>
     </div>
   </form>

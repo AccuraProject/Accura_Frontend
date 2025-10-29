@@ -4,17 +4,20 @@ import { FormsModule, NgForm } from '@angular/forms';
 import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 
 export interface UserFormDialogData {
-  roles: string[];
-  statuses: string[];
+  roles: UserRoleOption[];
   mode?: 'create' | 'edit';
-  user?: UserFormDialogResult;
+  user?: UserFormDialogValue;
 }
 
-export interface UserFormDialogResult {
+export interface UserRoleOption {
+  id: number;
+  label: string;
+}
+
+export interface UserFormDialogValue {
   name: string;
   email: string;
-  role: string;
-  status: string;
+  roleId: number;
 }
 
 @Component({
@@ -24,21 +27,19 @@ export interface UserFormDialogResult {
   templateUrl: './user-form-dialog.component.html'
 })
 export class UserFormDialogComponent {
-  protected readonly roles: string[];
-  protected readonly statuses: string[];
+  protected readonly roles: UserRoleOption[];
   protected readonly isEditMode: boolean;
   protected readonly title: string;
   protected readonly description: string;
   protected readonly actionLabel: string;
 
-  protected formModel: UserFormDialogResult;
+  protected formModel: UserFormDialogModel;
 
   constructor(
-    private readonly dialogRef: MatDialogRef<UserFormDialogComponent, UserFormDialogResult>,
+    private readonly dialogRef: MatDialogRef<UserFormDialogComponent, UserFormDialogValue>,
     @Inject(MAT_DIALOG_DATA) data: UserFormDialogData
   ) {
     this.roles = data.roles;
-    this.statuses = data.statuses;
     this.isEditMode = data.mode === 'edit';
 
     this.title = this.isEditMode ? 'Editar Usuario' : 'Crear Nuevo Usuario';
@@ -56,11 +57,15 @@ export class UserFormDialogComponent {
       return;
     }
 
+    if (this.formModel.roleId === null) {
+      form.form.markAllAsTouched();
+      return;
+    }
+
     this.dialogRef.close({
       name: this.formModel.name.trim(),
       email: this.formModel.email.trim(),
-      role: this.formModel.role,
-      status: this.formModel.status
+      roleId: this.formModel.roleId
     });
   }
 
@@ -68,12 +73,17 @@ export class UserFormDialogComponent {
     this.dialogRef.close();
   }
 
-  private getEmptyForm(): UserFormDialogResult {
+  private getEmptyForm(): UserFormDialogModel {
     return {
       name: '',
       email: '',
-      role: '',
-      status: ''
+      roleId: null
     };
   }
+}
+
+interface UserFormDialogModel {
+  name: string;
+  email: string;
+  roleId: number | null;
 }
