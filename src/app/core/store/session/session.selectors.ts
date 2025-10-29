@@ -14,3 +14,4 @@ export const selectSessionIsAuthenticated = selectIsAuthenticated;
 export const selectSessionMustChangePassword = selectMustChangePassword;
 
 export const selectIsAdmin = createSelector(selectRole, (role: SessionState['role']) => role === 'admin');
+export const selectIsUser = createSelector(selectRole, (role: SessionState['role']) => role === 'user');

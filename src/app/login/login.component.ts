@@ -62,7 +62,7 @@ export class LoginComponent {
         next: (response) => {
           this.store.dispatch(SessionActions.loginSuccess({ response }));
 
-          if (response.role === 'admin') {
+          if (response.role === 'admin' || response.role === 'user') {
             this.successMessage.set('Sesión iniciada correctamente.');
             this.router.navigate(['/']);
             return;

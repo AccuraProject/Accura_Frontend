@@ -18,13 +18,17 @@ export const routes: Routes = [
     canActivate: [authGuard],
     canActivateChild: [authGuard],
     children: [
-      { path: '', component: DashboardComponent },
-      { path: 'usuarios', component: UsersComponent },
-      { path: 'reglas-validacion', component: ValidationRulesComponent },
-      { path: 'permisos', component: PermissionsComponent },
-      { path: 'plantillas', component: TemplateManagementComponent },
-      { path: 'historial', component: HistoryComponent },
-      { path: 'configuracion', component: SettingsComponent },
+      { path: '', component: DashboardComponent, data: { roles: ['admin', 'user'] } },
+      { path: 'usuarios', component: UsersComponent, data: { roles: ['admin'] } },
+      {
+        path: 'reglas-validacion',
+        component: ValidationRulesComponent,
+        data: { roles: ['admin'] },
+      },
+      { path: 'permisos', component: PermissionsComponent, data: { roles: ['admin'] } },
+      { path: 'plantillas', component: TemplateManagementComponent, data: { roles: ['admin', 'user'] } },
+      { path: 'historial', component: HistoryComponent, data: { roles: ['admin', 'user'] } },
+      { path: 'configuracion', component: SettingsComponent, data: { roles: ['admin', 'user'] } },
     ]
   },
   {

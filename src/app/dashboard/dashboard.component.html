@@ -1,57 +1,7 @@
-<section class="page-header">
-  <div>
-    <p class="page-header__pretitle">Panel de Administración</p>
-    <h1 class="page-header__title">Bienvenido al panel de control de Accura</h1>
-  </div>
-</section>
+<ng-container *ngIf="isAdmin$ | async; else clientDashboard">
+  <app-admin-dashboard />
+</ng-container>
 
-<section class="stats">
-  <article
-    *ngFor="let stat of stats"
-    class="stats__card"
-    [class.stats__card--highlight]="stat.highlight"
-  >
-    <div class="stats__header">
-      <p class="stats__title">{{ stat.title }}</p>
-      <span class="material-symbols-rounded stats__icon">{{ stat.icon }}</span>
-    </div>
-    <p class="stats__value">{{ stat.value }}</p>
-    <p class="stats__change">{{ stat.change }}</p>
-  </article>
-</section>
-
-<section class="dashboard-grid">
-  <article class="panel">
-    <header class="panel__header">
-      <h2>Actividad Reciente</h2>
-      <a class="panel__link" href="#">Ver historial completo</a>
-    </header>
-    <ul class="timeline">
-      <li *ngFor="let item of activity" class="timeline__item">
-        <div class="timeline__marker"></div>
-        <div>
-          <p class="timeline__title">{{ item.name }}</p>
-          <p class="timeline__description">{{ item.action }}</p>
-          <p class="timeline__time">{{ item.time }}</p>
-        </div>
-      </li>
-    </ul>
-  </article>
-
-  <article class="panel">
-    <header class="panel__header">
-      <h2>Acceso Rápido</h2>
-    </header>
-    <div class="quick-actions">
-      <button
-        *ngFor="let action of quickActions"
-        class="quick-actions__item"
-        type="button"
-        (click)="handleAction(action)"
-      >
-        <span class="quick-actions__label">{{ action.label }}</span>
-        <span class="quick-actions__description">{{ action.description }}</span>
-      </button>
-    </div>
-  </article>
-</section>
+<ng-template #clientDashboard>
+  <app-client-dashboard />
+</ng-template>
