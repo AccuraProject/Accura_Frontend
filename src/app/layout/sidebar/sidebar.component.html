@@ -1,7 +1,7 @@
 <aside class="sidebar" [class.sidebar--open]="mobileNavOpen">
   <nav class="sidebar__nav" aria-label="Navegación principal">
     <button
-      *ngFor="let item of navigation"
+      *ngFor="let item of filteredNavigation$ | async; trackBy: trackByLabel"
       class="sidebar__link"
       type="button"
       (click)="navigate(item)"
