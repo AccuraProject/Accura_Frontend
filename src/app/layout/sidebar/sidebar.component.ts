@@ -15,7 +15,7 @@ interface NavigationItem {
   roles?: NavigationRole[];
 }
 
-type NavigationRole = 'admin' | 'client';
+type NavigationRole = 'admin' | 'user';
 
 @Component({
   selector: 'app-sidebar',
@@ -46,7 +46,7 @@ export class SidebarComponent {
       roles: ['admin'],
     },
     { icon: 'docs', label: 'Plantillas', route: '/plantillas' },
-    { icon: 'upload_file', label: 'Cargar archivo', route: '/cargar-archivo' },
+    { icon: 'upload_file', label: 'Cargar archivo', route: '/cargar-archivo', roles: ['user'] },
     { icon: 'shield', label: 'Permisos', route: '/permisos', roles: ['admin'] },
     { icon: 'history', label: 'Historial', route: '/historial' },
     { icon: 'settings', label: 'Configuración', route: '/configuracion' }
@@ -65,7 +65,7 @@ export class SidebarComponent {
   }
 
   private filterNavigation(role: string | null): NavigationItem[] {
-    const normalizedRole: NavigationRole = role === 'admin' ? 'admin' : 'client';
+    const normalizedRole: NavigationRole = role === 'admin' ? 'admin' : 'user';
 
     return this.navigation.filter((item) => {
       if (!item.roles || item.roles.length === 0) {
