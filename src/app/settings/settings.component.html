@@ -3,8 +3,8 @@
     <p class="page-header__pretitle">Configuración</p>
     <h1 class="page-header__title">Administra tu perfil y la gestión de usuarios</h1>
     <p class="page-header__subtitle">
-      Actualiza tu información personal, mantén segura tu cuenta y realiza cambios rápidos sobre las credenciales
-      de los usuarios registrados en la plataforma.
+      Actualiza tu información personal, mantén segura tu cuenta y realiza cambios rápidos sobre las
+      credenciales de los usuarios registrados en la plataforma.
     </p>
   </div>
 </section>
@@ -21,20 +21,20 @@
 
     <form class="settings-form" [formGroup]="personalInfoForm" (ngSubmit)="submitPersonalInfo()">
       <div class="settings-form__fields">
-        <label class="settings-field">
-          <span>Nombre completo</span>
-          <input type="text" formControlName="fullName" placeholder="Administrador" />
-        </label>
+        <div class="form-field">
+          <label for="fullName">Nombre completo</label>
+          <input id="fullName" type="text" formControlName="fullName" placeholder="Administrador" />
+        </div>
 
-        <label class="settings-field">
-          <span>Usuario</span>
-          <input type="text" formControlName="username" placeholder="admin" />
-        </label>
+        <div class="form-field">
+          <label for="role">Rol</label>
+          <input id="role" type="text" formControlName="role" placeholder="admin" readonly />
+        </div>
 
-        <label class="settings-field settings-field--full">
-          <span>Correo electrónico</span>
-          <input type="email" formControlName="email" placeholder="admin@accura.com" />
-        </label>
+        <div class="form-field settings-field--full">
+          <label for="email">Correo electrónico</label>
+          <input id="email" type="email" formControlName="email" placeholder="admin@accura.com" />
+        </div>
       </div>
 
       <div class="settings-form__actions">
@@ -54,21 +54,40 @@
       </div>
     </header>
 
-    <form class="settings-form" [formGroup]="changePasswordForm" (ngSubmit)="submitChangePassword()">
+    <form
+      class="settings-form"
+      [formGroup]="changePasswordForm"
+      (ngSubmit)="submitChangePassword()"
+    >
       <div class="settings-form__fields">
         <label class="settings-field settings-field--full">
           <span>Contraseña actual</span>
-          <input type="password" formControlName="currentPassword" placeholder="••••••••" autocomplete="current-password" />
+          <input
+            type="password"
+            formControlName="currentPassword"
+            placeholder="••••••••"
+            autocomplete="current-password"
+          />
         </label>
 
         <label class="settings-field">
           <span>Nueva contraseña</span>
-          <input type="password" formControlName="newPassword" placeholder="••••••••" autocomplete="new-password" />
+          <input
+            type="password"
+            formControlName="newPassword"
+            placeholder="••••••••"
+            autocomplete="new-password"
+          />
         </label>
 
         <label class="settings-field">
           <span>Confirmar contraseña</span>
-          <input type="password" formControlName="confirmPassword" placeholder="••••••••" autocomplete="new-password" />
+          <input
+            type="password"
+            formControlName="confirmPassword"
+            placeholder="••••••••"
+            autocomplete="new-password"
+          />
         </label>
       </div>
 
@@ -112,7 +131,9 @@
         <tr *ngFor="let user of items; trackBy: trackByUsername">
           <td>
             <div class="settings-users__identity">
-              <span class="settings-users__avatar" aria-hidden="true">{{ userInitials(user) }}</span>
+              <span class="settings-users__avatar" aria-hidden="true">{{
+                userInitials(user)
+              }}</span>
               <div>
                 <p class="settings-users__username">{{ user.username }}</p>
                 <p class="settings-users__name">{{ user.name }}</p>
@@ -126,7 +147,10 @@
           <td>
             <span
               class="badge"
-              [ngClass]="{ 'badge--admin': user.role === 'Administrador', 'badge--client': user.role === 'Cliente' }"
+              [ngClass]="{
+                'badge--admin': user.role === 'Administrador',
+                'badge--client': user.role === 'Cliente'
+              }"
             >
               {{ user.role }}
             </span>

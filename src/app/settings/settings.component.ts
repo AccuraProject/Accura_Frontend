@@ -39,7 +39,7 @@ export class SettingsComponent {
   constructor(private readonly formBuilder: FormBuilder, private readonly dialog: MatDialog) {
     this.personalInfoForm = this.formBuilder.group({
       fullName: ['Administrador', [Validators.required]],
-      username: ['admin', [Validators.required]],
+      role: ['admin', [Validators.required]],
       email: ['deviyadsegh@gmail.com', [Validators.required, Validators.email]]
     });
 
