@@ -20,7 +20,7 @@ import { CreatedUserResponse, UserCreatedByMeResponse, UserRole } from '../core/
 interface UserRow {
   name: string;
   email: string;
-  roleId: number | null;
+  roleId: number;
   role: string;
   status: string;
   createdAt: string;
@@ -268,7 +268,7 @@ export class UsersComponent implements OnInit {
   private createUserRow(
     name: string,
     email: string,
-    roleId: number | null,
+    roleId: number,
     status: string,
     createdAt: string,
     roleLabel?: string,

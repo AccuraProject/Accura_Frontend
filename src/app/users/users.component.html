@@ -88,9 +88,11 @@
           </td>
         </tr>
         <tr *ngIf="items.length === 0">
-          <td colspan="5" class="users-table__empty">
-            <span class="material-symbols-rounded" aria-hidden="true">search_off</span>
-            <p>No se encontraron usuarios para la búsqueda realizada.</p>
+          <td colspan="5">
+            <div class="users-table__empty">
+              <span class="material-symbols-rounded" aria-hidden="true">search_off</span>
+              <p>No se encontraron usuarios para la búsqueda realizada.</p>
+            </div>
           </td>
         </tr>
       </tbody>
