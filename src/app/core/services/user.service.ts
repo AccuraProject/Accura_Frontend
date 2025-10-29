@@ -7,6 +7,8 @@ import { environment } from '../../../environments/environment';
 import {
   CreatedUserResponse,
   CreateUserPayload,
+  CurrentUserResponse,
+  UpdateUserPayload,
   UserCreatedByMeResponse
 } from '../models/user.model';
 import { selectSessionState } from '../store/session/session.reducer';
@@ -57,6 +59,44 @@ export class UserService {
     );
   }
 
+  getCurrentUser(): Observable<CurrentUserResponse> {
+    return this.store.select(selectSessionState).pipe(
+      take(1),
+      switchMap((session) => {
+        if (!session.accessToken) {
+          return throwError(() => new Error('No hay un token de autenticación disponible.'));
+        }
+
+        const tokenType = session.tokenType ?? 'Bearer';
+        const headers = new HttpHeaders({
+          Authorization: `${tokenType} ${session.accessToken}`
+        });
+
+        return this.http.get<CurrentUserResponse>(`${this.baseUrl}/users/me`, { headers });
+      })
+    );
+  }
+
+  updateUser(userId: number, payload: UpdateUserPayload): Observable<CurrentUserResponse> {
+    return this.store.select(selectSessionState).pipe(
+      take(1),
+      switchMap((session) => {
+        if (!session.accessToken) {
+          return throwError(() => new Error('No hay un token de autenticación disponible.'));
+        }
+
+        const tokenType = session.tokenType ?? 'Bearer';
+        const headers = new HttpHeaders({
+          Authorization: `${tokenType} ${session.accessToken}`
+        });
+
+        return this.http.patch<CurrentUserResponse>(`${this.baseUrl}/users/${userId}`, payload, {
+          headers
+        });
+      })
+    );
+  }
+
   getErrorMessage(error: unknown): string {
     if (error instanceof HttpErrorResponse) {
       if (typeof error.error === 'string' && error.error.trim().length > 0) {
@@ -78,6 +118,6 @@ export class UserService {
       return 'No se pudo completar la solicitud. Inténtalo nuevamente.';
     }
 
-    return 'Ha ocurrido un error desconocido al crear el usuario.';
+    return 'Ha ocurrido un error desconocido al procesar la solicitud.';
   }
 }

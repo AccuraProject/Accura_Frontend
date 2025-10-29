@@ -57,6 +57,29 @@
   gap: 1.75rem;
 }
 
+.settings-form__alert {
+  display: block;
+}
+
+.settings-form__alert .modal__alert {
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.settings-form__alert-close {
+  margin-left: auto;
+  align-self: flex-start;
+  background: transparent;
+  color: inherit;
+  width: 32px;
+  height: 32px;
+}
+
+.settings-form__alert-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: inherit;
+}
+
 .settings-form__fields {
   display: grid;
   gap: 1.25rem;
@@ -133,6 +156,21 @@
 
 .settings-form__button--primary:hover {
   box-shadow: 0 20px 48px rgba(99, 102, 241, 0.28);
+}
+
+.modal__alert.modal__alert--success {
+  background: #ecfdf5;
+  border-color: rgba(16, 185, 129, 0.35);
+  color: #047857;
+}
+
+.modal__alert.modal__alert--success .material-symbols-rounded {
+  color: #10b981;
+}
+
+.modal__alert.modal__alert--success .modal__alert-title,
+.modal__alert.modal__alert--success .modal__alert-text {
+  color: #047857;
 }
 
 .settings-users {

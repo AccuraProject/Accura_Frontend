@@ -1,6 +1,7 @@
 import { createFeature, createReducer, on } from '@ngrx/store';
 
 import { AuthResponse } from '../../models/auth-response.model';
+import { CurrentUserResponse } from '../../models/user.model';
 import { SessionActions } from './session.actions';
 
 export interface SessionState {
@@ -8,6 +9,7 @@ export interface SessionState {
   tokenType: string | null;
   role: string | null;
   mustChangePassword: boolean | null;
+  user: CurrentUserResponse | null;
   isAuthenticated: boolean;
 }
 
@@ -18,6 +20,7 @@ const emptySnapshot: SessionSnapshot = {
   tokenType: null,
   role: null,
   mustChangePassword: null,
+  user: null,
 };
 
 const initialState: SessionState = createStateFromSnapshot(emptySnapshot);
@@ -33,6 +36,13 @@ const reducer = createReducer(
     SessionActions.restoreSession,
     (_state: SessionState, { session }: { session: SessionSnapshot }): SessionState =>
       createStateFromSnapshot(session)
+  ),
+  on(
+    SessionActions.loadCurrentUserSuccess,
+    (state: SessionState, { user }: { user: CurrentUserResponse }): SessionState => ({
+      ...state,
+      user,
+    })
   ),
   on(SessionActions.logout, (): SessionState => initialState)
 );
@@ -50,6 +60,7 @@ export const {
   selectTokenType,
   selectRole,
   selectMustChangePassword,
+  selectUser,
   selectIsAuthenticated,
 } = sessionFeature;
 
@@ -60,6 +71,7 @@ function mapResponseToSnapshot(response: AuthResponse): SessionSnapshot {
     role: response.role ?? null,
     mustChangePassword:
       response.must_change_password === undefined ? null : response.must_change_password,
+    user: null,
   };
 }
 

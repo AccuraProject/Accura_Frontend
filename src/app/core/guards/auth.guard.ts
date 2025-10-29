@@ -4,7 +4,6 @@ import { Store } from '@ngrx/store';
 import { combineLatest } from 'rxjs';
 import { map, take } from 'rxjs/operators';
 
-import { AuthService } from '../services/auth.service';
 import { SessionActions } from '../store/session/session.actions';
 import { selectSessionIsAuthenticated, selectSessionRole } from '../store/session/session.selectors';
 
@@ -13,7 +12,6 @@ type AllowedRole = 'admin' | 'user';
 export const authGuard: CanActivateFn = (route) => {
   const store = inject(Store);
   const router = inject(Router);
-  const authService = inject(AuthService);
 
   return combineLatest([
     store.select(selectSessionIsAuthenticated),
@@ -23,22 +21,11 @@ export const authGuard: CanActivateFn = (route) => {
     map(([isAuthenticated, role]) => {
       if (isAuthenticated && role) {
         if (!isAllowedRole(role)) {
-          logout(store, authService);
+          logout(store);
           return createLoginUrlTree(router);
         }
 
         return ensureRoleAccess(route, role, router);
-      }
-
-      const storedSession = authService.getStoredSession();
-      if (storedSession) {
-        store.dispatch(SessionActions.restoreSession({ session: storedSession }));
-
-        if (storedSession.role && isAllowedRole(storedSession.role)) {
-          return ensureRoleAccess(route, storedSession.role, router);
-        }
-
-        logout(store, authService);
       }
 
       return createLoginUrlTree(router);
@@ -84,7 +71,6 @@ function resolveRequiredRoles(route: ActivatedRouteSnapshot): AllowedRole[] | un
   return roles.filter(isAllowedRole);
 }
 
-function logout(store: Store, authService: AuthService): void {
-  authService.clearSession();
+function logout(store: Store): void {
   store.dispatch(SessionActions.logout());
 }

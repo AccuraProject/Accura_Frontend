@@ -19,7 +19,7 @@ export interface UserRole {
   alias: string;
 }
 
-export interface UserCreatedByMeResponse {
+export interface UserDetail {
   id: number;
   name: string;
   email: string;
@@ -29,4 +29,12 @@ export interface UserCreatedByMeResponse {
   updated_at: string;
   is_active: boolean;
   role: UserRole;
+}
+
+export type UserCreatedByMeResponse = UserDetail;
+export type CurrentUserResponse = UserDetail;
+
+export interface UpdateUserPayload {
+  name: string;
+  email: string;
 }

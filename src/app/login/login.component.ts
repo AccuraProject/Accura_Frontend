@@ -1,12 +1,13 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { finalize } from 'rxjs';
+import { catchError, finalize, map, switchMap, throwError } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { Store } from '@ngrx/store';
 
 import { AuthService } from '../core/services/auth.service';
+import { UserService } from '../core/services/user.service';
 import { SessionActions } from '../core/store/session/session.actions';
 
 @Component({
@@ -19,6 +20,7 @@ import { SessionActions } from '../core/store/session/session.actions';
 export class LoginComponent {
   private readonly fb = inject(FormBuilder);
   private readonly authService = inject(AuthService);
+  private readonly userService = inject(UserService);
   private readonly router = inject(Router);
   private readonly store = inject(Store);
 
@@ -57,22 +59,37 @@ export class LoginComponent {
 
     this.authService
       .login(email, password, { rememberMe })
-      .pipe(finalize(() => this.isSubmitting.set(false)))
-      .subscribe({
-        next: (response) => {
+      .pipe(
+        switchMap((response) => {
           this.store.dispatch(SessionActions.loginSuccess({ response }));
-
+          return this.userService.getCurrentUser().pipe(
+            map((user) => ({ response, user })),
+            catchError((error) => {
+              this.store.dispatch(SessionActions.logout());
+              return throwError(() => ({ kind: 'current-user', error } as CurrentUserLoadError));
+            })
+          );
+        }),
+        finalize(() => this.isSubmitting.set(false))
+      )
+      .subscribe({
+        next: ({ response, user }) => {
           if (response.role === 'admin' || response.role === 'user') {
+            this.store.dispatch(SessionActions.loadCurrentUserSuccess({ user }));
             this.successMessage.set('Sesión iniciada correctamente.');
             this.router.navigate(['/']);
             return;
           }
 
-          this.authService.clearSession();
           this.store.dispatch(SessionActions.logout());
           this.serverError.set('Tu cuenta no tiene permisos para acceder a la aplicación.');
         },
         error: (error: unknown) => {
+          if (isCurrentUserLoadError(error)) {
+            this.serverError.set(this.userService.getErrorMessage(error.error));
+            return;
+          }
+
           this.serverError.set(this.authService.getErrorMessage(error));
         },
       });
@@ -87,4 +104,18 @@ export class LoginComponent {
     const control = this.loginForm.controls.password;
     return control.invalid && (control.dirty || control.touched);
   }
+}
+
+interface CurrentUserLoadError {
+  kind: 'current-user';
+  error: unknown;
+}
+
+function isCurrentUserLoadError(value: unknown): value is CurrentUserLoadError {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'kind' in value &&
+    (value as CurrentUserLoadError).kind === 'current-user'
+  );
 }

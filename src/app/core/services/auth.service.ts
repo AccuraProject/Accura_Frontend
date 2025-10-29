@@ -1,11 +1,10 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, tap } from 'rxjs';
+import { Observable } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
 import { AuthResponse } from '../models/auth-response.model';
 import { LoginOptions } from '../models/login-options.model';
-import type { SessionSnapshot } from '../store/session/session.reducer';
 
 @Injectable({
   providedIn: 'root'
@@ -15,13 +14,7 @@ export class AuthService {
   private readonly baseUrl = environment.apiBaseUrl.replace(/\/$/, '');
 
   login(email: string, password: string, options: LoginOptions = {}): Observable<AuthResponse> {
-    const {
-      rememberMe = false,
-      scope = 'offline_access',
-      clientId,
-      clientSecret,
-      grantType = 'password'
-    } = options;
+    const { scope = 'offline_access', clientId, clientSecret, grantType = 'password' } = options;
 
     const formData = new FormData();
     formData.append('username', email);
@@ -35,74 +28,7 @@ export class AuthService {
       formData.append('client_secret', clientSecret);
     }
 
-    return this.http
-      .post<AuthResponse>(`${this.baseUrl}/auth/token`, formData)
-      .pipe(tap((response) => this.persistSession(response, rememberMe)));
-  }
-
-  persistSession(response: AuthResponse, rememberMe: boolean): void {
-    const targetStorage = this.getStorage(rememberMe);
-    if (!targetStorage) {
-      return;
-    }
-
-    this.clearSession();
-
-    targetStorage.setItem('access_token', response.access_token);
-    targetStorage.setItem('token_type', response.token_type);
-    if (response.role) {
-      targetStorage.setItem('role', response.role);
-    }
-    if (response.must_change_password !== undefined) {
-      targetStorage.setItem(
-        'must_change_password',
-        response.must_change_password ? 'true' : 'false'
-      );
-    }
-    if (response.refresh_token) {
-      targetStorage.setItem('refresh_token', response.refresh_token);
-    }
-    if (response.scope) {
-      targetStorage.setItem('scope', response.scope);
-    }
-    if (response.expires_in !== undefined) {
-      targetStorage.setItem('expires_in', response.expires_in.toString());
-    }
-  }
-
-  getStoredSession(): SessionSnapshot | null {
-    const storage = this.getExistingStorage();
-    if (!storage) {
-      return null;
-    }
-
-    const accessToken = storage.getItem('access_token');
-    if (!accessToken) {
-      return null;
-    }
-
-    return {
-      accessToken,
-      tokenType: storage.getItem('token_type'),
-      role: storage.getItem('role'),
-      mustChangePassword: this.parseBoolean(storage.getItem('must_change_password')),
-    };
-  }
-
-  clearSession(): void {
-    if (typeof window === 'undefined') {
-      return;
-    }
-
-    [window.localStorage, window.sessionStorage].forEach((storage) => {
-      storage.removeItem('access_token');
-      storage.removeItem('token_type');
-      storage.removeItem('role');
-      storage.removeItem('must_change_password');
-      storage.removeItem('refresh_token');
-      storage.removeItem('scope');
-      storage.removeItem('expires_in');
-    });
+    return this.http.post<AuthResponse>(`${this.baseUrl}/auth/token`, formData);
   }
 
   getErrorMessage(error: unknown): string {
@@ -129,35 +55,4 @@ export class AuthService {
     return 'Ha ocurrido un error desconocido.';
   }
 
-  private getStorage(persistent: boolean): Storage | null {
-    if (typeof window === 'undefined') {
-      return null;
-    }
-
-    return persistent ? window.localStorage : window.sessionStorage;
-  }
-
-  private getExistingStorage(): Storage | null {
-    if (typeof window === 'undefined') {
-      return null;
-    }
-
-    if (window.localStorage.getItem('access_token')) {
-      return window.localStorage;
-    }
-
-    if (window.sessionStorage.getItem('access_token')) {
-      return window.sessionStorage;
-    }
-
-    return null;
-  }
-
-  private parseBoolean(value: string | null): boolean | null {
-    if (value === null) {
-      return null;
-    }
-
-    return value === 'true';
-  }
 }

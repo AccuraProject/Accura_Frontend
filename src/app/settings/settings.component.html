@@ -20,25 +20,89 @@
     </header>
 
     <form class="settings-form" [formGroup]="personalInfoForm" (ngSubmit)="submitPersonalInfo()">
+      <div class="settings-form__alert" *ngIf="personalInfoAlert as alert">
+        <div
+          class="modal__alert"
+          [ngClass]="{
+            'modal__alert--success': alert.type === 'success',
+            'modal__alert--error': alert.type === 'error'
+          }"
+          role="alert"
+        >
+          <span class="material-symbols-rounded" aria-hidden="true">
+            {{ alert.type === 'success' ? 'check_circle' : 'error' }}
+          </span>
+          <div>
+            <p class="modal__alert-title">{{ alert.title }}</p>
+            <p class="modal__alert-text">{{ alert.message }}</p>
+          </div>
+          <button
+            class="icon-button settings-form__alert-close"
+            type="button"
+            (click)="dismissPersonalInfoAlert()"
+            aria-label="Cerrar alerta"
+          >
+            <span class="material-symbols-rounded" aria-hidden="true">close</span>
+          </button>
+        </div>
+      </div>
+
       <div class="settings-form__fields">
-        <div class="form-field">
+        <div class="form-field" [class.form-field--invalid]="showPersonalInfoError('fullName')">
           <label for="fullName">Nombre completo</label>
-          <input id="fullName" type="text" formControlName="fullName" placeholder="Administrador" />
+          <input
+            id="fullName"
+            type="text"
+            formControlName="fullName"
+            placeholder="Administrador"
+            autocomplete="name"
+            [attr.aria-invalid]="showPersonalInfoError('fullName') ? 'true' : 'false'"
+          />
+          <small *ngIf="hasPersonalInfoError('fullName', 'required') && showPersonalInfoError('fullName')">
+            El nombre es obligatorio.
+          </small>
+          <small *ngIf="hasPersonalInfoError('fullName', 'minlength') && showPersonalInfoError('fullName')">
+            Ingresa al menos 3 caracteres.
+          </small>
         </div>
 
         <div class="form-field">
           <label for="role">Rol</label>
-          <input id="role" type="text" formControlName="role" placeholder="admin" readonly />
+          <input
+            id="role"
+            type="text"
+            formControlName="role"
+            placeholder="admin"
+            readonly
+            tabindex="-1"
+          />
         </div>
 
-        <div class="form-field settings-field--full">
+        <div class="form-field settings-field--full" [class.form-field--invalid]="showPersonalInfoError('email')">
           <label for="email">Correo electrónico</label>
-          <input id="email" type="email" formControlName="email" placeholder="admin@accura.com" />
+          <input
+            id="email"
+            type="email"
+            formControlName="email"
+            placeholder="admin@accura.com"
+            autocomplete="email"
+            [attr.aria-invalid]="showPersonalInfoError('email') ? 'true' : 'false'"
+          />
+          <small *ngIf="hasPersonalInfoError('email', 'required') && showPersonalInfoError('email')">
+            El correo electrónico es obligatorio.
+          </small>
+          <small *ngIf="hasPersonalInfoError('email', 'email') && showPersonalInfoError('email')">
+            Ingresa un correo electrónico válido.
+          </small>
         </div>
       </div>
 
       <div class="settings-form__actions">
-        <button class="settings-form__button settings-form__button--primary" type="submit">
+        <button
+          class="settings-form__button settings-form__button--primary"
+          type="submit"
+          [disabled]="personalInfoForm.invalid || personalInfoSubmitting"
+        >
           Guardar cambios
         </button>
       </div>
