@@ -90,7 +90,7 @@ export class UserService {
           Authorization: `${tokenType} ${session.accessToken}`
         });
 
-        return this.http.patch<CurrentUserResponse>(`${this.baseUrl}/users/${userId}`, payload, {
+        return this.http.put<CurrentUserResponse>(`${this.baseUrl}/users/${userId}`, payload, {
           headers
         });
       })
