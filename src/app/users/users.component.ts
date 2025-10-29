@@ -96,7 +96,7 @@ export class UsersComponent implements OnInit {
         })
         .subscribe({
           next: (createdUser: CreatedUserResponse) => {
-            this.addUserEntry(createdUser);
+            this.loadUsers();
             console.info(
               'Usuario creado correctamente. Contraseña temporal:',
               createdUser.temporary_password,
@@ -169,19 +169,6 @@ export class UsersComponent implements OnInit {
     });
   }
 
-  private addUserEntry(createdUser: CreatedUserResponse): void {
-    const entry = this.createUserRow(
-      createdUser.name,
-      createdUser.email,
-      createdUser.role_id,
-      this.getStatusLabel(createdUser.is_active),
-      this.formatDate(new Date().toISOString()),
-      this.getRoleLabel(createdUser.role_id),
-    );
-
-    this.users = [entry, ...this.users];
-  }
-
   private updateUserEntry(email: string, formData: UserFormDialogValue): void {
     this.users = this.users.map((user) => {
       if (user.email !== email) {
@@ -217,10 +204,14 @@ export class UsersComponent implements OnInit {
   }
 
   protected roleClass(role: string): string {
-    switch (role) {
-      case 'Administrador':
+    const normalizedRole = role.trim().toLowerCase();
+
+    switch (normalizedRole) {
+      case 'administrador':
+      case 'admin':
         return 'badge--admin';
-      case 'Analista':
+      case 'analista':
+      case 'analyst':
         return 'badge--analyst';
       default:
         return 'badge--client';
@@ -255,10 +246,12 @@ export class UsersComponent implements OnInit {
   }
 
   private mapToUserRow(user: UserCreatedByMeResponse): UserRow {
+    const roleId = user.role?.id ?? 0;
+
     return this.createUserRow(
       user.name,
       user.email,
-      user.role?.id ?? null,
+      roleId,
       this.getStatusLabel(user.is_active),
       this.formatDate(user.created_at),
       this.getRoleDisplayName(user.role),
@@ -284,7 +277,7 @@ export class UsersComponent implements OnInit {
   }
 
   private getRoleLabel(roleId: number | null): string {
-    if (roleId === null) {
+    if (roleId === null || roleId <= 0) {
       return 'Sin rol';
     }
 
