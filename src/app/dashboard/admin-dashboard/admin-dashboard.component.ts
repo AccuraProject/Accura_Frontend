@@ -97,7 +97,9 @@ export class AdminDashboardComponent {
       {
         title: 'Validaciones Exitosas',
         value: this.formatNumber(kpis.validations.successful),
-        change: `${this.formatNumber(kpis.validations.total)} totales · ${this.formatPercentage(kpis.validations.effectiveness_percentage)}% efectividad`,
+        change: `${this.formatNumber(kpis.validations.total)} totales · ${this.formatPercentage(
+          kpis.validations.effectiveness_percentage
+        )}% efectividad`,
         icon: 'check_circle',
       },
     ];
@@ -129,7 +131,6 @@ export class AdminDashboardComponent {
         value: '—',
         change: 'Cargando...',
         icon: 'docs',
-        highlight: true,
       },
       { title: 'Cargas del Mes', value: '—', change: 'Cargando...', icon: 'upload' },
       {
@@ -145,26 +146,26 @@ export class AdminDashboardComponent {
     return [
       {
         title: 'Usuarios Activos',
-        value: 'No disponible',
+        value: '-',
         change: 'No se pudo obtener la información',
         icon: 'group',
       },
       {
         title: 'Plantillas Publicadas',
-        value: 'No disponible',
+        value: '-',
         change: 'No se pudo obtener la información',
         icon: 'docs',
         highlight: true,
       },
       {
         title: 'Cargas del Mes',
-        value: 'No disponible',
+        value: '-',
         change: 'No se pudo obtener la información',
         icon: 'upload',
       },
       {
         title: 'Validaciones Exitosas',
-        value: 'No disponible',
+        value: '-',
         change: 'No se pudo obtener la información',
         icon: 'check_circle',
       },

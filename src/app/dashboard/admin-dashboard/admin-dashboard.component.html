@@ -9,7 +9,6 @@
   <article
     *ngFor="let stat of stats"
     class="stats__card"
-    [class.stats__card--highlight]="stat.highlight"
   >
     <div class="stats__header">
       <p class="stats__title">{{ stat.title }}</p>
