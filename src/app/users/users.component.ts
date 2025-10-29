@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
@@ -15,12 +15,12 @@ import {
 } from './user-delete-dialog.component';
 
 import { UserService } from '../core/services/user.service';
-import { CreatedUserResponse } from '../core/models/user.model';
+import { CreatedUserResponse, UserCreatedByMeResponse, UserRole } from '../core/models/user.model';
 
 interface UserRow {
   name: string;
   email: string;
-  roleId: number;
+  roleId: number | null;
   role: string;
   status: string;
   createdAt: string;
@@ -33,7 +33,7 @@ interface UserRow {
   templateUrl: './users.component.html',
   styleUrl: './users.component.scss',
 })
-export class UsersComponent {
+export class UsersComponent implements OnInit {
   protected searchTerm = '';
 
   protected readonly roles: UserRoleOption[] = [
@@ -46,12 +46,10 @@ export class UsersComponent {
   constructor(
     private readonly dialog: MatDialog,
     private readonly userService: UserService,
-  ) {
-    this.users = [
-      this.createUserRow('Juan Pérez', 'juan@example.com', 1, 'Activo', '2025-01-12'),
-      this.createUserRow('María García', 'maria@example.com', 2, 'Activo', '2025-01-08'),
-      this.createUserRow('Carlos López', 'carlos@example.com', 2, 'Inactivo', '2024-12-28'),
-    ];
+  ) {}
+
+  public ngOnInit(): void {
+    this.loadUsers();
   }
 
   protected get filteredUsers(): UserRow[] {
@@ -176,8 +174,9 @@ export class UsersComponent {
       createdUser.name,
       createdUser.email,
       createdUser.role_id,
-      createdUser.is_active ? 'Activo' : 'Inactivo',
-      new Date().toISOString().slice(0, 10),
+      this.getStatusLabel(createdUser.is_active),
+      this.formatDate(new Date().toISOString()),
+      this.getRoleLabel(createdUser.role_id),
     );
 
     this.users = [entry, ...this.users];
@@ -239,24 +238,81 @@ export class UsersComponent {
     }
   }
 
+  private loadUsers(): void {
+    this.userService.getUsersCreatedByMe().subscribe({
+      next: (users: UserCreatedByMeResponse[]) => {
+        this.users = users.map((user) => this.mapToUserRow(user));
+      },
+      error: (error: unknown) => {
+        const message = this.userService.getErrorMessage(error);
+        if (typeof window !== 'undefined') {
+          window.alert(message);
+        } else {
+          console.error(message);
+        }
+      },
+    });
+  }
+
+  private mapToUserRow(user: UserCreatedByMeResponse): UserRow {
+    return this.createUserRow(
+      user.name,
+      user.email,
+      user.role?.id ?? null,
+      this.getStatusLabel(user.is_active),
+      this.formatDate(user.created_at),
+      this.getRoleDisplayName(user.role),
+    );
+  }
+
   private createUserRow(
     name: string,
     email: string,
-    roleId: number,
+    roleId: number | null,
     status: string,
     createdAt: string,
+    roleLabel?: string,
   ): UserRow {
     return {
       name,
       email,
       roleId,
-      role: this.getRoleLabel(roleId),
+      role: roleLabel ?? this.getRoleLabel(roleId),
       status,
       createdAt,
     };
   }
 
-  private getRoleLabel(roleId: number): string {
-    return this.roles.find((role) => role.id === roleId)?.label ?? 'Cliente';
+  private getRoleLabel(roleId: number | null): string {
+    if (roleId === null) {
+      return 'Sin rol';
+    }
+
+    return this.roles.find((role) => role.id === roleId)?.label ?? 'Sin rol';
+  }
+
+  private getRoleDisplayName(role?: UserRole | null): string {
+    if (!role) {
+      return this.getRoleLabel(null);
+    }
+
+    return role.alias?.trim() || role.name?.trim() || this.getRoleLabel(role.id ?? null);
+  }
+
+  private getStatusLabel(isActive: boolean): string {
+    return isActive ? 'Activo' : 'Inactivo';
+  }
+
+  private formatDate(value: string | null | undefined): string {
+    if (!value) {
+      return '';
+    }
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return '';
+    }
+
+    return new Intl.DateTimeFormat('es-ES').format(date);
   }
 }
