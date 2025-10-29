@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { FormsModule } from '@angular/forms';
@@ -13,14 +13,19 @@ import {
 } from './settings-manage-user-dialog.component';
 import { UserService } from '../core/services/user.service';
 import { selectSessionUser } from '../core/store/session/session.selectors';
-import { CurrentUserResponse, UpdateUserPayload } from '../core/models/user.model';
+import {
+  CurrentUserResponse,
+  UpdateUserPayload,
+  UserCreatedByMeResponse,
+  UserRole,
+} from '../core/models/user.model';
 import { SessionActions } from '../core/store/session/session.actions';
 
 export interface ManagedUser {
   name: string;
   username: string;
   email: string;
-  role: 'Administrador' | 'Cliente';
+  role: string;
 }
 
 @Component({
@@ -30,19 +35,14 @@ export interface ManagedUser {
   templateUrl: './settings.component.html',
   styleUrl: './settings.component.scss'
 })
-export class SettingsComponent {
+export class SettingsComponent implements OnInit {
   protected readonly personalInfoForm: FormGroup;
   protected readonly changePasswordForm: FormGroup;
 
   protected personalInfoAlert: PersonalInfoAlert | null = null;
   protected personalInfoSubmitting = false;
 
-  protected readonly users: ManagedUser[] = [
-    { name: 'Administrador', username: 'admin', email: 'deviyadsegh@gmail.com', role: 'Administrador' },
-    { name: 'Gwyneth', username: 'gwyneth', email: 'gwyneth@gmail.com', role: 'Administrador' },
-    { name: 'Cliente 1', username: 'cliente1', email: 'cliente1@gmail.com', role: 'Cliente' },
-    { name: 'Cliente 2', username: 'cliente2', email: 'cliente2@gmail.com', role: 'Cliente' }
-  ];
+  protected users: ManagedUser[] = [];
 
   protected searchTerm = '';
 
@@ -71,6 +71,10 @@ export class SettingsComponent {
       .select(selectSessionUser)
       .pipe(takeUntilDestroyed())
       .subscribe((user) => this.handleCurrentUserChange(user));
+  }
+
+  public ngOnInit(): void {
+    this.loadUsers();
   }
 
   protected get filteredUsers(): ManagedUser[] {
@@ -215,6 +219,48 @@ export class SettingsComponent {
 
   protected dismissPersonalInfoAlert(): void {
     this.personalInfoAlert = null;
+  }
+
+  private loadUsers(): void {
+    this.userService.getUsersCreatedByMe().subscribe({
+      next: (users: UserCreatedByMeResponse[]) => {
+        this.users = users.map((user) => this.mapToManagedUser(user));
+      },
+      error: (error: unknown) => {
+        const message = this.userService.getErrorMessage(error);
+        if (typeof window !== 'undefined') {
+          window.alert(message);
+        } else {
+          console.error(message);
+        }
+      }
+    });
+  }
+
+  private mapToManagedUser(user: UserCreatedByMeResponse): ManagedUser {
+    return {
+      name: user.name,
+      username: this.getUsernameFromEmail(user.email),
+      email: user.email,
+      role: this.getRoleDisplayName(user.role)
+    };
+  }
+
+  private getUsernameFromEmail(email: string): string {
+    if (!email) {
+      return '';
+    }
+
+    const [username] = email.split('@');
+    return username?.trim() || email;
+  }
+
+  private getRoleDisplayName(role?: UserRole | null): string {
+    if (!role) {
+      return 'Sin rol';
+    }
+
+    return role.alias?.trim() || role.name?.trim() || 'Sin rol';
   }
 
   private handleCurrentUserChange(user: CurrentUserResponse | null): void {
