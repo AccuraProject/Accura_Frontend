@@ -96,7 +96,7 @@ export class UsersComponent implements OnInit {
         })
         .subscribe({
           next: (createdUser: CreatedUserResponse) => {
-            this.addUserEntry(createdUser);
+            this.loadUsers();
             console.info(
               'Usuario creado correctamente. Contraseña temporal:',
               createdUser.temporary_password,
@@ -220,8 +220,6 @@ export class UsersComponent implements OnInit {
     switch (role) {
       case 'Administrador':
         return 'badge--admin';
-      case 'Analista':
-        return 'badge--analyst';
       default:
         return 'badge--client';
     }
@@ -231,8 +229,6 @@ export class UsersComponent implements OnInit {
     switch (status) {
       case 'Activo':
         return 'badge--active';
-      case 'Suspendido':
-        return 'badge--suspended';
       default:
         return 'badge--inactive';
     }
@@ -296,7 +292,7 @@ export class UsersComponent implements OnInit {
       return this.getRoleLabel(null);
     }
 
-    return role.alias?.trim() || role.name?.trim() || this.getRoleLabel(role.id ?? null);
+    return role.name?.trim() || role.alias?.trim()  || this.getRoleLabel(role.id ?? null);
   }
 
   private getStatusLabel(isActive: boolean): string {
