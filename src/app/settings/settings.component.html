@@ -58,10 +58,18 @@
             autocomplete="name"
             [attr.aria-invalid]="showPersonalInfoError('fullName') ? 'true' : 'false'"
           />
-          <small *ngIf="hasPersonalInfoError('fullName', 'required') && showPersonalInfoError('fullName')">
+          <small
+            *ngIf="
+              hasPersonalInfoError('fullName', 'required') && showPersonalInfoError('fullName')
+            "
+          >
             El nombre es obligatorio.
           </small>
-          <small *ngIf="hasPersonalInfoError('fullName', 'minlength') && showPersonalInfoError('fullName')">
+          <small
+            *ngIf="
+              hasPersonalInfoError('fullName', 'minlength') && showPersonalInfoError('fullName')
+            "
+          >
             Ingresa al menos 3 caracteres.
           </small>
         </div>
@@ -78,7 +86,10 @@
           />
         </div>
 
-        <div class="form-field settings-field--full" [class.form-field--invalid]="showPersonalInfoError('email')">
+        <div
+          class="form-field settings-field--full"
+          [class.form-field--invalid]="showPersonalInfoError('email')"
+        >
           <label for="email">Correo electrónico</label>
           <input
             id="email"
@@ -88,7 +99,9 @@
             autocomplete="email"
             [attr.aria-invalid]="showPersonalInfoError('email') ? 'true' : 'false'"
           />
-          <small *ngIf="hasPersonalInfoError('email', 'required') && showPersonalInfoError('email')">
+          <small
+            *ngIf="hasPersonalInfoError('email', 'required') && showPersonalInfoError('email')"
+          >
             El correo electrónico es obligatorio.
           </small>
           <small *ngIf="hasPersonalInfoError('email', 'email') && showPersonalInfoError('email')">
@@ -124,35 +137,38 @@
       (ngSubmit)="submitChangePassword()"
     >
       <div class="settings-form__fields">
-        <label class="settings-field settings-field--full">
-          <span>Contraseña actual</span>
+        <div class="form-field settings-field--full">
+          <label for="password">Contraseña actual</label>
           <input
+            id="password"
             type="password"
             formControlName="currentPassword"
             placeholder="••••••••"
             autocomplete="current-password"
           />
-        </label>
+        </div>
 
-        <label class="settings-field">
-          <span>Nueva contraseña</span>
+        <div class="form-field">
+          <label for="new-password">Nueva contraseña</label>
           <input
+            id="new-password"
             type="password"
             formControlName="newPassword"
             placeholder="••••••••"
             autocomplete="new-password"
           />
-        </label>
+        </div>
 
-        <label class="settings-field">
-          <span>Confirmar contraseña</span>
+        <div class="form-field">
+          <label for="confirm-password">Confirmar contraseña</label>
           <input
+            id="confirm-password"
             type="password"
             formControlName="confirmPassword"
             placeholder="••••••••"
             autocomplete="new-password"
           />
-        </label>
+        </div>
       </div>
 
       <div class="settings-form__actions">
@@ -205,10 +221,7 @@
             </div>
           </td>
           <td>
-            <span
-              class="badge"
-              [ngClass]="roleClass(user.role)"
-            >
+            <span class="badge" [ngClass]="roleClass(user.role)">
               {{ user.role }}
             </span>
           </td>
