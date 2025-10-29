@@ -169,19 +169,6 @@ export class UsersComponent implements OnInit {
     });
   }
 
-  private addUserEntry(createdUser: CreatedUserResponse): void {
-    const entry = this.createUserRow(
-      createdUser.name,
-      createdUser.email,
-      createdUser.role_id,
-      this.getStatusLabel(createdUser.is_active),
-      this.formatDate(new Date().toISOString()),
-      this.getRoleLabel(createdUser.role_id),
-    );
-
-    this.users = [entry, ...this.users];
-  }
-
   private updateUserEntry(email: string, formData: UserFormDialogValue): void {
     this.users = this.users.map((user) => {
       if (user.email !== email) {
