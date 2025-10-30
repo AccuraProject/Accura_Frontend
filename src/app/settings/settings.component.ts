@@ -55,6 +55,7 @@ export class SettingsComponent implements OnInit {
   protected personalInfoSubmitting = false;
   protected changePasswordAlert: ChangePasswordAlert | null = null;
   protected changePasswordSubmitting = false;
+  protected manageUsersAlert: ManageUsersAlert | null = null;
 
   protected users: ManagedUser[] = [];
 
@@ -335,6 +336,10 @@ export class SettingsComponent implements OnInit {
     this.changePasswordAlert = null;
   }
 
+  protected dismissManageUsersAlert(): void {
+    this.manageUsersAlert = null;
+  }
+
   private loadUsers(): void {
     this.userService.getUsersCreatedByMe().subscribe({
       next: (users: UserCreatedByMeResponse[]) => {
@@ -358,50 +363,50 @@ export class SettingsComponent implements OnInit {
       return;
     }
 
+    this.manageUsersAlert = null;
+
     this.userService.updateUser(userId, { email: trimmedEmail }).subscribe({
       next: (updatedUser) => {
         const managedUser = this.mapToManagedUser(updatedUser);
         this.users = this.users.map((user) =>
           user.id === userId ? { ...user, ...managedUser } : user
         );
-        this.showNotification('El correo electrónico se actualizó correctamente.');
+        this.manageUsersAlert = {
+          type: 'success',
+          title: 'Correo actualizado',
+          message: 'El correo electrónico se actualizó correctamente.'
+        };
       },
       error: (error: unknown) => {
-        this.showNotification(
-          `No se pudo actualizar el correo electrónico: ${this.userService.getErrorMessage(error)}`,
-          'error'
-        );
+        this.manageUsersAlert = {
+          type: 'error',
+          title: 'No se pudo actualizar el correo electrónico',
+          message: this.userService.getErrorMessage(error)
+        };
       }
     });
   }
 
   private resetManagedUserPassword(userId: number): void {
+    this.manageUsersAlert = null;
+
     this.userService.resetManagedUserPassword(userId).subscribe({
       next: () => {
-        this.showNotification(
-          'Se envió el enlace para restablecer la contraseña del usuario seleccionado.'
-        );
+        this.manageUsersAlert = {
+          type: 'success',
+          title: 'Contraseña reseteada',
+          message:
+            'Se generó una nueva contraseña y se envió al correo del usuario seleccionado.'
+        };
       },
       error: (error: unknown) => {
-        this.showNotification(
-          `No se pudo resetear la contraseña: ${this.userService.getErrorMessage(error)}`,
-          'error'
-        );
+        this.manageUsersAlert = {
+          type: 'error',
+          title: 'No se pudo resetear la contraseña',
+          message: this.userService.getErrorMessage(error)
+        };
       }
     });
-  }
-
-  private showNotification(message: string, type: 'info' | 'error' = 'info'): void {
-    if (typeof window !== 'undefined') {
-      window.alert(message);
-      return;
-    }
-
-    if (type === 'error') {
-      console.error(message);
-    } else {
-      console.info(message);
-    }
   }
 
   private mapToManagedUser(user: UserDetail): ManagedUser {
@@ -456,6 +461,7 @@ export class SettingsComponent implements OnInit {
     this.personalInfoAlert = null;
     this.changePasswordSubmitted = false;
     this.changePasswordAlert = null;
+    this.manageUsersAlert = null;
 
     if (!user) {
       this.personalInfoForm.reset({ fullName: '', email: '', role: '' });
@@ -503,6 +509,12 @@ interface PersonalInfoAlert {
 }
 
 interface ChangePasswordAlert {
+  type: 'success' | 'error';
+  title: string;
+  message: string;
+}
+
+interface ManageUsersAlert {
   type: 'success' | 'error';
   title: string;
   message: string;

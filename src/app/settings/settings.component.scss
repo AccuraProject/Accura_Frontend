@@ -184,6 +184,29 @@
   gap: 1.75rem;
 }
 
+.settings-users__alert {
+  display: block;
+}
+
+.settings-users__alert .modal__alert {
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.settings-users__alert-close {
+  margin-left: auto;
+  align-self: flex-start;
+  background: transparent;
+  color: inherit;
+  width: 32px;
+  height: 32px;
+}
+
+.settings-users__alert-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: inherit;
+}
+
 .settings-users__header {
   display: flex;
   align-items: center;

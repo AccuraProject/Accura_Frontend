@@ -20,7 +20,8 @@
   <div class="manage-user-dialog__section">
     <h4>Resetear contraseña</h4>
     <p>
-      Envía un enlace para que {{ user.name }} pueda establecer una nueva contraseña.
+      Genera una contraseña temporal y envíala al correo de {{ user.name }} para que pueda
+      iniciar sesión nuevamente.
     </p>
 
     <div class="manage-user-dialog__actions">
@@ -56,7 +57,9 @@
     </div>
 
     <div class="manage-user-dialog__actions manage-user-dialog__actions--align-start">
-      <button class="modal__button" type="submit">Actualizar correo</button>
+      <button class="modal__button" type="submit" [disabled]="emailForm.invalid">
+        Actualizar correo
+      </button>
     </div>
   </form>
 </div>
