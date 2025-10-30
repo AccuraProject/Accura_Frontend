@@ -411,7 +411,7 @@ export class SettingsComponent implements OnInit {
       {
         fullName: user.name,
         email: user.email,
-        role: user.role.alias
+        role: user.role.name
       },
       { emitEvent: false }
     );
