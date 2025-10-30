@@ -181,7 +181,25 @@ export class UsersComponent implements OnInit {
         return;
       }
 
-      this.removeUserEntry(user.email);
+      this.formAlert = null;
+
+      this.userService.deleteUser(user.id).subscribe({
+        next: () => {
+          this.removeUserEntry(user.id);
+          this.formAlert = {
+            type: 'success',
+            title: 'Usuario eliminado',
+            message: 'El usuario se eliminó correctamente.',
+          };
+        },
+        error: (error: unknown) => {
+          this.formAlert = {
+            type: 'error',
+            title: 'No se pudo eliminar al usuario',
+            message: this.userService.getErrorMessage(error),
+          };
+        },
+      });
     });
   }
 
@@ -221,8 +239,8 @@ export class UsersComponent implements OnInit {
     });
   }
 
-  private removeUserEntry(email: string): void {
-    this.users = this.users.filter((user) => user.email !== email);
+  private removeUserEntry(userId: number): void {
+    this.users = this.users.filter((user) => user.id !== userId);
   }
 
   protected trackByEmail(_: number, user: UserRow): string {

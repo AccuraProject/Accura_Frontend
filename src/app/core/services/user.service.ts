@@ -98,6 +98,24 @@ export class UserService {
     );
   }
 
+  deleteUser(userId: number): Observable<void> {
+    return this.store.select(selectSessionState).pipe(
+      take(1),
+      switchMap((session) => {
+        if (!session.accessToken) {
+          return throwError(() => new Error('No hay un token de autenticación disponible.'));
+        }
+
+        const tokenType = session.tokenType ?? 'Bearer';
+        const headers = new HttpHeaders({
+          Authorization: `${tokenType} ${session.accessToken}`
+        });
+
+        return this.http.delete<void>(`${this.baseUrl}/users/${userId}`, { headers });
+      })
+    );
+  }
+
   resetPassword(userId: number, payload: ResetPasswordPayload): Observable<void> {
     return this.store.select(selectSessionState).pipe(
       take(1),
