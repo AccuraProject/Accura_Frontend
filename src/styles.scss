@@ -383,6 +383,21 @@ button {
   font-size: 0.9rem;
 }
 
+.modal__alert.modal__alert--success {
+  background: #ecfdf5;
+  border-color: rgba(16, 185, 129, 0.35);
+  color: #047857;
+}
+
+.modal__alert.modal__alert--success .material-symbols-rounded {
+  color: #10b981;
+}
+
+.modal__alert.modal__alert--success .modal__alert-title,
+.modal__alert.modal__alert--success .modal__alert-text {
+  color: #047857;
+}
+
 @keyframes modalFade {
   from {
     transform: translateY(10px);
