@@ -90,3 +90,8 @@ export function createEmptySessionSnapshot(): SessionSnapshot {
 export function createSessionStateFromResponse(response: AuthResponse): SessionState {
   return createStateFromSnapshot(mapResponseToSnapshot(response));
 }
+
+export function createSnapshotFromState(state: SessionState): SessionSnapshot {
+  const { isAuthenticated, ...snapshot } = state;
+  return snapshot;
+}
