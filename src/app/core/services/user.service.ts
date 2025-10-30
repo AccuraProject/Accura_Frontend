@@ -116,6 +116,26 @@ export class UserService {
     );
   }
 
+  resetManagedUserPassword(userId: number): Observable<void> {
+    return this.store.select(selectSessionState).pipe(
+      take(1),
+      switchMap((session) => {
+        if (!session.accessToken) {
+          return throwError(() => new Error('No hay un token de autenticación disponible.'));
+        }
+
+        const tokenType = session.tokenType ?? 'Bearer';
+        const headers = new HttpHeaders({
+          Authorization: `${tokenType} ${session.accessToken}`
+        });
+
+        return this.http.post<void>(`${this.baseUrl}/users/${userId}/reset-password`, {}, {
+          headers
+        });
+      })
+    );
+  }
+
   getErrorMessage(error: unknown): string {
     if (error instanceof HttpErrorResponse) {
       if (typeof error.error === 'string' && error.error.trim().length > 0) {

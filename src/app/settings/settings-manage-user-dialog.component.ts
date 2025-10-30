@@ -10,7 +10,7 @@ export interface SettingsManageUserDialogData {
 }
 
 export type SettingsManageUserDialogResult =
-  | { action: 'password'; user: ManagedUser; newPassword: string }
+  | { action: 'reset-password'; user: ManagedUser }
   | { action: 'email'; user: ManagedUser; email: string };
 
 @Component({
@@ -22,9 +22,7 @@ export type SettingsManageUserDialogResult =
 })
 export class SettingsManageUserDialogComponent {
   protected readonly user: ManagedUser;
-  protected readonly passwordForm: FormGroup;
   protected readonly emailForm: FormGroup;
-  protected passwordMismatch = false;
 
   constructor(
     private readonly dialogRef: MatDialogRef<
@@ -35,40 +33,15 @@ export class SettingsManageUserDialogComponent {
     private readonly formBuilder: FormBuilder
   ) {
     this.user = data.user;
-    this.passwordForm = this.formBuilder.group({
-      newPassword: ['', [Validators.required, Validators.minLength(8)]],
-      confirmPassword: ['', [Validators.required, Validators.minLength(8)]]
-    });
     this.emailForm = this.formBuilder.group({
       email: [this.user.email, [Validators.required, Validators.email]]
     });
   }
 
-  protected submitPassword(): void {
-    this.passwordMismatch = false;
-
-    if (this.passwordForm.invalid) {
-      this.passwordForm.markAllAsTouched();
-      return;
-    }
-
-    const newPassword = this.passwordForm.get('newPassword')?.value as string | null;
-    const confirmPassword = this.passwordForm.get('confirmPassword')?.value as string | null;
-
-    if (!newPassword || !confirmPassword) {
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      this.passwordMismatch = true;
-      this.passwordForm.get('confirmPassword')?.markAsTouched();
-      return;
-    }
-
+  protected resetPassword(): void {
     this.dialogRef.close({
-      action: 'password',
-      user: this.user,
-      newPassword
+      action: 'reset-password',
+      user: this.user
     });
   }
 

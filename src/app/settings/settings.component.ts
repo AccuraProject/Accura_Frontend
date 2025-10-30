@@ -26,10 +26,12 @@ import {
   UpdateUserPayload,
   UserCreatedByMeResponse,
   UserRole,
+  UserDetail,
 } from '../core/models/user.model';
 import { SessionActions } from '../core/store/session/session.actions';
 
 export interface ManagedUser {
+  id: number;
   name: string;
   username: string;
   email: string;
@@ -242,18 +244,18 @@ export class SettingsComponent implements OnInit {
           return;
         }
 
-        if (result.action === 'password') {
-          console.info('Actualizar contraseña de usuario', result);
+        if (result.action === 'email') {
+          this.updateManagedUserEmail(result.user.id, result.email);
         }
 
-        if (result.action === 'email') {
-          console.info('Actualizar correo de usuario', result);
+        if (result.action === 'reset-password') {
+          this.resetManagedUserPassword(result.user.id);
         }
       });
   }
 
-  protected trackByUsername(_: number, user: ManagedUser): string {
-    return user.username;
+  protected trackByUserId(_: number, user: ManagedUser): number {
+    return user.id;
   }
 
   protected userInitials(user: ManagedUser): string {
@@ -349,8 +351,62 @@ export class SettingsComponent implements OnInit {
     });
   }
 
-  private mapToManagedUser(user: UserCreatedByMeResponse): ManagedUser {
+  private updateManagedUserEmail(userId: number, email: string): void {
+    const trimmedEmail = email.trim();
+
+    if (!trimmedEmail) {
+      return;
+    }
+
+    this.userService.updateUser(userId, { email: trimmedEmail }).subscribe({
+      next: (updatedUser) => {
+        const managedUser = this.mapToManagedUser(updatedUser);
+        this.users = this.users.map((user) =>
+          user.id === userId ? { ...user, ...managedUser } : user
+        );
+        this.showNotification('El correo electrónico se actualizó correctamente.');
+      },
+      error: (error: unknown) => {
+        this.showNotification(
+          `No se pudo actualizar el correo electrónico: ${this.userService.getErrorMessage(error)}`,
+          'error'
+        );
+      }
+    });
+  }
+
+  private resetManagedUserPassword(userId: number): void {
+    this.userService.resetManagedUserPassword(userId).subscribe({
+      next: () => {
+        this.showNotification(
+          'Se envió el enlace para restablecer la contraseña del usuario seleccionado.'
+        );
+      },
+      error: (error: unknown) => {
+        this.showNotification(
+          `No se pudo resetear la contraseña: ${this.userService.getErrorMessage(error)}`,
+          'error'
+        );
+      }
+    });
+  }
+
+  private showNotification(message: string, type: 'info' | 'error' = 'info'): void {
+    if (typeof window !== 'undefined') {
+      window.alert(message);
+      return;
+    }
+
+    if (type === 'error') {
+      console.error(message);
+    } else {
+      console.info(message);
+    }
+  }
+
+  private mapToManagedUser(user: UserDetail): ManagedUser {
     return {
+      id: user.id,
       name: user.name,
       username: this.getUsernameFromEmail(user.email),
       email: user.email,
