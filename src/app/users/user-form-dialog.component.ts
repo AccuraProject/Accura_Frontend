@@ -3,21 +3,29 @@ import { Component, Inject } from '@angular/core';
 import { FormsModule, NgForm } from '@angular/forms';
 import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 
-export interface UserFormDialogData {
-  roles: UserRoleOption[];
-  mode?: 'create' | 'edit';
-  user?: UserFormDialogValue;
-}
-
 export interface UserRoleOption {
   id: number;
   label: string;
+}
+
+export interface UserFormDialogData {
+  roles: UserRoleOption[];
+  mode?: 'create' | 'edit';
+  user?: UserFormDialogInitialValue;
 }
 
 export interface UserFormDialogValue {
   name: string;
   email: string;
   roleId: number;
+  status: boolean;
+}
+
+export interface UserFormDialogInitialValue {
+  name: string;
+  email: string;
+  roleId: number | null;
+  status: boolean | null;
 }
 
 @Component({
@@ -32,6 +40,10 @@ export class UserFormDialogComponent {
   protected readonly title: string;
   protected readonly description: string;
   protected readonly actionLabel: string;
+  protected readonly statusOptions = [
+    { label: 'Activo', value: true },
+    { label: 'Inactivo', value: false },
+  ];
 
   protected formModel: UserFormDialogModel;
 
@@ -62,10 +74,16 @@ export class UserFormDialogComponent {
       return;
     }
 
+    if (this.isEditMode && this.formModel.status === null) {
+      form.form.markAllAsTouched();
+      return;
+    }
+
     this.dialogRef.close({
       name: this.formModel.name.trim(),
       email: this.formModel.email.trim(),
-      roleId: this.formModel.roleId
+      roleId: this.formModel.roleId as number,
+      status: (this.formModel.status ?? true) as boolean,
     });
   }
 
@@ -77,13 +95,10 @@ export class UserFormDialogComponent {
     return {
       name: '',
       email: '',
-      roleId: null
+      roleId: null,
+      status: true,
     };
   }
 }
 
-interface UserFormDialogModel {
-  name: string;
-  email: string;
-  roleId: number | null;
-}
+type UserFormDialogModel = UserFormDialogInitialValue;

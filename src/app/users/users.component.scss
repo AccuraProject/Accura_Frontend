@@ -21,6 +21,29 @@
   flex-wrap: wrap;
 }
 
+.users-panel__alert {
+  display: block;
+}
+
+.users-panel__alert .modal__alert {
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.users-panel__alert-close {
+  margin-left: auto;
+  align-self: flex-start;
+  background: transparent;
+  color: inherit;
+  width: 32px;
+  height: 32px;
+}
+
+.users-panel__alert-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: inherit;
+}
+
 .users-panel__header h2 {
   margin: 0;
   font-weight: 600;
