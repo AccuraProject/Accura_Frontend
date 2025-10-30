@@ -12,6 +12,7 @@ import { SettingsComponent } from './settings/settings.component';
 import { authGuard } from './core/guards/auth.guard';
 import { PasswordUpdateComponent } from './password-update/password-update.component';
 import { passwordUpdateGuard } from './core/guards/password-update.guard';
+import { loginRedirectGuard } from './core/guards/login-redirect.guard';
 
 export const routes: Routes = [
   {
@@ -35,7 +36,8 @@ export const routes: Routes = [
   },
   {
     path: 'login',
-    component: LoginComponent
+    component: LoginComponent,
+    canActivate: [loginRedirectGuard],
   },
   {
     path: 'cambiar-contrasena',
