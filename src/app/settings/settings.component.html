@@ -201,12 +201,18 @@
             [attr.aria-invalid]="showChangePasswordError('newPassword') ? 'true' : 'false'"
           />
           <small
-            *ngIf="hasChangePasswordError('newPassword', 'required') && showChangePasswordError('newPassword')"
+            *ngIf="
+              hasChangePasswordError('newPassword', 'required') &&
+              showChangePasswordError('newPassword')
+            "
           >
             La nueva contraseña es obligatoria.
           </small>
           <small
-            *ngIf="hasChangePasswordError('newPassword', 'minlength') && showChangePasswordError('newPassword')"
+            *ngIf="
+              hasChangePasswordError('newPassword', 'minlength') &&
+              showChangePasswordError('newPassword')
+            "
           >
             Ingresa al menos 8 caracteres.
           </small>
@@ -353,9 +359,11 @@
           </td>
         </tr>
         <tr *ngIf="items.length === 0">
-          <td colspan="5" class="settings-users__empty">
-            <span class="material-symbols-rounded" aria-hidden="true">search_off</span>
-            <p>No se encontraron usuarios para el criterio ingresado.</p>
+          <td colspan="5">
+            <div class="settings-users__empty">
+              <span class="material-symbols-rounded" aria-hidden="true">search_off</span>
+              <p>No se encontraron usuarios para el criterio ingresado.</p>
+            </div>
           </td>
         </tr>
       </tbody>
