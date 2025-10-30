@@ -15,15 +15,28 @@ import {
 } from './user-delete-dialog.component';
 
 import { UserService } from '../core/services/user.service';
-import { CreatedUserResponse, UserCreatedByMeResponse, UserRole } from '../core/models/user.model';
+import {
+  CreatedUserResponse,
+  UpdateUserPayload,
+  UserCreatedByMeResponse,
+  UserRole,
+} from '../core/models/user.model';
 
 interface UserRow {
+  id: number;
   name: string;
   email: string;
-  roleId: number;
+  roleId: number | null;
   role: string;
   status: string;
+  isActive: boolean;
   createdAt: string;
+}
+
+interface UsersAlert {
+  type: 'success' | 'error';
+  title: string;
+  message: string;
 }
 
 @Component({
@@ -35,6 +48,8 @@ interface UserRow {
 })
 export class UsersComponent implements OnInit {
   protected searchTerm = '';
+
+  protected formAlert: UsersAlert | null = null;
 
   protected readonly roles: UserRoleOption[] = [
     { id: 1, label: 'Administrador' },
@@ -130,6 +145,7 @@ export class UsersComponent implements OnInit {
             name: user.name,
             email: user.email,
             roleId: user.roleId,
+            status: user.isActive,
           },
         },
       },
@@ -140,7 +156,7 @@ export class UsersComponent implements OnInit {
         return;
       }
 
-      this.updateUserEntry(user.email, result);
+      this.updateUserEntry(user, result);
     });
   }
 
@@ -169,20 +185,39 @@ export class UsersComponent implements OnInit {
     });
   }
 
-  private updateUserEntry(email: string, formData: UserFormDialogValue): void {
-    this.users = this.users.map((user) => {
-      if (user.email !== email) {
-        return user;
-      }
+  protected closeAlert(): void {
+    this.formAlert = null;
+  }
 
-      const roleId = formData.roleId;
+  private updateUserEntry(user: UserRow, formData: UserFormDialogValue): void {
+    const payload: UpdateUserPayload = {
+      name: formData.name,
+      role_id: formData.roleId,
+      is_active: formData.status,
+    };
 
-      return {
-        ...user,
-        name: formData.name,
-        roleId,
-        role: this.getRoleLabel(roleId),
-      };
+    this.formAlert = null;
+
+    this.userService.updateUser(user.id, payload).subscribe({
+      next: (updatedUser: UserCreatedByMeResponse) => {
+        const updatedRow = this.mapToUserRow(updatedUser);
+        this.users = this.users.map((current) =>
+          current.id === updatedRow.id ? updatedRow : current,
+        );
+
+        this.formAlert = {
+          type: 'success',
+          title: 'Cambios guardados',
+          message: 'La información del usuario se actualizó correctamente.',
+        };
+      },
+      error: (error: unknown) => {
+        this.formAlert = {
+          type: 'error',
+          title: 'No se pudo actualizar al usuario',
+          message: this.userService.getErrorMessage(error),
+        };
+      },
     });
   }
 
@@ -239,29 +274,33 @@ export class UsersComponent implements OnInit {
 
   private mapToUserRow(user: UserCreatedByMeResponse): UserRow {
     return this.createUserRow(
+      user.id,
       user.name,
       user.email,
       user.role?.id ?? null,
-      this.getStatusLabel(user.is_active),
+      user.is_active,
       this.formatDate(user.created_at),
       this.getRoleDisplayName(user.role),
     );
   }
 
   private createUserRow(
+    id: number,
     name: string,
     email: string,
-    roleId: number,
-    status: string,
+    roleId: number | null,
+    isActive: boolean,
     createdAt: string,
     roleLabel?: string,
   ): UserRow {
     return {
+      id,
       name,
       email,
       roleId,
       role: roleLabel ?? this.getRoleLabel(roleId),
-      status,
+      status: this.getStatusLabel(isActive),
+      isActive,
       createdAt,
     };
   }

@@ -74,6 +74,35 @@
       </div>
 
       <div
+        *ngIf="isEditMode"
+        class="form-field"
+        [class.form-field--invalid]="
+          statusModel.invalid && (statusModel.touched || userForm.submitted)
+        "
+      >
+        <label for="status">Estado</label>
+        <select
+          id="status"
+          name="status"
+          [(ngModel)]="formModel.status"
+          required
+          #statusModel="ngModel"
+          [attr.aria-invalid]="
+            statusModel.invalid && (statusModel.touched || userForm.submitted) ? 'true' : 'false'
+          "
+        >
+          <option *ngFor="let option of statusOptions" [ngValue]="option.value">
+            {{ option.label }}
+          </option>
+        </select>
+        <small
+          *ngIf="statusModel.errors?.['required'] && (statusModel.touched || userForm.submitted)"
+        >
+          Selecciona el estado del usuario.
+        </small>
+      </div>
+
+      <div
         class="form-field"
         [class.form-field--invalid]="roleModel.invalid && (roleModel.touched || userForm.submitted)"
       >
