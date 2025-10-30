@@ -111,9 +111,7 @@ export class UserService {
           Authorization: `${tokenType} ${session.accessToken}`
         });
 
-        return this.http.post<void>(`${this.baseUrl}/users/${userId}/reset-password`, payload, {
-          headers
-        });
+        return this.http.put<void>(`${this.baseUrl}/users/${userId}`, payload, { headers });
       })
     );
   }
