@@ -29,6 +29,33 @@
     </label>
   </header>
 
+  <div class="users-panel__alert" *ngIf="formAlert as alert">
+    <div
+      class="modal__alert"
+      [ngClass]="{
+        'modal__alert--success': alert.type === 'success',
+        'modal__alert--error': alert.type === 'error'
+      }"
+      role="alert"
+    >
+      <span class="material-symbols-rounded" aria-hidden="true">
+        {{ alert.type === 'success' ? 'check_circle' : 'error' }}
+      </span>
+      <div>
+        <p class="modal__alert-title">{{ alert.title }}</p>
+        <p class="modal__alert-text">{{ alert.message }}</p>
+      </div>
+      <button
+        class="icon-button users-panel__alert-close"
+        type="button"
+        (click)="closeAlert()"
+        aria-label="Cerrar alerta"
+      >
+        <span class="material-symbols-rounded" aria-hidden="true">close</span>
+      </button>
+    </div>
+  </div>
+
   <div class="users-table__wrapper" *ngIf="filteredUsers as items">
     <table class="users-table">
       <thead>
