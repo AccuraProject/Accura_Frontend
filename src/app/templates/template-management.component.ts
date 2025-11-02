@@ -58,11 +58,15 @@ interface ClientTemplate {
   styleUrl: './template-management.component.scss'
 })
 export class TemplateManagementComponent {
-   private readonly dialog = inject(MatDialog);
-   private readonly store = inject(Store);
+  private readonly dialog = inject(MatDialog);
+  private readonly store = inject(Store);
 
-   protected searchTerm = '';
-   protected statusFilter: ManagementTemplateStatus | 'Todos' = 'Todos';
+  protected searchTerm = '';
+  protected statusFilter: ManagementTemplateStatus | 'Todos' = 'Todos';
+  protected uploadTemplateId: string | null = null;
+  protected uploadState: Record<string, string | null> = {};
+  protected uploadErrors: Record<string, string | null> = {};
+  protected dragActiveId: string | null = null;
 
    protected readonly isAdmin$: Observable<boolean> = this.store.select(selectIsAdmin);
 
@@ -323,9 +327,9 @@ export class TemplateManagementComponent {
      return template.id;
    }
 
-   protected trackByAssignedTemplateId(_: number, template: ClientTemplate): string {
-     return template.id;
-   }
+  protected trackByAssignedTemplateId(_: number, template: ClientTemplate): string {
+    return template.id;
+  }
 
   protected statusClass(status: TemplateStatus): string {
     switch (status) {
@@ -404,11 +408,11 @@ export class TemplateManagementComponent {
      );
    }
 
-   protected openClientDetailDialog(template: ClientTemplate): void {
-     this.dialog.open<TemplateDetailDialogComponent, TemplateDetailDialogData, void>(
-       TemplateDetailDialogComponent,
-       {
-         data: {
+  protected openClientDetailDialog(template: ClientTemplate): void {
+    this.dialog.open<TemplateDetailDialogComponent, TemplateDetailDialogData, void>(
+      TemplateDetailDialogComponent,
+      {
+        data: {
            name: template.name,
            description: template.description,
            version: template.version,
@@ -421,11 +425,77 @@ export class TemplateManagementComponent {
            tags: template.tags,
            columnsDetail: template.columnsDetail
          }
-       }
-     );
-   }
+      }
+    );
+  }
 
-   protected openDeleteDialog(template: TemplateRow): void {
+  protected toggleUpload(templateId: string): void {
+    this.uploadErrors[templateId] = null;
+    if (this.uploadTemplateId === templateId) {
+      this.uploadTemplateId = null;
+      return;
+    }
+
+    this.uploadTemplateId = templateId;
+  }
+
+  protected onFileSelected(event: Event, templateId: string): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+
+    if (!file) {
+      this.uploadState[templateId] = null;
+      this.uploadErrors[templateId] = null;
+      return;
+    }
+
+    if (!this.isExcelFile(file)) {
+      this.uploadState[templateId] = null;
+      this.uploadErrors[templateId] = 'Solo se aceptan archivos con formato .xlsx o .xls';
+      input.value = '';
+      return;
+    }
+
+    this.uploadState[templateId] = file.name;
+    this.uploadErrors[templateId] = null;
+  }
+
+  protected onDropFile(event: DragEvent, templateId: string): void {
+    event.preventDefault();
+    this.dragActiveId = null;
+
+    const file = event.dataTransfer?.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    if (!this.isExcelFile(file)) {
+      this.uploadState[templateId] = null;
+      this.uploadErrors[templateId] = 'Solo se aceptan archivos con formato .xlsx o .xls';
+      return;
+    }
+
+    this.uploadState[templateId] = file.name;
+    this.uploadErrors[templateId] = null;
+  }
+
+  protected onDragOver(event: DragEvent, templateId: string): void {
+    event.preventDefault();
+    if (event.dataTransfer) {
+      event.dataTransfer.dropEffect = 'copy';
+    }
+    this.dragActiveId = templateId;
+  }
+
+  protected onDragLeave(event: DragEvent, templateId: string): void {
+    event.preventDefault();
+
+    if (this.dragActiveId === templateId) {
+      this.dragActiveId = null;
+    }
+  }
+
+  protected openDeleteDialog(template: TemplateRow): void {
      const dialogRef = this.dialog.open<TemplateDeleteDialogComponent, TemplateDeleteDialogData, boolean>(
        TemplateDeleteDialogComponent,
        {
@@ -478,9 +548,14 @@ export class TemplateManagementComponent {
 
    private removeTemplate(templateId: string): void {
      this.templates = this.templates.filter((template) => template.id !== templateId);
-   }
+  }
 
-   private generateId(): string {
-     return `template-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
-   }
- }
+  private generateId(): string {
+    return `template-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+  }
+
+  private isExcelFile(file: File): boolean {
+    const extension = file.name.split('.').pop()?.toLowerCase();
+    return extension === 'xlsx' || extension === 'xls';
+  }
+}

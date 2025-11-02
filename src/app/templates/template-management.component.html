@@ -199,10 +199,56 @@
         </ul>
 
         <footer>
-          <button type="button" (click)="openClientDetailDialog(template)">
-            <span class="material-symbols-rounded" aria-hidden="true">description</span>
-            Ver Especificaciones
-          </button>
+          <div class="client-template-card__actions">
+            <button
+              type="button"
+              (click)="toggleUpload(template.id)"
+              [attr.aria-expanded]="uploadTemplateId === template.id"
+            >
+              <span class="material-symbols-rounded" aria-hidden="true">upload_file</span>
+              Cargar archivo
+            </button>
+            <button
+              type="button"
+              class="client-template-card__action--secondary"
+              (click)="openClientDetailDialog(template)"
+            >
+              <span class="material-symbols-rounded" aria-hidden="true">description</span>
+              Ver Especificaciones
+            </button>
+          </div>
+
+          <div
+            *ngIf="uploadTemplateId === template.id"
+            class="client-template-card__upload"
+          >
+            <input
+              type="file"
+              class="client-template-card__upload-input"
+              [id]="'upload-' + template.id"
+              accept=".xlsx,.xls"
+              (change)="onFileSelected($event, template.id)"
+            />
+            <label
+              class="client-template-card__upload-dropzone"
+              [for]="'upload-' + template.id"
+              (dragover)="onDragOver($event, template.id)"
+              (dragleave)="onDragLeave($event, template.id)"
+              (drop)="onDropFile($event, template.id)"
+              [class.client-template-card__upload-dropzone--active]="dragActiveId === template.id"
+            >
+              <span class="material-symbols-rounded" aria-hidden="true">cloud_upload</span>
+              <p>Arrastra y suelta tu archivo aquí</p>
+              <small>o haz clic para seleccionar un archivo .xlsx</small>
+            </label>
+
+            <p *ngIf="uploadState[template.id]" class="client-template-card__upload-file">
+              {{ uploadState[template.id] }}
+            </p>
+            <p *ngIf="uploadErrors[template.id]" class="client-template-card__upload-error">
+              {{ uploadErrors[template.id] }}
+            </p>
+          </div>
         </footer>
       </article>
 
