@@ -1,7 +1,10 @@
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
+import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { Store } from '@ngrx/store';
+import { firstValueFrom } from 'rxjs';
 
 import {
   ValidationRuleFormDialogComponent,
@@ -12,6 +15,8 @@ import {
   ValidationRuleDeleteDialogComponent,
   ValidationRuleDeleteDialogData
 } from './validation-rule-delete-dialog.component';
+import { environment } from '../../environments/environment';
+import { selectSessionState, SessionState } from '../core/store/session/session.reducer';
 
 type RuleExample = Record<string, unknown>;
 
@@ -65,7 +70,9 @@ export class ValidationRulesComponent {
   protected aiError: string | null = null;
   protected hasAiFetched = false;
 
-  private readonly aiEndpoint = 'http://localhost:8000/assistant/analyze';
+  protected ruleSyncError: string | null = null;
+
+  private readonly baseUrl = environment.apiBaseUrl.replace(/\/$/, '');
 
   private readonly aiRuleSchema: Record<string, unknown> = {
     title: 'Regla de Campo',
@@ -459,7 +466,11 @@ export class ValidationRulesComponent {
     ]
   };
 
-  constructor(private readonly dialog: MatDialog) {
+  constructor(
+    private readonly dialog: MatDialog,
+    private readonly http: HttpClient,
+    private readonly store: Store
+  ) {
     const initialPayloads: Array<{ payload: RulePayload; status: ValidationRule['status']; source: 'manual' | 'ia' }> = [
       {
         payload: {
@@ -670,19 +681,9 @@ export class ValidationRulesComponent {
     this.aiError = null;
 
     try {
-      const response = await fetch(this.aiEndpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ schema: this.aiRuleSchema })
-      });
-
-      if (!response.ok) {
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
-      }
-
-      const data = await response.json();
+      const session = await this.getSessionSnapshot();
+      const body = { schema: this.aiRuleSchema, is_admin: this.isAdmin(session) };
+      const data = await this.postAuthorized<unknown>('/assistant/analyze', body, session);
       console.log('[ValidationRules] Respuesta bruta de la IA:', data);
 
       const payloads = this.extractPayloads(data)
@@ -699,7 +700,7 @@ export class ValidationRulesComponent {
       this.selectedAiRuleId = this.aiRuleOptions.length > 0 ? this.aiRuleOptions[0].id : null;
     } catch (error) {
       console.error('[ValidationRules] Error al consultar la IA:', error);
-      this.aiError = 'No fue posible obtener sugerencias en este momento.';
+      this.aiError = this.getErrorMessage(error);
       this.aiRuleOptions = [];
       this.selectedAiRuleId = null;
     } finally {
@@ -710,8 +711,10 @@ export class ValidationRulesComponent {
 
   protected applyAiRule(option: AiRuleOption): void {
     console.log('[ValidationRules] Payload listo para enviar (IA):', option.payload);
-    const rule = this.buildRuleFromPayload(option.payload, 'Borrador', 'ia');
+    const payloadClone = JSON.parse(JSON.stringify(option.payload)) as RulePayload;
+    const rule = this.buildRuleFromPayload(payloadClone, 'Borrador', 'ia');
     this.rules = [rule, ...this.rules];
+    this.persistRule(payloadClone, 'Borrador', 'ia');
   }
 
   protected describeRuleConfig(payload: RulePayload): string[] {
@@ -809,10 +812,11 @@ export class ValidationRulesComponent {
   }
 
   private addRule(result: ValidationRuleFormDialogResult): void {
-    const payload = this.buildPayloadFromManualResult(result);
+    const payload = this.buildPayloadFromFormResult(result);
     console.log('[ValidationRules] Payload listo para enviar (manual):', payload);
     const entry = this.buildRuleFromPayload(payload, result.status, 'manual');
     this.rules = [entry, ...this.rules];
+    this.persistRule(payload, result.status, 'manual');
   }
 
   private updateRule(ruleId: string, result: ValidationRuleFormDialogResult): void {
@@ -821,20 +825,7 @@ export class ValidationRulesComponent {
         return rule;
       }
 
-      const payload =
-        rule.source === 'manual'
-          ? this.buildPayloadFromManualResult(result)
-          : {
-              ...rule.payload,
-              'Nombre de la regla': result.name.trim(),
-              'Tipo de dato': result.dataType,
-              'Campo obligatorio': result.mandatory,
-              Header: [result.documentType.trim() || 'Plantilla Global'],
-              'Mensaje de error': result.errorMessage.trim(),
-              'Descripción': result.description.trim(),
-              'Ejemplo': rule.payload['Ejemplo'],
-              'Regla': rule.payload['Regla']
-            };
+      const payload = this.buildPayloadFromFormResult(result);
 
       return this.buildRuleFromPayload(payload, result.status, rule.source, rule.id);
     });
@@ -880,21 +871,117 @@ export class ValidationRulesComponent {
     };
   }
 
-  private buildPayloadFromManualResult(result: ValidationRuleFormDialogResult): RulePayload {
+  private buildPayloadFromFormResult(result: ValidationRuleFormDialogResult): RulePayload {
     const name = result.name.trim();
     const dataType = result.dataType;
-    const documentType = result.documentType.trim() || 'Plantilla Global';
+    const primaryHeader = result.documentType.trim() || 'Plantilla Global';
+    const additionalHeaders = result.secondaryHeaders
+      .map((item) => item.trim())
+      .filter((item, index, array) => item.length > 0 && array.indexOf(item) === index && item !== primaryHeader);
+    const headers = [primaryHeader, ...additionalHeaders];
+
+    const example = result.exampleEntries.reduce<RuleExample>((acc, entry) => {
+      const key = entry.key.trim();
+      if (!key) {
+        return acc;
+      }
+
+      acc[key] = entry.value.trim();
+      return acc;
+    }, {});
 
     return {
       'Nombre de la regla': name,
       'Tipo de dato': dataType,
       'Campo obligatorio': result.mandatory,
-      Header: [documentType],
+      Header: headers,
       'Mensaje de error': result.errorMessage.trim(),
       'Descripción': result.description.trim(),
-      'Ejemplo': {},
-      'Regla': this.generateDefaultRuleConfig(dataType)
+      'Ejemplo': example,
+      'Regla': this.normalizeManualRuleConfig(result.ruleConfig, dataType)
     };
+  }
+
+  private normalizeManualRuleConfig(
+    config: Record<string, unknown>,
+    dataType: string
+  ): Record<string, unknown> {
+    const clone = config && typeof config === 'object'
+      ? JSON.parse(JSON.stringify(config))
+      : this.generateDefaultRuleConfig(dataType);
+
+    const record = clone as Record<string, unknown>;
+
+    switch (dataType) {
+      case 'Texto':
+        record['Longitud minima'] = this.toNumber(record['Longitud minima'], 0);
+        record['Longitud maxima'] = this.toNumber(record['Longitud maxima'], 0);
+        break;
+      case 'Número':
+        record['Valor mínimo'] = this.toNumber(record['Valor mínimo'], null);
+        record['Valor máximo'] = this.toNumber(record['Valor máximo'], null);
+        record['Número de decimales'] = this.toNumber(record['Número de decimales'], 0);
+        break;
+      case 'Documento':
+        record['Longitud minima'] = this.toNumber(record['Longitud minima'], 1);
+        record['Longitud maxima'] = this.toNumber(record['Longitud maxima'], 1);
+        break;
+      case 'Lista': {
+        const values = Array.isArray(record['Lista'])
+          ? (record['Lista'] as unknown[])
+              .map((item) => (typeof item === 'string' ? item.trim() : ''))
+              .filter((item, index, array) => item.length > 0 && array.indexOf(item) === index)
+          : [];
+        record['Lista'] = values;
+        break;
+      }
+      case 'Lista compleja':
+        record['Lista compleja'] = Array.isArray(record['Lista compleja'])
+          ? (record['Lista compleja'] as unknown[])
+          : [];
+        break;
+      case 'Telefono':
+        record['Longitud minima'] = this.toNumber(record['Longitud minima'], 1);
+        record['Código de país'] = this.sanitizeString(record['Código de país']) ?? '+00';
+        break;
+      case 'Correo':
+        record['Formato'] = this.sanitizeString(record['Formato']) ?? 'usuario@dominio.com';
+        record['Longitud máxima'] = this.toNumber(record['Longitud máxima'], 1);
+        break;
+      case 'Fecha':
+        record['Formato'] = this.sanitizeString(record['Formato']) ?? 'yyyy-MM-dd';
+        record['Fecha mínima'] = this.sanitizeString(record['Fecha mínima']) ?? '1900-01-01';
+        record['Fecha máxima'] = this.sanitizeString(record['Fecha máxima']) ?? '2100-12-31';
+        break;
+      case 'Dependencia':
+        record['reglas especifica'] = Array.isArray(record['reglas especifica'])
+          ? (record['reglas especifica'] as unknown[]).filter((item) => item && typeof item === 'object')
+          : [];
+        break;
+      case 'Validación conjunta': {
+        const values = Array.isArray(record['Nombre de campos'])
+          ? (record['Nombre de campos'] as unknown[])
+              .map((item) => (typeof item === 'string' ? item.trim() : ''))
+              .filter((item, index, array) => item.length > 0 && array.indexOf(item) === index)
+          : [];
+        record['Nombre de campos'] = values;
+        break;
+      }
+      case 'Duplicados': {
+        const values = Array.isArray(record['Campos'])
+          ? (record['Campos'] as unknown[])
+              .map((item) => (typeof item === 'string' ? item.trim() : ''))
+              .filter((item, index, array) => item.length > 0 && array.indexOf(item) === index)
+          : [];
+        record['Campos'] = values;
+        record['Ignorar vacios'] = this.toBoolean(record['Ignorar vacios']);
+        break;
+      }
+      default:
+        break;
+    }
+
+    return record;
   }
 
   private generateDefaultRuleConfig(dataType: string): Record<string, unknown> {
@@ -924,6 +1011,63 @@ export class ValidationRulesComponent {
       default:
         return {};
     }
+  }
+
+  private persistRule(
+    payload: RulePayload,
+    status: ValidationRule['status'],
+    source: 'manual' | 'ia'
+  ): void {
+    this.ruleSyncError = null;
+    void this.sendRuleToServer(payload, status, source).catch((error) => this.handleRuleSyncError(error));
+  }
+
+  private async sendRuleToServer(
+    payload: RulePayload,
+    status: ValidationRule['status'],
+    source: 'manual' | 'ia'
+  ): Promise<void> {
+    const session = await this.getSessionSnapshot();
+    const body = {
+      payload,
+      status,
+      source,
+      is_admin: this.isAdmin(session)
+    };
+
+    await this.postAuthorized<void>('/rules', body, session);
+  }
+
+  private async postAuthorized<T>(path: string, body: unknown, session?: SessionState): Promise<T> {
+    const snapshot = session ?? (await this.getSessionSnapshot());
+    const headers = this.buildAuthHeaders(snapshot);
+    return await firstValueFrom(this.http.post<T>(`${this.baseUrl}${path}`, body, { headers }));
+  }
+
+  private async getSessionSnapshot(): Promise<SessionState> {
+    return await firstValueFrom(this.store.select(selectSessionState));
+  }
+
+  private buildAuthHeaders(session: SessionState): HttpHeaders {
+    if (!session.accessToken) {
+      throw new Error('No hay un token de autenticación disponible.');
+    }
+
+    const tokenType = session.tokenType ?? 'Bearer';
+
+    return new HttpHeaders({
+      'Content-Type': 'application/json',
+      Authorization: `${tokenType} ${session.accessToken}`
+    });
+  }
+
+  private isAdmin(session: SessionState): boolean {
+    return (session.role ?? '').toLowerCase() === 'admin';
+  }
+
+  private handleRuleSyncError(error: unknown): void {
+    console.error('[ValidationRules] Error al sincronizar la regla:', error);
+    this.ruleSyncError = this.getErrorMessage(error);
   }
 
   private extractPayloads(response: unknown): unknown[] {
@@ -1158,7 +1302,41 @@ export class ValidationRulesComponent {
       errorMessage: rule.errorMessage,
       status: rule.status,
       documentType: rule.documentType,
-      description: rule.description
+      description: rule.description,
+      secondaryHeaders: rule.header.slice(1),
+      exampleEntries: this.getExampleEntries(rule.payload).map(({ key, value }) => ({
+        key,
+        value
+      })),
+      ruleConfig: JSON.parse(JSON.stringify(rule.ruleConfig)) as Record<string, unknown>
     };
+  }
+
+  private getErrorMessage(error: unknown): string {
+    if (error instanceof HttpErrorResponse) {
+      if (typeof error.error === 'string' && error.error.trim().length > 0) {
+        return error.error;
+      }
+
+      if (error.error?.detail) {
+        return error.error.detail;
+      }
+
+      if (error.status === 0) {
+        return 'No se pudo establecer conexión con el servidor.';
+      }
+
+      if (error.status === 401) {
+        return 'No estás autorizado para realizar esta acción.';
+      }
+
+      return 'No se pudo completar la solicitud. Inténtalo nuevamente.';
+    }
+
+    if (error instanceof Error && error.message) {
+      return error.message;
+    }
+
+    return 'No se pudo completar la solicitud. Inténtalo nuevamente.';
   }
 }
