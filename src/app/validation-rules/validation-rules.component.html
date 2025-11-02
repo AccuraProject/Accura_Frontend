@@ -12,6 +12,83 @@
   </button>
 </section>
 
+<section class="assistant-panel">
+  <header class="assistant-panel__header">
+    <div>
+      <h2>Asistente de reglas con IA</h2>
+      <p>
+        Consulta el asistente para generar reglas sugeridas y agrégalas a tu catálogo formateadas según el esquema
+        requerido.
+      </p>
+    </div>
+    <button class="assistant-panel__cta" type="button" (click)="loadAiSuggestions()" [disabled]="aiIsLoading">
+      <span class="material-symbols-rounded" aria-hidden="true">auto_fix_high</span>
+      {{ aiIsLoading ? 'Consultando...' : 'Consultar asistente' }}
+    </button>
+  </header>
+
+  <p *ngIf="aiError" class="assistant-panel__error">{{ aiError }}</p>
+  <div *ngIf="aiIsLoading" class="assistant-panel__loading">
+    <span class="material-symbols-rounded" aria-hidden="true">progress_activity</span>
+    Consultando asistente...
+  </div>
+
+  <div *ngIf="selectedAiRule as option" class="assistant-panel__content">
+    <label class="assistant-panel__select">
+      <span>Sugerencia disponible</span>
+      <select [(ngModel)]="selectedAiRuleId">
+        <option *ngFor="let item of aiRuleOptions; trackBy: trackByAiOptionId" [value]="item.id">
+          {{ item.payload['Nombre de la regla'] }}
+        </option>
+      </select>
+    </label>
+
+    <article class="assistant-panel__card">
+      <header class="assistant-panel__card-header">
+        <div>
+          <h3>{{ option.payload['Nombre de la regla'] }}</h3>
+          <p>{{ option.payload['Descripción'] }}</p>
+        </div>
+        <span class="assistant-panel__badge">{{ option.payload['Tipo de dato'] }}</span>
+      </header>
+
+      <ul class="assistant-panel__meta">
+        <li><strong>Obligatorio:</strong> {{ option.payload['Campo obligatorio'] ? 'Sí' : 'No' }}</li>
+        <li><strong>Mensaje de error:</strong> {{ option.payload['Mensaje de error'] }}</li>
+      </ul>
+
+      <div class="assistant-panel__tags" *ngIf="option.payload.Header.length > 0">
+        <span *ngFor="let header of option.payload.Header">{{ header }}</span>
+      </div>
+
+      <section class="assistant-panel__detail" *ngIf="describeRuleConfig(option.payload) as details">
+        <h4>Detalle de la regla</h4>
+        <ul>
+          <li *ngFor="let detail of details">{{ detail }}</li>
+        </ul>
+      </section>
+
+      <section class="assistant-panel__detail" *ngIf="getExampleEntries(option.payload).length > 0">
+        <h4>Ejemplos</h4>
+        <ul>
+          <li *ngFor="let example of getExampleEntries(option.payload)">
+            <strong>{{ example.key }}:</strong> {{ example.value }}
+          </li>
+        </ul>
+      </section>
+
+      <button class="assistant-panel__add" type="button" (click)="applyAiRule(option)">
+        <span class="material-symbols-rounded" aria-hidden="true">add_circle</span>
+        Agregar regla generada
+      </button>
+    </article>
+  </div>
+
+  <p *ngIf="!aiIsLoading && hasAiFetched && !aiError && !selectedAiRule" class="assistant-panel__empty">
+    No se recibieron sugerencias del asistente. Intenta nuevamente más tarde.
+  </p>
+</section>
+
 <section class="validation-summary">
   <article class="summary-card">
     <header>
