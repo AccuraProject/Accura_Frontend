@@ -141,6 +141,11 @@
     </label>
   </header>
 
+  <p *ngIf="ruleSyncError" class="validation-panel__error">
+    <span class="material-symbols-rounded" aria-hidden="true">error</span>
+    {{ ruleSyncError }}
+  </p>
+
   <div class="validation-table__wrapper" *ngIf="filteredRules as items">
     <table class="validation-table">
       <thead>

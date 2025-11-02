@@ -1,62 +1,325 @@
-<header class="modal__header">
-  <div>
-    <h3>{{ title }}</h3>
-    <p>{{ description }}</p>
-  </div>
-  <button class="icon-button" type="button" (click)="close()" aria-label="Cerrar">
-    <span class="material-symbols-rounded" aria-hidden="true">close</span>
-  </button>
-</header>
-
-<div mat-dialog-content>
-  <div class="modal__placeholder">
-    <span class="material-symbols-rounded" aria-hidden="true">auto_fix_high</span>
+<form class="modal__form" (ngSubmit)="save()" novalidate>
+  <header class="modal__header">
     <div>
-      <p class="modal__placeholder-title">Formulario en construcción</p>
-      <p class="modal__placeholder-text">
-        Pronto podrás definir los campos y condiciones de la regla desde este espacio. Mientras tanto, revisa un
-        resumen de la configuración actual.
-      </p>
+      <h3>{{ title }}</h3>
+      <p>{{ description }}</p>
     </div>
+    <button class="icon-button" type="button" (click)="close()" aria-label="Cerrar">
+      <span class="material-symbols-rounded" aria-hidden="true">close</span>
+    </button>
+  </header>
+
+  <div mat-dialog-content>
+    <section class="modal__section">
+      <div class="modal__grid">
+        <label class="modal__field">
+          <span>Nombre de la regla</span>
+          <input type="text" [(ngModel)]="formModel.name" name="name" required />
+        </label>
+        <label class="modal__field">
+          <span>Tipo de dato</span>
+          <select [(ngModel)]="formModel.dataType" name="dataType" (ngModelChange)="onDataTypeChange()">
+            <option *ngFor="let option of dataTypeOptions" [value]="option">{{ option }}</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="modal__grid modal__grid--three">
+        <label class="modal__field modal__field--checkbox">
+          <input type="checkbox" [(ngModel)]="formModel.mandatory" name="mandatory" />
+          <span>Campo obligatorio</span>
+        </label>
+        <label class="modal__field">
+          <span>Estado</span>
+          <select [(ngModel)]="formModel.status" name="status">
+            <option *ngFor="let option of statusOptions" [value]="option">{{ option }}</option>
+          </select>
+        </label>
+        <label class="modal__field">
+          <span>Mensaje de error</span>
+          <input type="text" [(ngModel)]="formModel.errorMessage" name="errorMessage" required />
+        </label>
+      </div>
+
+      <label class="modal__field">
+        <span>Descripción</span>
+        <textarea rows="3" [(ngModel)]="formModel.description" name="description" placeholder="Describe la validación y su contexto"></textarea>
+      </label>
+    </section>
+
+    <section class="modal__section">
+      <h4>Plantillas asociadas</h4>
+      <label class="modal__field">
+        <span>Plantilla principal / Tipo de documento</span>
+        <input type="text" [(ngModel)]="formModel.documentType" name="documentType" required />
+      </label>
+
+      <div class="tag-input">
+        <input
+          type="text"
+          [(ngModel)]="secondaryHeaderDraft"
+          name="secondaryHeaderDraft"
+          placeholder="Agregar encabezado adicional"
+          (keyup.enter)="addSecondaryHeader()"
+        />
+        <button
+          type="button"
+          class="modal__action-button"
+          (click)="addSecondaryHeader()"
+          [disabled]="!secondaryHeaderDraft.trim()"
+        >
+          Agregar
+        </button>
+      </div>
+
+      <ul *ngIf="formModel.secondaryHeaders.length > 0" class="tag-list">
+        <li *ngFor="let header of formModel.secondaryHeaders; let i = index; trackBy: trackByIndex">
+          <span>{{ header }}</span>
+          <button type="button" (click)="removeSecondaryHeader(i)" aria-label="Eliminar encabezado">
+            <span class="material-symbols-rounded" aria-hidden="true">close</span>
+          </button>
+        </li>
+      </ul>
+    </section>
+
+    <section class="modal__section">
+      <div class="modal__section-header">
+        <h4>Configuración de la regla</h4>
+        <p class="modal__helper">Personaliza los parámetros según el tipo de dato.</p>
+      </div>
+
+      <ng-container [ngSwitch]="formModel.dataType">
+        <div *ngSwitchCase="'Texto'" class="modal__grid">
+          <label class="modal__field">
+            <span>Longitud mínima</span>
+            <input type="number" min="0" [(ngModel)]="ruleConfig['Longitud minima']" name="textMin" />
+          </label>
+          <label class="modal__field">
+            <span>Longitud máxima</span>
+            <input type="number" min="0" [(ngModel)]="ruleConfig['Longitud maxima']" name="textMax" />
+          </label>
+        </div>
+
+        <div *ngSwitchCase="'Número'" class="modal__grid modal__grid--three">
+          <label class="modal__field">
+            <span>Valor mínimo</span>
+            <input type="number" [(ngModel)]="ruleConfig['Valor mínimo']" name="numberMin" />
+          </label>
+          <label class="modal__field">
+            <span>Valor máximo</span>
+            <input type="number" [(ngModel)]="ruleConfig['Valor máximo']" name="numberMax" />
+          </label>
+          <label class="modal__field">
+            <span>Número de decimales</span>
+            <input type="number" min="0" [(ngModel)]="ruleConfig['Número de decimales']" name="numberDecimals" />
+          </label>
+        </div>
+
+        <div *ngSwitchCase="'Documento'" class="modal__grid">
+          <label class="modal__field">
+            <span>Longitud mínima</span>
+            <input type="number" min="1" [(ngModel)]="ruleConfig['Longitud minima']" name="documentMin" />
+          </label>
+          <label class="modal__field">
+            <span>Longitud máxima</span>
+            <input type="number" min="1" [(ngModel)]="ruleConfig['Longitud maxima']" name="documentMax" />
+          </label>
+        </div>
+
+        <div *ngSwitchCase="'Lista'" class="modal__stack">
+          <div class="tag-input">
+            <input
+              type="text"
+              [(ngModel)]="listItemDraft"
+              name="listDraft"
+              placeholder="Agregar valor permitido"
+              (keyup.enter)="addListValue()"
+            />
+            <button
+              type="button"
+              class="modal__action-button"
+              (click)="addListValue()"
+              [disabled]="!listItemDraft.trim()"
+            >
+              Agregar
+            </button>
+          </div>
+          <p class="modal__helper" *ngIf="listValues.length === 0">Incluye al menos un valor para la lista.</p>
+          <ul *ngIf="listValues.length > 0" class="tag-list">
+            <li *ngFor="let value of listValues; let i = index; trackBy: trackByIndex">
+              <span>{{ value }}</span>
+              <button type="button" (click)="removeListValue(i)" aria-label="Eliminar valor">
+                <span class="material-symbols-rounded" aria-hidden="true">close</span>
+              </button>
+            </li>
+          </ul>
+        </div>
+
+        <div *ngSwitchCase="'Lista compleja'" class="modal__stack">
+          <textarea
+            rows="6"
+            [(ngModel)]="advancedConfigText"
+            name="complexList"
+            (ngModelChange)="onAdvancedConfigChange($event)"
+            placeholder='Ingresa un arreglo JSON de objetos con los campos necesarios'
+          ></textarea>
+          <p class="modal__helper" *ngIf="!advancedConfigError">Utiliza JSON válido. Ejemplo: [{ "Pais": "Perú" }]</p>
+          <p class="modal__helper modal__helper--error" *ngIf="advancedConfigError">{{ advancedConfigError }}</p>
+        </div>
+
+        <div *ngSwitchCase="'Telefono'" class="modal__grid">
+          <label class="modal__field">
+            <span>Longitud mínima</span>
+            <input type="number" min="1" [(ngModel)]="ruleConfig['Longitud minima']" name="phoneMin" />
+          </label>
+          <label class="modal__field">
+            <span>Código de país</span>
+            <input type="text" [(ngModel)]="ruleConfig['Código de país']" name="phoneCountry" placeholder="+51" />
+          </label>
+        </div>
+
+        <div *ngSwitchCase="'Correo'" class="modal__grid">
+          <label class="modal__field">
+            <span>Formato esperado</span>
+            <input type="text" [(ngModel)]="ruleConfig['Formato']" name="emailFormat" placeholder="usuario@dominio.com" />
+          </label>
+          <label class="modal__field">
+            <span>Longitud máxima</span>
+            <input type="number" min="1" [(ngModel)]="ruleConfig['Longitud máxima']" name="emailMax" />
+          </label>
+        </div>
+
+        <div *ngSwitchCase="'Fecha'" class="modal__grid modal__grid--three">
+          <label class="modal__field">
+            <span>Formato</span>
+            <select [(ngModel)]="ruleConfig['Formato']" name="dateFormat">
+              <option value="yyyy-MM-dd">yyyy-MM-dd</option>
+              <option value="dd/MM/yyyy">dd/MM/yyyy</option>
+              <option value="MM-dd-yyyy">MM-dd-yyyy</option>
+            </select>
+          </label>
+          <label class="modal__field">
+            <span>Fecha mínima</span>
+            <input type="text" [(ngModel)]="ruleConfig['Fecha mínima']" name="dateMin" placeholder="1900-01-01" />
+          </label>
+          <label class="modal__field">
+            <span>Fecha máxima</span>
+            <input type="text" [(ngModel)]="ruleConfig['Fecha máxima']" name="dateMax" placeholder="2100-12-31" />
+          </label>
+        </div>
+
+        <div *ngSwitchCase="'Dependencia'" class="modal__stack">
+          <textarea
+            rows="6"
+            [(ngModel)]="advancedConfigText"
+            name="dependencyConfig"
+            (ngModelChange)="onAdvancedConfigChange($event)"
+            placeholder='Ingresa un arreglo JSON con las reglas dependientes'
+          ></textarea>
+          <p class="modal__helper" *ngIf="!advancedConfigError">Ejemplo: [{ "Texto": { "Longitud minima": 5 } }]</p>
+          <p class="modal__helper modal__helper--error" *ngIf="advancedConfigError">{{ advancedConfigError }}</p>
+        </div>
+
+        <div *ngSwitchCase="'Validación conjunta'" class="modal__stack">
+          <div class="tag-input">
+            <input
+              type="text"
+              [(ngModel)]="jointFieldDraft"
+              name="jointDraft"
+              placeholder="Agregar campo relacionado"
+              (keyup.enter)="addJointField()"
+            />
+            <button
+              type="button"
+              class="modal__action-button"
+              (click)="addJointField()"
+              [disabled]="!jointFieldDraft.trim()"
+            >
+              Agregar
+            </button>
+          </div>
+          <p class="modal__helper" *ngIf="jointFieldValues.length === 0">Define al menos un campo relacionado.</p>
+          <ul *ngIf="jointFieldValues.length > 0" class="tag-list">
+            <li *ngFor="let field of jointFieldValues; let i = index; trackBy: trackByIndex">
+              <span>{{ field }}</span>
+              <button type="button" (click)="removeJointField(i)" aria-label="Eliminar campo">
+                <span class="material-symbols-rounded" aria-hidden="true">close</span>
+              </button>
+            </li>
+          </ul>
+        </div>
+
+        <div *ngSwitchCase="'Duplicados'" class="modal__stack">
+          <div class="tag-input">
+            <input
+              type="text"
+              [(ngModel)]="duplicateFieldDraft"
+              name="duplicateDraft"
+              placeholder="Agregar campo a validar"
+              (keyup.enter)="addDuplicateField()"
+            />
+            <button
+              type="button"
+              class="modal__action-button"
+              (click)="addDuplicateField()"
+              [disabled]="!duplicateFieldDraft.trim()"
+            >
+              Agregar
+            </button>
+          </div>
+          <p class="modal__helper" *ngIf="duplicateFieldValues.length === 0">Selecciona los campos que no deben repetirse.</p>
+          <ul *ngIf="duplicateFieldValues.length > 0" class="tag-list">
+            <li *ngFor="let field of duplicateFieldValues; let i = index; trackBy: trackByIndex">
+              <span>{{ field }}</span>
+              <button type="button" (click)="removeDuplicateField(i)" aria-label="Eliminar campo">
+                <span class="material-symbols-rounded" aria-hidden="true">close</span>
+              </button>
+            </li>
+          </ul>
+          <label class="modal__field modal__field--checkbox">
+            <input type="checkbox" [checked]="ignoreEmptyDuplicates" (change)="toggleIgnoreEmpty($event.target.checked)" />
+            <span>Ignorar filas con valores vacíos</span>
+          </label>
+        </div>
+
+        <div *ngSwitchDefault class="modal__helper">
+          Configura los parámetros necesarios para este tipo de dato.
+        </div>
+      </ng-container>
+    </section>
+
+    <section class="modal__section">
+      <div class="modal__section-header">
+        <h4>Ejemplos de datos</h4>
+        <button type="button" class="modal__action-button" (click)="addExampleEntry()">
+          Agregar ejemplo
+        </button>
+      </div>
+      <p class="modal__helper" *ngIf="!hasExampleEntries()">Agrega ejemplos para ayudar a tu equipo a entender la regla.</p>
+      <div class="modal__example-grid" *ngIf="hasExampleEntries()">
+        <div class="modal__example-row" *ngFor="let example of formModel.exampleEntries; let i = index; trackBy: trackByIndex">
+          <label class="modal__field">
+            <span>Campo</span>
+            <input type="text" [(ngModel)]="example.key" name="exampleKey{{ i }}" />
+          </label>
+          <label class="modal__field">
+            <span>Valor</span>
+            <input type="text" [(ngModel)]="example.value" name="exampleValue{{ i }}" />
+          </label>
+          <button type="button" class="modal__icon-button" (click)="removeExampleEntry(i)" aria-label="Eliminar ejemplo">
+            <span class="material-symbols-rounded" aria-hidden="true">delete</span>
+          </button>
+        </div>
+      </div>
+    </section>
   </div>
 
-  <section class="rule-preview">
-    <article class="rule-preview__item">
-      <span class="rule-preview__label">Nombre de la Regla</span>
-      <p class="rule-preview__value">{{ formModel.name }}</p>
-    </article>
-    <article class="rule-preview__item">
-      <span class="rule-preview__label">Tipo de Dato</span>
-      <p class="rule-preview__value">{{ formModel.dataType }}</p>
-    </article>
-    <article class="rule-preview__item">
-      <span class="rule-preview__label">Obligatoria</span>
-      <p class="rule-preview__value">{{ formModel.mandatory ? 'Sí' : 'No' }}</p>
-    </article>
-    <article class="rule-preview__item">
-      <span class="rule-preview__label">Estado</span>
-      <p class="rule-preview__value">{{ statusLabel }}</p>
-    </article>
-    <article class="rule-preview__item">
-      <span class="rule-preview__label">Mensaje de Error</span>
-      <p class="rule-preview__value">{{ formModel.errorMessage }}</p>
-    </article>
-    <article class="rule-preview__item">
-      <span class="rule-preview__label">Plantilla / Tipo de Documento</span>
-      <p class="rule-preview__value">{{ formModel.documentType }}</p>
-    </article>
-    <article class="rule-preview__item">
-      <span class="rule-preview__label">Descripción</span>
-      <p class="rule-preview__value">{{ formModel.description }}</p>
-    </article>
-  </section>
-</div>
-
-<footer mat-dialog-actions class="modal__actions">
-  <button class="modal__button modal__button--ghost" type="button" (click)="close()">
-    Cerrar
-  </button>
-  <button class="modal__button" type="button" (click)="save()" disabled>
-    {{ actionLabel }}
-  </button>
-</footer>
+  <footer mat-dialog-actions class="modal__actions">
+    <button class="modal__button modal__button--ghost" type="button" (click)="close()">
+      Cerrar
+    </button>
+    <button class="modal__button" type="submit" [disabled]="!canSave">
+      {{ actionLabel }}
+    </button>
+  </footer>
+</form>
