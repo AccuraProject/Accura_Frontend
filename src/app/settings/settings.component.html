@@ -97,6 +97,7 @@
             formControlName="email"
             placeholder="juan@example.com"
             autocomplete="email"
+            readonly
             [attr.aria-invalid]="showPersonalInfoError('email') ? 'true' : 'false'"
           />
           <small
@@ -271,7 +272,11 @@
   </article>
 </section>
 
-<section class="settings-users" aria-labelledby="users-management-heading">
+<section
+  class="settings-users"
+  aria-labelledby="users-management-heading"
+  *ngIf="canManageUsers"
+>
   <header class="settings-users__header">
     <div>
       <h2 id="users-management-heading">Gestión de usuarios</h2>

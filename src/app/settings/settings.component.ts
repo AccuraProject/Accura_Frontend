@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   AbstractControl,
@@ -47,7 +47,7 @@ export interface ManagedUser {
   templateUrl: './settings.component.html',
   styleUrl: './settings.component.scss'
 })
-export class SettingsComponent implements OnInit {
+export class SettingsComponent {
   protected readonly personalInfoForm: FormGroup;
   protected readonly changePasswordForm: FormGroup;
 
@@ -56,6 +56,7 @@ export class SettingsComponent implements OnInit {
   protected changePasswordAlert: ChangePasswordAlert | null = null;
   protected changePasswordSubmitting = false;
   protected manageUsersAlert: ManageUsersAlert | null = null;
+  protected canManageUsers = false;
 
   protected users: ManagedUser[] = [];
 
@@ -64,6 +65,7 @@ export class SettingsComponent implements OnInit {
   private currentUser: CurrentUserResponse | null = null;
   private personalInfoSubmitted = false;
   private changePasswordSubmitted = false;
+  private manageUsersLoaded = false;
 
   constructor(
     private readonly formBuilder: FormBuilder,
@@ -97,10 +99,6 @@ export class SettingsComponent implements OnInit {
       .select(selectSessionUser)
       .pipe(takeUntilDestroyed())
       .subscribe((user) => this.handleCurrentUserChange(user));
-  }
-
-  public ngOnInit(): void {
-    this.loadUsers();
   }
 
   protected get filteredUsers(): ManagedUser[] {
@@ -233,6 +231,10 @@ export class SettingsComponent implements OnInit {
   }
 
   protected openManageDialog(user: ManagedUser): void {
+    if (!this.canManageUsers) {
+      return;
+    }
+
     this.dialog
       .open(SettingsManageUserDialogComponent, {
         width: '540px',
@@ -341,6 +343,12 @@ export class SettingsComponent implements OnInit {
   }
 
   private loadUsers(): void {
+    if (!this.canManageUsers) {
+      return;
+    }
+
+    this.manageUsersLoaded = true;
+
     this.userService.getUsersCreatedByMe().subscribe({
       next: (users: UserCreatedByMeResponse[]) => {
         this.users = users.map((user) => this.mapToManagedUser(user));
@@ -352,6 +360,7 @@ export class SettingsComponent implements OnInit {
         } else {
           console.error(message);
         }
+        this.manageUsersLoaded = false;
       }
     });
   }
@@ -463,10 +472,21 @@ export class SettingsComponent implements OnInit {
     this.changePasswordAlert = null;
     this.manageUsersAlert = null;
 
+    this.canManageUsers = this.userCanManageUsers(user);
+
+    if (!this.canManageUsers) {
+      this.users = [];
+      this.manageUsersLoaded = false;
+    }
+
     if (!user) {
       this.personalInfoForm.reset({ fullName: '', email: '', role: '' });
       this.changePasswordForm.reset();
       return;
+    }
+
+    if (this.canManageUsers && !this.manageUsersLoaded) {
+      this.loadUsers();
     }
 
     this.personalInfoForm.patchValue(
@@ -497,8 +517,22 @@ export class SettingsComponent implements OnInit {
         return null;
       }
 
-      return newPassword === confirmPassword ? null : { passwordMismatch: true };
+    return newPassword === confirmPassword ? null : { passwordMismatch: true };
     };
+  }
+
+  private userCanManageUsers(user: CurrentUserResponse | null): boolean {
+    if (!user?.role) {
+      return false;
+    }
+
+    const alias = user.role.alias?.toLowerCase();
+    if (alias) {
+      return alias === 'admin';
+    }
+
+    const name = user.role.name?.toLowerCase();
+    return name === 'administrador';
   }
 }
 
