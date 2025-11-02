@@ -1,147 +1,215 @@
-<section class="page-header">
-  <div>
-    <p class="page-header__pretitle">Gestión de Plantillas</p>
-    <h1 class="page-header__title">Administra las plantillas de carga de datos</h1>
-    <p class="page-header__subtitle">
-      Centraliza la creación y mantenimiento de plantillas para asegurar consistencia en tus procesos de carga.
-    </p>
-  </div>
-  <button class="page-header__cta" type="button" (click)="openCreateDialog()">
-    <span class="material-symbols-rounded" aria-hidden="true">add</span>
-    Crear Plantilla
-  </button>
-</section>
-
-<section class="templates-summary">
-  <article class="summary-card">
-    <header>
-      <p>Total de Plantillas</p>
-      <span class="material-symbols-rounded" aria-hidden="true">auto_awesome</span>
-    </header>
-    <strong>{{ totalTemplates }}</strong>
-    <span>Registradas en la plataforma</span>
-  </article>
-  <article class="summary-card summary-card--accent">
-    <header>
-      <p>Plantillas Publicadas</p>
-      <span class="material-symbols-rounded" aria-hidden="true">task_alt</span>
-    </header>
-    <strong>{{ publishedTemplates }}</strong>
-    <span>Listas para su uso</span>
-  </article>
-  <article class="summary-card">
-    <header>
-      <p>En Borrador</p>
-      <span class="material-symbols-rounded" aria-hidden="true">draw</span>
-    </header>
-    <strong>{{ draftTemplates }}</strong>
-    <span>En revisión o edición</span>
-  </article>
-  <article class="summary-card">
-    <header>
-      <p>Inactivas</p>
-      <span class="material-symbols-rounded" aria-hidden="true">pause_circle</span>
-    </header>
-    <strong>{{ inactiveTemplates }}</strong>
-    <span>Disponibles para reactivar</span>
-  </article>
-</section>
-
-<section class="templates-panel">
-  <header class="templates-panel__header">
+<ng-container *ngIf="isAdmin$ | async; else clientTemplates">
+  <section class="page-header">
     <div>
-      <h2>Plantillas Disponibles</h2>
-      <p>Gestiona las plantillas existentes, visualiza su detalle o crea nuevas estructuras en minutos.</p>
+      <p class="page-header__pretitle">Gestión de Plantillas</p>
+      <h1 class="page-header__title">Administra las plantillas de carga de datos</h1>
+      <p class="page-header__subtitle">
+        Centraliza la creación y mantenimiento de plantillas para asegurar consistencia en tus procesos de carga.
+      </p>
     </div>
-    <div class="templates-panel__actions">
-      <label class="templates-panel__search">
+    <button class="page-header__cta" type="button" (click)="openCreateDialog()">
+      <span class="material-symbols-rounded" aria-hidden="true">add</span>
+      Crear Plantilla
+    </button>
+  </section>
+
+  <section class="templates-summary">
+    <article class="summary-card">
+      <header>
+        <p>Total de Plantillas</p>
+        <span class="material-symbols-rounded" aria-hidden="true">auto_awesome</span>
+      </header>
+      <strong>{{ totalTemplates }}</strong>
+      <span>Registradas en la plataforma</span>
+    </article>
+    <article class="summary-card summary-card--accent">
+      <header>
+        <p>Plantillas Publicadas</p>
+        <span class="material-symbols-rounded" aria-hidden="true">task_alt</span>
+      </header>
+      <strong>{{ publishedTemplates }}</strong>
+      <span>Listas para su uso</span>
+    </article>
+    <article class="summary-card">
+      <header>
+        <p>En Borrador</p>
+        <span class="material-symbols-rounded" aria-hidden="true">draw</span>
+      </header>
+      <strong>{{ draftTemplates }}</strong>
+      <span>En revisión o edición</span>
+    </article>
+    <article class="summary-card">
+      <header>
+        <p>Inactivas</p>
+        <span class="material-symbols-rounded" aria-hidden="true">pause_circle</span>
+      </header>
+      <strong>{{ inactiveTemplates }}</strong>
+      <span>Disponibles para reactivar</span>
+    </article>
+  </section>
+
+  <section class="templates-panel">
+    <header class="templates-panel__header">
+      <div>
+        <h2>Plantillas Disponibles</h2>
+        <p>Gestiona las plantillas existentes, visualiza su detalle o crea nuevas estructuras en minutos.</p>
+      </div>
+      <div class="templates-panel__actions">
+        <label class="templates-panel__search">
+          <span class="material-symbols-rounded" aria-hidden="true">search</span>
+          <input
+            type="search"
+            name="search"
+            placeholder="Buscar por nombre, versión o descripción..."
+            [(ngModel)]="searchTerm"
+          />
+        </label>
+        <label class="templates-panel__filter">
+          <span>Estado</span>
+          <select [(ngModel)]="statusFilter" name="status">
+            <option *ngFor="let status of statusOptions" [ngValue]="status">{{ status }}</option>
+          </select>
+        </label>
+      </div>
+    </header>
+
+    <div class="templates-table__wrapper" *ngIf="filteredTemplates as items">
+      <table class="templates-table">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Versión</th>
+            <th>Descripción</th>
+            <th>Última Actualización</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let template of items; trackBy: trackByTemplateId">
+            <td>
+              <div class="templates-table__name">
+                <p class="templates-table__title">{{ template.name }}</p>
+                <p class="templates-table__meta">{{ template.createdAt | date: 'dd/MM/yyyy' }}</p>
+              </div>
+            </td>
+            <td>
+              <span class="templates-table__version">{{ template.version }}</span>
+            </td>
+            <td>
+              <span class="templates-table__description">{{ template.description }}</span>
+            </td>
+            <td>
+              <span class="templates-table__date">{{ template.lastUpdated | date: 'dd/MM/yyyy' }}</span>
+            </td>
+            <td>
+              <span class="badge" [ngClass]="statusClass(template.status)">{{ template.status }}</span>
+            </td>
+            <td class="templates-table__actions">
+              <button
+                class="icon-button"
+                type="button"
+                aria-label="Abrir acciones"
+                [matMenuTriggerFor]="actionsMenu"
+              >
+                <span class="material-symbols-rounded" aria-hidden="true">more_vert</span>
+              </button>
+              <mat-menu #actionsMenu="matMenu">
+                <button mat-menu-item type="button" (click)="openDetailDialog(template)">
+                  <div class="menu-item-text">
+                    <span class="material-symbols-rounded" aria-hidden="true">visibility</span>
+                    <span>Ver Detalle</span>
+                  </div>
+                </button>
+                <button mat-menu-item type="button" (click)="openEditDialog(template)">
+                  <div class="menu-item-text">
+                    <span class="material-symbols-rounded" aria-hidden="true">edit</span>
+                    <span>Editar</span>
+                  </div>
+                </button>
+                <button mat-menu-item type="button" (click)="openDeleteDialog(template)">
+                  <div class="menu-item-text text-danger">
+                    <span class="material-symbols-rounded" aria-hidden="true">delete</span>
+                    <span>Eliminar</span>
+                  </div>
+                </button>
+              </mat-menu>
+            </td>
+          </tr>
+          <tr *ngIf="items.length === 0">
+            <td colspan="6" class="templates-table__empty">
+              <span class="material-symbols-rounded" aria-hidden="true">search_off</span>
+              <p>No se encontraron plantillas para los criterios seleccionados.</p>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</ng-container>
+
+<ng-template #clientTemplates>
+  <section class="client-templates">
+    <header class="client-templates__header">
+      <div>
+        <p class="client-templates__pretitle">Plantillas Disponibles</p>
+        <h1>Explora las plantillas a las que tienes acceso</h1>
+        <p>Visualiza rápidamente la información clave de cada plantilla asignada a tu usuario.</p>
+      </div>
+      <label class="client-templates__search">
         <span class="material-symbols-rounded" aria-hidden="true">search</span>
         <input
           type="search"
           name="search"
-          placeholder="Buscar por nombre, versión o descripción..."
+          placeholder="Buscar plantillas..."
           [(ngModel)]="searchTerm"
         />
       </label>
-      <label class="templates-panel__filter">
-        <span>Estado</span>
-        <select [(ngModel)]="statusFilter" name="status">
-          <option *ngFor="let status of statusOptions" [ngValue]="status">{{ status }}</option>
-        </select>
-      </label>
-    </div>
-  </header>
+    </header>
 
-  <div class="templates-table__wrapper" *ngIf="filteredTemplates as items">
-    <table class="templates-table">
-      <thead>
-        <tr>
-          <th>Nombre</th>
-          <th>Versión</th>
-          <th>Descripción</th>
-          <th>Última Actualización</th>
-          <th>Estado</th>
-          <th>Acciones</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let template of items; trackBy: trackByTemplateId">
-          <td>
-            <div class="templates-table__name">
-              <p class="templates-table__title">{{ template.name }}</p>
-              <p class="templates-table__meta">{{ template.createdAt | date: 'dd/MM/yyyy' }}</p>
-            </div>
-          </td>
-          <td>
-            <span class="templates-table__version">{{ template.version }}</span>
-          </td>
-          <td>
-            <span class="templates-table__description">{{ template.description }}</span>
-          </td>
-          <td>
-            <span class="templates-table__date">{{ template.lastUpdated | date: 'dd/MM/yyyy' }}</span>
-          </td>
-          <td>
-            <span class="badge" [ngClass]="statusClass(template.status)">{{ template.status }}</span>
-          </td>
-          <td class="templates-table__actions">
-            <button
-              class="icon-button"
-              type="button"
-              aria-label="Abrir acciones"
-              [matMenuTriggerFor]="actionsMenu"
-            >
-              <span class="material-symbols-rounded" aria-hidden="true">more_vert</span>
-            </button>
-            <mat-menu #actionsMenu="matMenu">
-              <button mat-menu-item type="button" (click)="openDetailDialog(template)">
-                <div class="menu-item-text">
-                  <span class="material-symbols-rounded" aria-hidden="true">visibility</span>
-                  <span>Ver Detalle</span>
-                </div>
-              </button>
-              <button mat-menu-item type="button" (click)="openEditDialog(template)">
-                <div class="menu-item-text">
-                  <span class="material-symbols-rounded" aria-hidden="true">edit</span>
-                  <span>Editar</span>
-                </div>
-              </button>
-              <button mat-menu-item type="button" (click)="openDeleteDialog(template)">
-                <div class="menu-item-text text-danger">
-                  <span class="material-symbols-rounded" aria-hidden="true">delete</span>
-                  <span>Eliminar</span>
-                </div>
-              </button>
-            </mat-menu>
-          </td>
-        </tr>
-        <tr *ngIf="items.length === 0">
-          <td colspan="6" class="templates-table__empty">
-            <span class="material-symbols-rounded" aria-hidden="true">search_off</span>
-            <p>No se encontraron plantillas para los criterios seleccionados.</p>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-</section>
+    <section class="client-templates__grid" *ngIf="filteredAssignedTemplates as templates">
+      <article
+        class="client-template-card"
+        *ngFor="let template of templates; trackBy: trackByAssignedTemplateId"
+      >
+        <header>
+          <span class="client-template-card__version">{{ template.version }}</span>
+          <span class="badge" [ngClass]="template.statusClass">{{ template.status }}</span>
+        </header>
+        <h2>{{ template.name }}</h2>
+        <p class="client-template-card__description">{{ template.description }}</p>
+
+        <dl class="client-template-card__meta">
+          <div>
+            <dt>Última actualización</dt>
+            <dd>{{ template.lastUpdated | date: 'dd/MM/yyyy' }}</dd>
+          </div>
+          <div>
+            <dt>Columnas</dt>
+            <dd>{{ template.columnsCount }}</dd>
+          </div>
+          <div>
+            <dt>Responsable</dt>
+            <dd>{{ template.owner }}</dd>
+          </div>
+        </dl>
+
+        <ul class="client-template-card__tags" *ngIf="template.tags?.length">
+          <li *ngFor="let tag of template.tags">{{ tag }}</li>
+        </ul>
+
+        <footer>
+          <button type="button" (click)="openClientDetailDialog(template)">
+            <span class="material-symbols-rounded" aria-hidden="true">description</span>
+            Ver Especificaciones
+          </button>
+        </footer>
+      </article>
+
+      <div *ngIf="templates.length === 0" class="client-templates__empty">
+        <span class="material-symbols-rounded" aria-hidden="true">search_off</span>
+        <p>No tienes plantillas asignadas con los criterios de búsqueda.</p>
+      </div>
+    </section>
+  </section>
+</ng-template>
