@@ -13,6 +13,7 @@ import { authGuard } from './core/guards/auth.guard';
 import { PasswordUpdateComponent } from './password-update/password-update.component';
 import { passwordUpdateGuard } from './core/guards/password-update.guard';
 import { loginRedirectGuard } from './core/guards/login-redirect.guard';
+import { ForgotPasswordComponent } from './forgot-password/forgot-password.component';
 
 export const routes: Routes = [
   {
@@ -37,6 +38,11 @@ export const routes: Routes = [
   {
     path: 'login',
     component: LoginComponent,
+    canActivate: [loginRedirectGuard],
+  },
+  {
+    path: 'recuperar-contrasena',
+    component: ForgotPasswordComponent,
     canActivate: [loginRedirectGuard],
   },
   {

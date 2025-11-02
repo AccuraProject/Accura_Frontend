@@ -31,6 +31,13 @@ export class AuthService {
     return this.http.post<AuthResponse>(`${this.baseUrl}/auth/token`, formData);
   }
 
+  requestPasswordReset(email: string): Observable<{ detail?: string; message?: string }> {
+    return this.http.post<{ detail?: string; message?: string }>(
+      `${this.baseUrl}/auth/forgot-password`,
+      { email }
+    );
+  }
+
   getErrorMessage(error: unknown): string {
     if (error instanceof HttpErrorResponse) {
       if (typeof error.error === 'string') {
