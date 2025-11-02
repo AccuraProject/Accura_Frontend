@@ -133,9 +133,12 @@ export class SettingsComponent {
     }
 
     const payload: UpdateUserPayload = {
-      name: this.personalInfoForm.get('fullName')?.value?.trim() ?? '',
-      email: this.personalInfoForm.get('email')?.value?.trim() ?? ''
+      name: this.personalInfoForm.get('fullName')?.value?.trim() ?? ''
     };
+
+    if (!this.userIsClient(this.currentUser)) {
+      payload.email = this.personalInfoForm.get('email')?.value?.trim() ?? '';
+    }
 
     this.personalInfoSubmitting = true;
     this.personalInfoAlert = null;
@@ -533,6 +536,16 @@ export class SettingsComponent {
 
     const name = user.role.name?.toLowerCase();
     return name === 'administrador';
+  }
+
+  private userIsClient(user: CurrentUserResponse | null): boolean {
+    const alias = user?.role?.alias?.toLowerCase();
+    if (alias) {
+      return alias === 'user';
+    }
+
+    const name = user?.role?.name?.toLowerCase();
+    return name === 'cliente' || name === 'usuario';
   }
 }
 
