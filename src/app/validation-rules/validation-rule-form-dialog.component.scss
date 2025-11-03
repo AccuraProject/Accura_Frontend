@@ -1,12 +1,14 @@
 :host {
   display: block;
-  max-width: 760px;
+  width: min(80vw, 1100px);
+  max-width: none;
 }
 
 .modal__form {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  height: 100%;
 }
 
 .modal__header {
@@ -32,10 +34,26 @@
 }
 
 mat-dialog-content {
+  max-height: calc(80vh - 180px);
+  padding-right: 0.75rem;
+  overflow-y: auto;
+}
+
+.modal__layout {
   display: grid;
   gap: 1.75rem;
-  max-height: 65vh;
-  padding-right: 0.5rem;
+}
+
+.modal__column {
+  display: grid;
+  gap: 1.75rem;
+  align-content: start;
+}
+
+@media (min-width: 1200px) {
+  .modal__layout {
+    grid-template-columns: minmax(360px, 0.95fr) minmax(420px, 1.1fr);
+  }
 }
 
 .modal__section {
@@ -87,12 +105,21 @@ mat-dialog-content {
 .modal__ai-loading {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1rem;
+  gap: 0.75rem;
+  padding: 0.85rem 1.1rem;
   border-radius: 12px;
   background: rgba(99, 102, 241, 0.12);
   color: #4338ca;
-  font-weight: 500;
+  font-weight: 600;
+}
+
+.modal__ai-spinner {
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 999px;
+  border: 3px solid rgba(99, 102, 241, 0.24);
+  border-top-color: #4f46e5;
+  animation: spin 0.9s linear infinite;
 }
 
 .modal__ai-preview {
@@ -345,12 +372,13 @@ mat-dialog-content {
 .modal__field select,
 .modal__field textarea {
   border-radius: 12px;
-  border: 1px solid rgba(148, 163, 184, 0.35);
-  padding: 0.65rem 0.85rem;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  padding: 0.7rem 0.9rem;
   font-size: 0.95rem;
-  background: #fff;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(241, 245, 249, 0.92));
   color: #0f172a;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
 
 .modal__field textarea {
@@ -364,6 +392,12 @@ mat-dialog-content {
   outline: none;
   border-color: rgba(99, 102, 241, 0.8);
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18);
+  transform: translateY(-1px);
+}
+
+.modal__field input::placeholder,
+.modal__field textarea::placeholder {
+  color: rgba(100, 116, 139, 0.8);
 }
 
 .modal__field--checkbox {
@@ -374,6 +408,10 @@ mat-dialog-content {
 
 .modal__field--checkbox span {
   font-weight: 600;
+}
+
+.modal__field--stacked {
+  gap: 0.5rem;
 }
 
 .tag-input {
@@ -455,10 +493,13 @@ mat-dialog-content {
   gap: 0.75rem;
 }
 
+.modal__example-grid--fixed {
+  gap: 1.25rem;
+}
+
 .modal__example-row {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)) auto;
-  align-items: center;
+  grid-template-columns: 1fr;
   gap: 0.75rem;
 }
 
@@ -485,6 +526,11 @@ mat-dialog-content {
   gap: 0.75rem;
   padding-top: 1rem;
   border-top: 1px solid rgba(226, 232, 240, 0.8);
+}
+
+.modal__section--examples {
+  align-content: start;
+  gap: 1.25rem;
 }
 
 .modal__button {
@@ -518,4 +564,10 @@ mat-dialog-content {
 
 .modal__button--ghost:hover:not(:disabled) {
   background: rgba(148, 163, 184, 0.2);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
