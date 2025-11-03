@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
@@ -39,7 +39,7 @@ interface ValidationRule {
   dataType: string;
   mandatory: boolean;
   errorMessage: string;
-  status: 'Activa' | 'Inactiva' | 'Borrador';
+  status: 'Activa' | 'Inactiva';
   documentType: string;
   description: string;
   header: string[];
@@ -56,10 +56,12 @@ interface ValidationRule {
   templateUrl: './validation-rules.component.html',
   styleUrl: './validation-rules.component.scss'
 })
-export class ValidationRulesComponent {
+export class ValidationRulesComponent implements OnInit {
   protected searchTerm = '';
 
   protected rules: ValidationRule[] = [];
+  protected rulesLoading = false;
+  protected ruleLoadError: string | null = null;
 
   protected aiRuleOptions: AiRuleOption[] = [];
   protected selectedAiRuleId: string | null = null;
@@ -78,82 +80,35 @@ export class ValidationRulesComponent {
     private readonly dialog: MatDialog,
     private readonly http: HttpClient,
     private readonly store: Store
-  ) {
-    const initialPayloads: Array<{ payload: RulePayload; status: ValidationRule['status']; source: 'manual' | 'ia' }> = [
-      {
-        payload: {
-          'Nombre de la regla': 'Validación de Precio',
-          'Tipo de dato': 'Número',
-          'Campo obligatorio': true,
-          Header: ['Catálogo de Productos'],
-          'Mensaje de error': 'El precio debe estar entre 0 y 10,000 con 2 decimales',
-          'Descripción':
-            'Verifica que el precio ingresado se encuentre dentro del rango permitido y con el número de decimales adecuado.',
-          'Ejemplo': {},
-          'Regla': {
-            'Valor mínimo': 0,
-            'Valor máximo': 10000,
-            'Número de decimales': 2
-          }
-        },
-        status: 'Activa',
-        source: 'manual'
-      },
-      {
-        payload: {
-          'Nombre de la regla': 'Validación de DNI',
-          'Tipo de dato': 'Texto',
-          'Campo obligatorio': true,
-          Header: ['Documentos de Identidad'],
-          'Mensaje de error': 'El DNI debe tener exactamente 8 dígitos',
-          'Descripción': 'Controla que el número de documento tenga la cantidad exacta de dígitos requerida.',
-          'Ejemplo': {},
-          'Regla': {
-            'Longitud minima': 8,
-            'Longitud maxima': 8
-          }
-        },
-        status: 'Activa',
-        source: 'manual'
-      },
-      {
-        payload: {
-          'Nombre de la regla': 'Tipo de Documento',
-          'Tipo de dato': 'Lista',
-          'Campo obligatorio': false,
-          Header: ['Documentos de Identidad'],
-          'Mensaje de error': 'Selecciona un tipo de documento válido',
-          'Descripción': 'Limita la selección del tipo de documento a los valores permitidos por el área legal.',
-          'Ejemplo': {},
-          'Regla': {
-            Lista: ['DNI', 'Pasaporte', 'Carnet de Extranjería']
-          }
-        },
-        status: 'Inactiva',
-        source: 'manual'
-      },
-      {
-        payload: {
-          'Nombre de la regla': 'Dirección Completa',
-          'Tipo de dato': 'Texto',
-          'Campo obligatorio': true,
-          Header: ['Clientes'],
-          'Mensaje de error': 'La dirección debe contener al menos 12 caracteres',
-          'Descripción': 'Verifica que la dirección incluya el detalle mínimo requerido para despachos.',
-          'Ejemplo': {},
-          'Regla': {
-            'Longitud minima': 12,
-            'Longitud maxima': 255
-          }
-        },
-        status: 'Borrador',
-        source: 'manual'
-      }
-    ];
+  ) {}
 
-    this.rules = initialPayloads.map(({ payload, status, source }) =>
-      this.buildRuleFromPayload(payload, status, source)
-    );
+  async ngOnInit(): Promise<void> {
+    await this.loadRules();
+  }
+
+  private async loadRules(): Promise<void> {
+    if (this.rulesLoading) {
+      return;
+    }
+
+    this.rulesLoading = true;
+    this.ruleLoadError = null;
+
+    try {
+      const session = await this.getSessionSnapshot();
+      const headers = this.buildAuthHeaders(session);
+      const data = await firstValueFrom(
+        this.http.get<unknown>(`${this.baseUrl}/rules`, { headers })
+      );
+
+      this.rules = this.parseRuleListResponse(data);
+    } catch (error) {
+      console.error('[ValidationRules] Error al obtener las reglas:', error);
+      this.ruleLoadError = this.getErrorMessage(error);
+      this.rules = [];
+    } finally {
+      this.rulesLoading = false;
+    }
   }
 
   protected get filteredRules(): ValidationRule[] {
@@ -196,6 +151,113 @@ export class ValidationRulesComponent {
     return this.aiRuleOptions[0];
   }
 
+  private parseRuleListResponse(data: unknown): ValidationRule[] {
+    if (Array.isArray(data)) {
+      return data
+        .map((item) => this.parseRuleItem(item))
+        .filter((rule): rule is ValidationRule => rule !== null);
+    }
+
+    if (data && typeof data === 'object') {
+      const record = data as Record<string, unknown>;
+      const collectionKeys = ['items', 'rules', 'data'];
+
+      for (const key of collectionKeys) {
+        const collection = record[key];
+        if (Array.isArray(collection)) {
+          return collection
+            .map((item) => this.parseRuleItem(item))
+            .filter((rule): rule is ValidationRule => rule !== null);
+        }
+      }
+
+      const single = this.parseRuleItem(record);
+      return single ? [single] : [];
+    }
+
+    return [];
+  }
+
+  private parseRuleItem(entry: unknown): ValidationRule | null {
+    if (!entry || typeof entry !== 'object') {
+      return null;
+    }
+
+    const record = entry as Record<string, unknown>;
+    const payloadCandidate = record.payload ?? record['rule'] ?? entry;
+    const payload = this.tryCoercePayload(payloadCandidate);
+
+    if (!payload) {
+      return null;
+    }
+
+    const status = this.toStatus(record.status);
+    const source = this.toSource(record.source);
+    const id = this.sanitizeString(record.id) ?? this.generateId();
+
+    return this.buildRuleFromPayload(payload, status, source, id);
+  }
+
+  private tryCoercePayload(value: unknown): RulePayload | null {
+    if (!value || typeof value !== 'object') {
+      return null;
+    }
+
+    const record = value as Record<string, unknown>;
+    const name = this.sanitizeString(record['Nombre de la regla']);
+    const dataType = this.sanitizeString(record['Tipo de dato']);
+    const errorMessage = this.sanitizeString(record['Mensaje de error']);
+    const description = this.sanitizeString(record['Descripción']) ?? '';
+
+    if (!name || !dataType || !errorMessage) {
+      return null;
+    }
+
+    const header = Array.isArray(record.Header)
+      ? (record.Header as unknown[])
+          .map((item) => this.sanitizeString(item))
+          .filter((item): item is string => Boolean(item))
+      : [];
+
+    if (header.length === 0) {
+      header.push('Plantilla Global');
+    }
+
+    const example =
+      record['Ejemplo'] && typeof record['Ejemplo'] === 'object' && !Array.isArray(record['Ejemplo'])
+        ? (record['Ejemplo'] as RuleExample)
+        : {};
+
+    const ruleConfig =
+      record['Regla'] && typeof record['Regla'] === 'object' && !Array.isArray(record['Regla'])
+        ? (record['Regla'] as Record<string, unknown>)
+        : {};
+
+    const mandatorySource = record['Campo obligatorio'];
+    const mandatory = typeof mandatorySource === 'boolean' ? mandatorySource : this.toBoolean(mandatorySource);
+
+    return {
+      'Nombre de la regla': name,
+      'Tipo de dato': dataType,
+      'Campo obligatorio': mandatory,
+      Header: header,
+      'Mensaje de error': errorMessage,
+      'Descripción': description,
+      'Ejemplo': example,
+      'Regla': ruleConfig
+    };
+  }
+
+  private toStatus(value: unknown): ValidationRule['status'] {
+    const text = this.sanitizeString(value)?.toLowerCase();
+    return text === 'inactiva' || text === 'borrador' ? 'Inactiva' : 'Activa';
+  }
+
+  private toSource(value: unknown): 'manual' | 'ia' {
+    const text = this.sanitizeString(value)?.toLowerCase();
+    return text === 'ia' ? 'ia' : 'manual';
+  }
+
   protected openCreateDialog(): void {
     const dialogRef = this.dialog.open<
       ValidationRuleFormDialogComponent,
@@ -203,6 +265,10 @@ export class ValidationRulesComponent {
       ValidationRuleFormDialogResult
     >(ValidationRuleFormDialogComponent, {
       disableClose: true,
+      width: '80vw',
+      maxWidth: '80vw',
+      maxHeight: '80vh',
+      panelClass: 'validation-rule-dialog',
       data: {
         mode: 'create'
       }
@@ -224,6 +290,10 @@ export class ValidationRulesComponent {
       ValidationRuleFormDialogResult
     >(ValidationRuleFormDialogComponent, {
       disableClose: true,
+      width: '80vw',
+      maxWidth: '80vw',
+      maxHeight: '80vh',
+      panelClass: 'validation-rule-dialog',
       data: {
         mode: 'edit',
         rule: this.toDialogResult(rule)
@@ -274,14 +344,7 @@ export class ValidationRulesComponent {
   }
 
   protected statusClass(status: ValidationRule['status']): string {
-    switch (status) {
-      case 'Activa':
-        return 'badge--active';
-      case 'Borrador':
-        return 'badge--draft';
-      default:
-        return 'badge--inactive';
-    }
+    return status === 'Activa' ? 'badge--active' : 'badge--inactive';
   }
 
   protected openAssistantPanel(): void {
@@ -334,9 +397,9 @@ export class ValidationRulesComponent {
   protected applyAiRule(option: AiRuleOption): void {
     console.log('[ValidationRules] Payload listo para enviar (IA):', option.payload);
     const payloadClone = JSON.parse(JSON.stringify(option.payload)) as RulePayload;
-    const rule = this.buildRuleFromPayload(payloadClone, 'Borrador', 'ia');
+    const rule = this.buildRuleFromPayload(payloadClone, 'Inactiva', 'ia');
     this.rules = [rule, ...this.rules];
-    this.persistRule(payloadClone, 'Borrador', 'ia');
+    this.persistRule(payloadClone, 'Inactiva', 'ia');
   }
 
   protected describeRuleConfig(payload: RulePayload): string[] {
@@ -636,12 +699,42 @@ export class ValidationRulesComponent {
       documentType: rule.documentType,
       description: rule.description,
       secondaryHeaders: rule.header.slice(1),
-      exampleEntries: this.getExampleEntries(rule.payload).map(({ key, value }) => ({
-        key,
-        value
-      })),
+      exampleEntries: this.buildDialogExamples(rule.payload),
       ruleConfig: JSON.parse(JSON.stringify(rule.ruleConfig)) as Record<string, unknown>
     };
+  }
+
+  private buildDialogExamples(payload: RulePayload): Array<{ key: string; value: string }> {
+    const defaults: Array<{ key: string; value: string }> = [
+      { key: 'Ejemplo válido', value: '' },
+      { key: 'Ejemplo inválido', value: '' }
+    ];
+
+    const entries = this.getExampleEntries(payload)
+      .map(({ key, value }) => ({ key: key.trim(), value: value.trim() }))
+      .filter((entry) => entry.value.length > 0);
+
+    const normalizeKey = (text: string): string =>
+      text
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase();
+
+    const validEntry = entries.find((entry) => normalizeKey(entry.key).includes('valido'));
+    const invalidEntry = entries.find((entry) => normalizeKey(entry.key).includes('invalido'));
+
+    const fallback = entries.filter((entry) => entry !== validEntry && entry !== invalidEntry);
+
+    return [
+      {
+        key: defaults[0].key,
+        value: validEntry?.value ?? entries[0]?.value ?? ''
+      },
+      {
+        key: defaults[1].key,
+        value: invalidEntry?.value ?? fallback[0]?.value ?? entries[1]?.value ?? ''
+      }
+    ];
   }
 
   private getErrorMessage(error: unknown): string {

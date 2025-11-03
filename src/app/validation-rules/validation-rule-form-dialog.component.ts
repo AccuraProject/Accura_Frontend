@@ -23,7 +23,7 @@ export interface ValidationRuleFormDialogResult {
   dataType: string;
   mandatory: boolean;
   errorMessage: string;
-  status: 'Activa' | 'Inactiva' | 'Borrador';
+  status: 'Activa' | 'Inactiva';
   documentType: string;
   description: string;
   secondaryHeaders: string[];
@@ -69,8 +69,7 @@ export class ValidationRuleFormDialogComponent {
   ];
   protected readonly statusOptions: Array<ValidationRuleFormDialogResult['status']> = [
     'Activa',
-    'Inactiva',
-    'Borrador'
+    'Inactiva'
   ];
   protected readonly decimalOptions: number[] = [0, 1, 2, 3, 4, 5, 6];
 
@@ -124,9 +123,12 @@ export class ValidationRuleFormDialogComponent {
       .map((item) => item.trim())
       .filter((item, index, array) => item.length > 0 && array.indexOf(item) === index && item !== documentType);
 
-    const exampleEntries = this.formModel.exampleEntries
-      .map((entry) => ({ key: entry.key.trim(), value: entry.value.trim() }))
-      .filter((entry) => entry.key.length > 0 || entry.value.length > 0);
+    const exampleEntries = this.formModel.exampleEntries.map((entry) => ({
+      key: entry.key.trim(),
+      value: entry.value.trim()
+    }));
+
+    this.formModel.exampleEntries = exampleEntries.map((entry) => ({ ...entry }));
 
     const result: ValidationRuleFormDialogResult = {
       ...this.formModel,
@@ -148,6 +150,10 @@ export class ValidationRuleFormDialogComponent {
     }
 
     if (!this.formModel.documentType.trim()) {
+      return false;
+    }
+
+    if (!this.formModel.exampleEntries.every((entry) => entry.value.trim().length > 0)) {
       return false;
     }
 
@@ -290,18 +296,6 @@ export class ValidationRuleFormDialogComponent {
 
   protected get ignoreEmptyDuplicates(): boolean {
     return Boolean(this.formModel.ruleConfig['Ignorar vacios']);
-  }
-
-  protected addExampleEntry(): void {
-    this.formModel.exampleEntries.push({ key: '', value: '' });
-  }
-
-  protected removeExampleEntry(index: number): void {
-    this.formModel.exampleEntries.splice(index, 1);
-  }
-
-  protected hasExampleEntries(): boolean {
-    return this.formModel.exampleEntries.length > 0;
   }
 
   protected get ruleConfig(): Record<string, any> {
@@ -456,11 +450,12 @@ export class ValidationRuleFormDialogComponent {
     const configSource = payload['Regla'] ?? generateDefaultRuleConfig(dataType);
     this.formModel.ruleConfig = JSON.parse(JSON.stringify(configSource)) as Record<string, unknown>;
 
-    const exampleEntries = getExampleEntriesUtil(payload)
-      .map(({ key, value }) => ({ key: key.trim(), value: value.trim() }))
-      .filter((entry) => entry.key.length > 0 || entry.value.length > 0);
+    const exampleEntries = getExampleEntriesUtil(payload).map(({ key, value }) => ({
+      key: key.trim(),
+      value: value.trim()
+    }));
 
-    this.formModel.exampleEntries = exampleEntries;
+    this.formModel.exampleEntries = this.normalizeExampleEntries(exampleEntries);
 
     this.secondaryHeaderDraft = '';
     this.listItemDraft = '';
@@ -531,11 +526,11 @@ export class ValidationRuleFormDialogComponent {
       dataType: 'Texto',
       mandatory: false,
       errorMessage: 'Define el mensaje de error que verán tus usuarios.',
-      status: 'Borrador',
+      status: 'Activa',
       documentType: 'Plantilla Global',
       description: 'Describe la regla para que otros usuarios entiendan su propósito.',
       secondaryHeaders: [],
-      exampleEntries: [],
+      exampleEntries: this.createDefaultExamples(),
       ruleConfig: this.createDefaultRuleConfig('Texto')
     };
   }
@@ -544,7 +539,7 @@ export class ValidationRuleFormDialogComponent {
     return {
       ...rule,
       secondaryHeaders: [...(rule.secondaryHeaders ?? [])],
-      exampleEntries: (rule.exampleEntries ?? []).map((entry) => ({ ...entry })),
+      exampleEntries: this.normalizeExampleEntries(rule.exampleEntries ?? []),
       ruleConfig: JSON.parse(JSON.stringify(rule.ruleConfig ?? {})) as Record<string, unknown>
     };
   }
@@ -554,9 +549,7 @@ export class ValidationRuleFormDialogComponent {
       this.formModel.secondaryHeaders = [];
     }
 
-    if (!Array.isArray(this.formModel.exampleEntries)) {
-      this.formModel.exampleEntries = [];
-    }
+    this.ensureExampleEntries();
   }
 
   private updateAdvancedConfigText(): void {
@@ -580,5 +573,53 @@ export class ValidationRuleFormDialogComponent {
 
   private createDefaultRuleConfig(dataType: string): Record<string, unknown> {
     return generateDefaultRuleConfig(dataType);
+  }
+
+  private ensureExampleEntries(): void {
+    const entries = Array.isArray(this.formModel.exampleEntries)
+      ? this.formModel.exampleEntries
+      : [];
+
+    this.formModel.exampleEntries = this.normalizeExampleEntries(entries);
+  }
+
+  private normalizeExampleEntries(
+    entries: Array<{ key: unknown; value: unknown }>
+  ): Array<{ key: string; value: string }> {
+    const defaults = this.createDefaultExamples();
+    const sanitized = entries
+      .map((entry) => ({
+        key: typeof entry?.key === 'string' ? entry.key.trim() : '',
+        value: typeof entry?.value === 'string' ? entry.value.trim() : ''
+      }))
+      .filter((entry) => entry.key.length > 0 || entry.value.length > 0);
+
+    const normalizeKey = (text: string): string =>
+      text
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase();
+
+    const validEntry = sanitized.find((entry) => normalizeKey(entry.key).includes('valido'));
+    const invalidEntry = sanitized.find((entry) => normalizeKey(entry.key).includes('invalido'));
+    const fallback = sanitized.filter((entry) => entry !== validEntry && entry !== invalidEntry);
+
+    return [
+      {
+        key: defaults[0].key,
+        value: validEntry?.value ?? sanitized[0]?.value ?? ''
+      },
+      {
+        key: defaults[1].key,
+        value: invalidEntry?.value ?? fallback[0]?.value ?? sanitized[1]?.value ?? ''
+      }
+    ];
+  }
+
+  private createDefaultExamples(): Array<{ key: string; value: string }> {
+    return [
+      { key: 'Ejemplo válido', value: '' },
+      { key: 'Ejemplo inválido', value: '' }
+    ];
   }
 }
