@@ -66,6 +66,7 @@ export class ValidationRulesComponent {
   protected aiIsLoading = false;
   protected aiError: string | null = null;
   protected hasAiFetched = false;
+  protected assistantPanelOpen = false;
 
   protected ruleSyncError: string | null = null;
 
@@ -283,7 +284,21 @@ export class ValidationRulesComponent {
     }
   }
 
+  protected openAssistantPanel(): void {
+    if (!this.assistantPanelOpen) {
+      this.assistantPanelOpen = true;
+    }
+
+    if (!this.aiIsLoading && !this.hasAiFetched) {
+      void this.loadAiSuggestions();
+    }
+  }
+
   protected async loadAiSuggestions(): Promise<void> {
+    if (this.aiIsLoading) {
+      return;
+    }
+
     this.aiIsLoading = true;
     this.aiError = null;
 
@@ -636,7 +651,15 @@ export class ValidationRulesComponent {
       }
 
       if (error.error?.detail) {
-        return error.error.detail;
+        return String(error.error.detail);
+      }
+
+      if (typeof error.error === 'object' && error.error !== null) {
+        try {
+          return JSON.stringify(error.error, null, 2);
+        } catch (_) {
+          // Ignorar y continuar con el flujo inferior.
+        }
       }
 
       if (error.status === 0) {
@@ -647,11 +670,25 @@ export class ValidationRulesComponent {
         return 'No estás autorizado para realizar esta acción.';
       }
 
+      if (error.message) {
+        return error.message;
+      }
+
       return 'No se pudo completar la solicitud. Inténtalo nuevamente.';
     }
 
     if (error instanceof Error && error.message) {
       return error.message;
+    }
+
+    if (typeof error === 'string' && error.trim().length > 0) {
+      return error;
+    }
+
+    try {
+      return JSON.stringify(error, null, 2);
+    } catch (_) {
+      return 'No se pudo completar la solicitud. Inténtalo nuevamente.';
     }
 
     return 'No se pudo completar la solicitud. Inténtalo nuevamente.';

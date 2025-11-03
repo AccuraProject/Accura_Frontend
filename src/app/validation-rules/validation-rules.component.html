@@ -6,13 +6,19 @@
       Configura validaciones reutilizables para asegurar la calidad de los datos en tus plantillas y procesos.
     </p>
   </div>
-  <button class="page-header__cta" type="button" (click)="openCreateDialog()">
-    <span class="material-symbols-rounded">add</span>
-    Crear Regla
-  </button>
+  <div class="page-header__actions">
+    <button class="page-header__action page-header__action--ghost" type="button" (click)="openAssistantPanel()">
+      <span class="material-symbols-rounded" aria-hidden="true">auto_fix_high</span>
+      Asistente IA
+    </button>
+    <button class="page-header__action" type="button" (click)="openCreateDialog()">
+      <span class="material-symbols-rounded" aria-hidden="true">add</span>
+      Crear Regla
+    </button>
+  </div>
 </section>
 
-<section class="assistant-panel">
+<section class="assistant-panel" *ngIf="assistantPanelOpen">
   <header class="assistant-panel__header">
     <div>
       <h2>Asistente de reglas con IA</h2>

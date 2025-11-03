@@ -72,6 +72,7 @@ export class ValidationRuleFormDialogComponent {
     'Inactiva',
     'Borrador'
   ];
+  protected readonly decimalOptions: number[] = [0, 1, 2, 3, 4, 5, 6];
 
   protected secondaryHeaderDraft = '';
   protected listItemDraft = '';
