@@ -163,7 +163,7 @@
             (ngModelChange)="onAdvancedConfigChange($event)"
             placeholder='Ingresa un arreglo JSON de objetos con los campos necesarios'
           ></textarea>
-          <p class="modal__helper" *ngIf="!advancedConfigError">Utiliza JSON válido. Ejemplo: [{ "Pais": "Perú" }]</p>
+         <p class="modal__helper" *ngIf="!advancedConfigError">Utiliza JSON válido. Ejemplo: [&#123; "Pais": "Perú" &#125;]</p>
           <p class="modal__helper modal__helper--error" *ngIf="advancedConfigError">{{ advancedConfigError }}</p>
         </div>
 
@@ -216,7 +216,7 @@
             (ngModelChange)="onAdvancedConfigChange($event)"
             placeholder='Ingresa un arreglo JSON con las reglas dependientes'
           ></textarea>
-          <p class="modal__helper" *ngIf="!advancedConfigError">Ejemplo: [{ "Texto": { "Longitud minima": 5 } }]</p>
+         <p class="modal__helper" *ngIf="!advancedConfigError">Ejemplo: [&#123; "Texto": &#123; "Longitud minima": 5 &#125; &#125;]</p>
           <p class="modal__helper modal__helper--error" *ngIf="advancedConfigError">{{ advancedConfigError }}</p>
         </div>
 
