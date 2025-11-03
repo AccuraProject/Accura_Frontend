@@ -223,6 +223,97 @@ mat-dialog-content {
   gap: 1rem;
 }
 
+.modal__section--info {
+  gap: 1.25rem;
+}
+
+.modal__summary-card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem 1.5rem;
+  padding: 1rem 1.25rem;
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(79, 70, 229, 0.08), rgba(129, 140, 248, 0.12));
+  border: 1px solid rgba(129, 140, 248, 0.22);
+}
+
+.modal__summary-main {
+  flex: 1 1 240px;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.modal__summary-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #4338ca;
+  font-weight: 700;
+}
+
+.modal__summary-title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.modal__summary-chip {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.5rem 0.85rem;
+  border-radius: 12px;
+  background: rgba(99, 102, 241, 0.14);
+  color: #312e81;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.modal__summary-chip span {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.modal__grid--info {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.modal__toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: stretch;
+}
+
+.modal__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.8rem 1rem;
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.32);
+  background: rgba(248, 250, 252, 0.9);
+  font-weight: 600;
+  color: #1f2937;
+  cursor: pointer;
+  user-select: none;
+}
+
+.modal__toggle input {
+  width: 18px;
+  height: 18px;
+}
+
+.modal__field--compact {
+  flex: 0 1 200px;
+}
+
+.modal__field--grow {
+  flex: 1 1 280px;
+}
+
 .modal__grid {
   display: grid;
   gap: 1rem;

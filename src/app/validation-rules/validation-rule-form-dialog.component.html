@@ -91,8 +91,23 @@
         </section>
       </article>
     </section>
-    <section class="modal__section">
-      <div class="modal__grid">
+    <section class="modal__section modal__section--info">
+      <div class="modal__summary-card">
+        <div class="modal__summary-main">
+          <span class="modal__summary-label">Nombre de la regla</span>
+          <h4 class="modal__summary-title">{{ formModel.name || 'Define un nombre para tu regla' }}</h4>
+        </div>
+        <div class="modal__summary-chip">
+          <span>Tipo de dato</span>
+          <strong>{{ formModel.dataType }}</strong>
+        </div>
+        <div class="modal__summary-chip">
+          <span>Estado</span>
+          <strong>{{ formModel.status }}</strong>
+        </div>
+      </div>
+
+      <div class="modal__grid modal__grid--info">
         <label class="modal__field">
           <span>Nombre de la regla</span>
           <input type="text" [(ngModel)]="formModel.name" name="name" required />
@@ -103,20 +118,30 @@
             <option *ngFor="let option of dataTypeOptions" [value]="option">{{ option }}</option>
           </select>
         </label>
+        <label class="modal__field">
+          <span>Plantilla / Tipo de documento</span>
+          <input
+            type="text"
+            [(ngModel)]="formModel.documentType"
+            name="documentType"
+            placeholder="Plantilla Global"
+            required
+          />
+        </label>
       </div>
 
-      <div class="modal__grid modal__grid--three">
-        <label class="modal__field modal__field--checkbox">
+      <div class="modal__toggles">
+        <label class="modal__toggle">
           <input type="checkbox" [(ngModel)]="formModel.mandatory" name="mandatory" />
           <span>Campo obligatorio</span>
         </label>
-        <label class="modal__field">
+        <label class="modal__field modal__field--compact">
           <span>Estado</span>
           <select [(ngModel)]="formModel.status" name="status">
             <option *ngFor="let option of statusOptions" [value]="option">{{ option }}</option>
           </select>
         </label>
-        <label class="modal__field">
+        <label class="modal__field modal__field--grow">
           <span>Mensaje de error</span>
           <input type="text" [(ngModel)]="formModel.errorMessage" name="errorMessage" required />
         </label>
@@ -124,43 +149,13 @@
 
       <label class="modal__field">
         <span>Descripción</span>
-        <textarea rows="3" [(ngModel)]="formModel.description" name="description" placeholder="Describe la validación y su contexto"></textarea>
+        <textarea
+          rows="3"
+          [(ngModel)]="formModel.description"
+          name="description"
+          placeholder="Describe la validación y su contexto"
+        ></textarea>
       </label>
-    </section>
-
-    <section class="modal__section">
-      <h4>Plantillas asociadas</h4>
-      <label class="modal__field">
-        <span>Plantilla principal / Tipo de documento</span>
-        <input type="text" [(ngModel)]="formModel.documentType" name="documentType" required />
-      </label>
-
-      <div class="tag-input">
-        <input
-          type="text"
-          [(ngModel)]="secondaryHeaderDraft"
-          name="secondaryHeaderDraft"
-          placeholder="Agregar encabezado adicional"
-          (keyup.enter)="addSecondaryHeader()"
-        />
-        <button
-          type="button"
-          class="modal__action-button"
-          (click)="addSecondaryHeader()"
-          [disabled]="!secondaryHeaderDraft.trim()"
-        >
-          Agregar
-        </button>
-      </div>
-
-      <ul *ngIf="formModel.secondaryHeaders.length > 0" class="tag-list">
-        <li *ngFor="let header of formModel.secondaryHeaders; let i = index; trackBy: trackByIndex">
-          <span>{{ header }}</span>
-          <button type="button" (click)="removeSecondaryHeader(i)" aria-label="Eliminar encabezado">
-            <span class="material-symbols-rounded" aria-hidden="true">close</span>
-          </button>
-        </li>
-      </ul>
     </section>
 
     <section class="modal__section">
@@ -192,7 +187,9 @@
           </label>
           <label class="modal__field">
             <span>Número de decimales</span>
-            <input type="number" min="0" [(ngModel)]="ruleConfig['Número de decimales']" name="numberDecimals" />
+            <select [(ngModel)]="ruleConfig['Número de decimales']" name="numberDecimals">
+              <option *ngFor="let option of decimalOptions" [ngValue]="option">{{ option }}</option>
+            </select>
           </label>
         </div>
 
