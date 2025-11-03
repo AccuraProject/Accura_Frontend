@@ -184,16 +184,16 @@ export class ValidationRulesComponent implements OnInit {
     }
 
     const record = entry as Record<string, unknown>;
-    const payloadCandidate = record.payload ?? record['rule'] ?? entry;
+    const payloadCandidate = record['payload'] ?? record['rule'] ?? entry;
     const payload = this.tryCoercePayload(payloadCandidate);
 
     if (!payload) {
       return null;
     }
 
-    const status = this.toStatus(record.status);
-    const source = this.toSource(record.source);
-    const id = this.sanitizeString(record.id) ?? this.generateId();
+    const status = this.toStatus(record['status']);
+    const source = this.toSource(record['source']);
+    const id = this.sanitizeString(record['id']) ?? this.generateId();
 
     return this.buildRuleFromPayload(payload, status, source, id);
   }
@@ -213,8 +213,9 @@ export class ValidationRulesComponent implements OnInit {
       return null;
     }
 
-    const header = Array.isArray(record.Header)
-      ? (record.Header as unknown[])
+    const headerSource = record['Header'];
+    const header = Array.isArray(headerSource)
+      ? (headerSource as unknown[])
           .map((item) => this.sanitizeString(item))
           .filter((item): item is string => Boolean(item))
       : [];
