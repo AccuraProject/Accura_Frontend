@@ -10,6 +10,87 @@
   </header>
 
   <div mat-dialog-content>
+    <section class="modal__section modal__section--ai">
+      <div class="modal__section-header">
+        <div>
+          <h4>Crear Regla con IA (Opcional)</h4>
+          <p class="modal__helper">Describe la validación y genera una propuesta automática.</p>
+        </div>
+      </div>
+
+      <div class="modal__ai-input">
+        <input
+          type="text"
+          [(ngModel)]="aiPrompt"
+          name="aiPrompt"
+          placeholder="Ej: Validar que el precio esté entre 0 y 10000 con 2 decimales"
+          (keyup.enter)="generateRuleWithAi()"
+        />
+        <button
+          type="button"
+          class="modal__ai-button"
+          (click)="generateRuleWithAi()"
+          [disabled]="aiIsLoading || !aiPrompt.trim()"
+        >
+          {{ aiIsLoading ? 'Analizando...' : 'Generar' }}
+        </button>
+      </div>
+
+      <p class="modal__helper">La regla se completará automáticamente y podrás ajustarla antes de guardarla.</p>
+      <p *ngIf="aiError" class="modal__helper modal__helper--error">{{ aiError }}</p>
+
+      <div *ngIf="aiIsLoading" class="modal__ai-loading">
+        <span class="material-symbols-rounded" aria-hidden="true">progress_activity</span>
+        Analizando descripción...
+      </div>
+
+      <article *ngIf="hasAiPreview && !aiIsLoading" class="modal__ai-preview">
+        <header class="modal__ai-preview-header">
+          <div>
+            <h5>{{ aiPreview?.['Nombre de la regla'] }}</h5>
+            <p>{{ aiPreview?.['Descripción'] }}</p>
+          </div>
+          <span class="modal__ai-badge">{{ aiPreview?.['Tipo de dato'] }}</span>
+        </header>
+
+        <label *ngIf="aiSuggestions.length > 1" class="modal__ai-select">
+          <span>Elegir sugerencia</span>
+          <select [(ngModel)]="selectedAiSuggestionId" (ngModelChange)="onAiSuggestionSelect($event)">
+            <option
+              *ngFor="let suggestion of aiSuggestions; trackBy: trackBySuggestionId"
+              [value]="suggestion.id"
+            >
+              {{ suggestion.payload['Nombre de la regla'] }}
+            </option>
+          </select>
+        </label>
+
+        <ul class="modal__ai-meta">
+          <li><strong>Obligatorio:</strong> {{ aiPreview?.['Campo obligatorio'] ? 'Sí' : 'No' }}</li>
+          <li><strong>Mensaje de error:</strong> {{ aiPreview?.['Mensaje de error'] }}</li>
+        </ul>
+
+        <div class="modal__ai-tags" *ngIf="aiPreviewHeaders.length > 0">
+          <span *ngFor="let header of aiPreviewHeaders">{{ header }}</span>
+        </div>
+
+        <section class="modal__ai-detail" *ngIf="aiPreviewDetails.length > 0">
+          <h6>Configuración sugerida</h6>
+          <ul>
+            <li *ngFor="let detail of aiPreviewDetails">{{ detail }}</li>
+          </ul>
+        </section>
+
+        <section class="modal__ai-detail" *ngIf="aiPreviewExamples.length > 0">
+          <h6>Ejemplos sugeridos</h6>
+          <ul>
+            <li *ngFor="let example of aiPreviewExamples">
+              <strong>{{ example.key }}:</strong> {{ example.value }}
+            </li>
+          </ul>
+        </section>
+      </article>
+    </section>
     <section class="modal__section">
       <div class="modal__grid">
         <label class="modal__field">

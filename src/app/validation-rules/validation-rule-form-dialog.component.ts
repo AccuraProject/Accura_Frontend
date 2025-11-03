@@ -1,7 +1,22 @@
 import { CommonModule } from '@angular/common';
+import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { Component, Inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { Store } from '@ngrx/store';
+import { firstValueFrom } from 'rxjs';
+
+import { environment } from '../../environments/environment';
+import { selectSessionState, SessionState } from '../core/store/session/session.reducer';
+import {
+  VALIDATION_RULE_AI_SCHEMA,
+  RulePayload,
+  describeRuleConfig as describeRuleConfigUtil,
+  extractAiPayloads,
+  generateDefaultRuleConfig,
+  getExampleEntries as getExampleEntriesUtil,
+  normalizeAiPayload
+} from './validation-rule-ai.utils';
 
 export interface ValidationRuleFormDialogResult {
   name: string;
@@ -19,6 +34,11 @@ export interface ValidationRuleFormDialogResult {
 export interface ValidationRuleFormDialogData {
   mode: 'create' | 'edit';
   rule?: ValidationRuleFormDialogResult;
+}
+
+interface AiSuggestion {
+  id: string;
+  payload: RulePayload;
 }
 
 @Component({
@@ -60,12 +80,23 @@ export class ValidationRuleFormDialogComponent {
   protected advancedConfigText = '';
   protected advancedConfigError: string | null = null;
 
+  protected aiPrompt = '';
+  protected aiIsLoading = false;
+  protected aiError: string | null = null;
+  protected aiSuggestions: AiSuggestion[] = [];
+  protected selectedAiSuggestionId: string | null = null;
+
+  private readonly baseUrl = environment.apiBaseUrl.replace(/\/$/, '');
+  private readonly aiRuleSchema = VALIDATION_RULE_AI_SCHEMA;
+
   constructor(
     private readonly dialogRef: MatDialogRef<
       ValidationRuleFormDialogComponent,
       ValidationRuleFormDialogResult | undefined
     >,
-    @Inject(MAT_DIALOG_DATA) data: ValidationRuleFormDialogData
+    @Inject(MAT_DIALOG_DATA) data: ValidationRuleFormDialogData,
+    private readonly http: HttpClient,
+    private readonly store: Store
   ) {
     this.isEditMode = data.mode === 'edit';
     this.title = this.isEditMode ? 'Editar Regla de Validación' : 'Crear Regla de Validación Global';
@@ -137,6 +168,10 @@ export class ValidationRuleFormDialogComponent {
 
   protected trackByIndex(index: number): number {
     return index;
+  }
+
+  protected trackBySuggestionId(_: number, suggestion: AiSuggestion): string {
+    return suggestion.id;
   }
 
   protected onDataTypeChange(): void {
@@ -301,6 +336,194 @@ export class ValidationRuleFormDialogComponent {
     }
   }
 
+  protected async generateRuleWithAi(): Promise<void> {
+    const prompt = this.aiPrompt.trim();
+    if (!prompt) {
+      this.aiError = 'Describe la validación que necesitas generar.';
+      return;
+    }
+
+    this.aiIsLoading = true;
+    this.aiError = null;
+
+    try {
+      const session = await this.getSessionSnapshot();
+      const body = { schema: this.aiRuleSchema, message: prompt, is_admin: this.isAdmin(session) };
+      const data = await this.postAuthorized<unknown>('/assistant/analyze', body, session);
+
+      const payloads = extractAiPayloads(data)
+        .map((item) => normalizeAiPayload(item))
+        .filter((item): item is RulePayload => item !== null);
+
+      if (payloads.length === 0) {
+        throw new Error('El asistente no devolvió sugerencias para la descripción ingresada.');
+      }
+
+      this.aiSuggestions = payloads.map((payload) => ({
+        id: this.generateSuggestionId(),
+        payload: JSON.parse(JSON.stringify(payload)) as RulePayload
+      }));
+
+      this.selectedAiSuggestionId = this.aiSuggestions[0]?.id ?? null;
+
+      const preview = this.aiPreview;
+      if (preview) {
+        this.applyAiPayload(preview);
+      }
+    } catch (error) {
+      console.error('[ValidationRuleFormDialog] Error al consultar la IA:', error);
+      this.aiError = this.getErrorMessage(error);
+      this.aiSuggestions = [];
+      this.selectedAiSuggestionId = null;
+    } finally {
+      this.aiIsLoading = false;
+    }
+  }
+
+  protected onAiSuggestionSelect(value: string): void {
+    this.selectedAiSuggestionId = value;
+    const preview = this.aiPreview;
+    if (preview) {
+      this.applyAiPayload(preview);
+    }
+  }
+
+  protected get hasAiPreview(): boolean {
+    return this.aiPreview !== null;
+  }
+
+  protected get aiPreview(): RulePayload | null {
+    if (!this.selectedAiSuggestionId) {
+      return null;
+    }
+
+    const suggestion = this.aiSuggestions.find((item) => item.id === this.selectedAiSuggestionId);
+    return suggestion ? suggestion.payload : null;
+  }
+
+  protected get aiPreviewDetails(): string[] {
+    const preview = this.aiPreview;
+    return preview ? describeRuleConfigUtil(preview) : [];
+  }
+
+  protected get aiPreviewHeaders(): string[] {
+    const preview = this.aiPreview;
+    if (!preview) {
+      return [];
+    }
+
+    return Array.isArray(preview.Header)
+      ? (preview.Header as unknown[])
+          .filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+      : [];
+  }
+
+  protected get aiPreviewExamples(): Array<{ key: string; value: string }> {
+    const preview = this.aiPreview;
+    if (!preview) {
+      return [];
+    }
+
+    return getExampleEntriesUtil(preview).filter((entry) => entry.key.trim().length > 0);
+  }
+
+  private applyAiPayload(payload: RulePayload): void {
+    const headers = Array.isArray(payload.Header)
+      ? (payload.Header as unknown[])
+          .map((item) => (typeof item === 'string' ? item.trim() : ''))
+          .filter((item, index, array) => item.length > 0 && array.indexOf(item) === index)
+      : [];
+
+    const [primaryHeader, ...secondaryHeaders] = headers.length > 0 ? headers : ['Plantilla Global'];
+
+    const dataType = typeof payload['Tipo de dato'] === 'string' ? payload['Tipo de dato'] : 'Texto';
+
+    this.formModel.name = typeof payload['Nombre de la regla'] === 'string'
+      ? payload['Nombre de la regla']
+      : this.formModel.name;
+    this.formModel.dataType = dataType;
+    this.formModel.mandatory = Boolean(payload['Campo obligatorio']);
+    this.formModel.errorMessage = typeof payload['Mensaje de error'] === 'string'
+      ? payload['Mensaje de error']
+      : this.formModel.errorMessage;
+    this.formModel.description = typeof payload['Descripción'] === 'string'
+      ? payload['Descripción']
+      : this.formModel.description;
+    this.formModel.documentType = primaryHeader;
+    this.formModel.secondaryHeaders = secondaryHeaders;
+
+    const configSource = payload['Regla'] ?? generateDefaultRuleConfig(dataType);
+    this.formModel.ruleConfig = JSON.parse(JSON.stringify(configSource)) as Record<string, unknown>;
+
+    const exampleEntries = getExampleEntriesUtil(payload)
+      .map(({ key, value }) => ({ key: key.trim(), value: value.trim() }))
+      .filter((entry) => entry.key.length > 0 || entry.value.length > 0);
+
+    this.formModel.exampleEntries = exampleEntries;
+
+    this.secondaryHeaderDraft = '';
+    this.listItemDraft = '';
+    this.jointFieldDraft = '';
+    this.duplicateFieldDraft = '';
+
+    this.ensureCollections();
+    this.updateAdvancedConfigText();
+  }
+
+  private generateSuggestionId(): string {
+    return `ai-suggestion-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+  }
+
+  private async postAuthorized<T>(path: string, body: unknown, session: SessionState | null): Promise<T> {
+    const snapshot = session ?? (await this.getSessionSnapshot());
+
+    if (!snapshot?.accessToken) {
+      throw new Error('No se encontró una sesión activa.');
+    }
+
+    const tokenType = snapshot.tokenType ?? 'Bearer';
+    const headers = new HttpHeaders({
+      'Content-Type': 'application/json',
+      Authorization: `${tokenType} ${snapshot.accessToken}`
+    });
+
+    return await firstValueFrom(this.http.post<T>(`${this.baseUrl}${path}`, body, { headers }));
+  }
+
+  private async getSessionSnapshot(): Promise<SessionState | null> {
+    return await firstValueFrom(this.store.select(selectSessionState));
+  }
+
+  private isAdmin(session: SessionState | null): boolean {
+    if (!session) {
+      return false;
+    }
+
+    return (session.role ?? '').toLowerCase() === 'admin';
+  }
+
+  private getErrorMessage(error: unknown): string {
+    if (error instanceof HttpErrorResponse) {
+      if (typeof error.error === 'string' && error.error.trim().length > 0) {
+        return error.error;
+      }
+
+      if (error.error?.detail) {
+        return String(error.error.detail);
+      }
+
+      if (error.message) {
+        return error.message;
+      }
+    }
+
+    if (error instanceof Error) {
+      return error.message;
+    }
+
+    return 'Ocurrió un error inesperado al consultar el asistente.';
+  }
+
   private createEmptyForm(): ValidationRuleFormDialogResult {
     return {
       name: 'Nueva Regla de Validación',
@@ -355,31 +578,6 @@ export class ValidationRuleFormDialogComponent {
   }
 
   private createDefaultRuleConfig(dataType: string): Record<string, unknown> {
-    switch (dataType) {
-      case 'Texto':
-        return { 'Longitud minima': 0, 'Longitud maxima': 0 };
-      case 'Número':
-        return { 'Valor mínimo': null, 'Valor máximo': null, 'Número de decimales': 0 };
-      case 'Documento':
-        return { 'Longitud minima': 1, 'Longitud maxima': 1 };
-      case 'Lista':
-        return { Lista: [] };
-      case 'Lista compleja':
-        return { 'Lista compleja': [] };
-      case 'Telefono':
-        return { 'Longitud minima': 1, 'Código de país': '+00' };
-      case 'Correo':
-        return { Formato: 'usuario@dominio.com', 'Longitud máxima': 1 };
-      case 'Fecha':
-        return { Formato: 'yyyy-MM-dd', 'Fecha mínima': '1900-01-01', 'Fecha máxima': '2100-12-31' };
-      case 'Dependencia':
-        return { 'reglas especifica': [] };
-      case 'Validación conjunta':
-        return { 'Nombre de campos': [] };
-      case 'Duplicados':
-        return { Campos: [], 'Ignorar vacios': false };
-      default:
-        return {};
-    }
+    return generateDefaultRuleConfig(dataType);
   }
 }
