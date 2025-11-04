@@ -15,7 +15,8 @@ import {
   extractAiPayloads,
   generateDefaultRuleConfig,
   getExampleEntries as getExampleEntriesUtil,
-  normalizeAiPayload
+  normalizeAiPayload,
+  extractRuleTable as extractRuleTableUtil
 } from './validation-rule-ai.utils';
 
 export interface ValidationRuleFormDialogResult {
@@ -496,6 +497,19 @@ export class ValidationRuleFormDialogComponent {
     return getExampleEntriesUtil(preview).filter((entry) => entry.key.trim().length > 0);
   }
 
+  protected get hasAiPreviewAdvancedTable(): boolean {
+    const table = this.getAiPreviewTableData();
+    return Boolean(table && table.columns.length > 0 && table.rows.length > 0);
+  }
+
+  protected get aiPreviewAdvancedTableColumns(): string[] {
+    return this.getAiPreviewTableData()?.columns ?? [];
+  }
+
+  protected get aiPreviewAdvancedTableRows(): Array<Record<string, string>> {
+    return this.getAiPreviewTableData()?.rows ?? [];
+  }
+
   private applyAiPayload(payload: RulePayload): void {
     const headers = Array.isArray(payload.Header)
       ? (payload.Header as unknown[])
@@ -542,6 +556,23 @@ export class ValidationRuleFormDialogComponent {
 
   private generateSuggestionId(): string {
     return `ai-suggestion-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+  }
+
+  private getAiPreviewTableData(): { columns: string[]; rows: Array<Record<string, string>> } | null {
+    const preview = this.aiPreview;
+    if (!preview) {
+      return null;
+    }
+
+    const table = extractRuleTableUtil(preview);
+    if (!table) {
+      return null;
+    }
+
+    return {
+      columns: [...table.columns],
+      rows: table.rows.map((row) => ({ ...row }))
+    };
   }
 
   private async postAuthorized<T>(path: string, body: unknown, session: SessionState | null): Promise<T> {

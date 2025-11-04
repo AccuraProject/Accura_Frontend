@@ -76,7 +76,25 @@
               <span *ngFor="let header of aiPreviewHeaders">{{ header }}</span>
             </div>
 
-            <section class="modal__ai-detail" *ngIf="aiPreviewDetails.length > 0">
+            <section class="modal__ai-detail" *ngIf="hasAiPreviewAdvancedTable">
+              <h6>Configuración sugerida</h6>
+              <div class="modal__table-wrapper">
+                <table class="modal__table" role="table">
+                  <thead>
+                    <tr>
+                      <th *ngFor="let column of aiPreviewAdvancedTableColumns" scope="col">{{ column }}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let row of aiPreviewAdvancedTableRows">
+                      <td *ngFor="let column of aiPreviewAdvancedTableColumns">{{ row[column] || '—' }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+
+            <section class="modal__ai-detail" *ngIf="!hasAiPreviewAdvancedTable && aiPreviewDetails.length > 0">
               <h6>Configuración sugerida</h6>
               <ul>
                 <li *ngFor="let detail of aiPreviewDetails">{{ detail }}</li>

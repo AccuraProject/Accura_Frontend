@@ -11,6 +11,11 @@ export interface RulePayload {
   'Regla': Record<string, unknown>;
 }
 
+export interface RuleTableData {
+  columns: string[];
+  rows: Array<Record<string, string>>;
+}
+
 export const VALIDATION_RULE_AI_SCHEMA: Record<string, unknown> = {
   title: 'Regla de Campo',
   type: 'object',
@@ -510,6 +515,82 @@ export function getExampleEntries(payload: RulePayload): Array<{ key: string; va
   }));
 }
 
+export function extractRuleTable(payload: RulePayload): RuleTableData | null {
+  const headers = Array.isArray(payload.Header)
+    ? (payload.Header as unknown[])
+        .map((item) => (typeof item === 'string' ? item.trim() : ''))
+        .filter((item, index, array) => item.length > 0 && array.indexOf(item) === index)
+    : [];
+
+  const config = payload['Regla'];
+  if (!config || typeof config !== 'object') {
+    return headers.length > 0 ? { columns: headers, rows: [] } : null;
+  }
+
+  const record = config as Record<string, unknown>;
+  let source: unknown[] = [];
+
+  if (payload['Tipo de dato'] === 'Lista compleja') {
+    source = Array.isArray(record['Lista compleja'])
+      ? (record['Lista compleja'] as unknown[])
+      : [];
+  } else if (payload['Tipo de dato'] === 'Dependencia') {
+    source = Array.isArray(record['reglas especifica'])
+      ? (record['reglas especifica'] as unknown[])
+      : [];
+  } else {
+    return headers.length > 0 ? { columns: headers, rows: [] } : null;
+  }
+
+  const rows = source.filter(
+    (item): item is Record<string, unknown> => Boolean(item) && typeof item === 'object' && !Array.isArray(item)
+  );
+
+  if (rows.length === 0) {
+    return headers.length > 0 ? { columns: headers, rows: [] } : null;
+  }
+
+  const columns: string[] = [...headers];
+
+  rows.forEach((row) => {
+    Object.keys(row).forEach((key) => {
+      const label = key.trim();
+      if (!label) {
+        return;
+      }
+
+      const exists = columns.some((column) => column.toLowerCase() === label.toLowerCase());
+      if (!exists) {
+        columns.push(label);
+      }
+    });
+  });
+
+  const normalizedRows = rows.map((row) => {
+    const normalized = Object.entries(row).reduce<Record<string, { label: string; value: unknown }>>(
+      (acc, [key, value]) => {
+        const label = typeof key === 'string' ? key.trim() : '';
+        if (label.length === 0) {
+          return acc;
+        }
+
+        acc[label.toLowerCase()] = { label, value };
+        return acc;
+      },
+      {}
+    );
+
+    return columns.reduce<Record<string, string>>((acc, column) => {
+      const match = normalized[column.toLowerCase()];
+      const value = match ? match.value : undefined;
+      acc[column] = stringifyValue(value);
+      return acc;
+    }, {});
+  });
+
+  return { columns, rows: normalizedRows };
+}
+
 function sanitizeHeader(value: unknown): string[] {
   if (Array.isArray(value)) {
     return (value as unknown[]).filter((item): item is string => typeof item === 'string' && item.trim().length > 0);
@@ -649,11 +730,24 @@ function stringifyValue(value: unknown): string {
   }
 
   if (value && typeof value === 'object') {
-    try {
-      return JSON.stringify(value);
-    } catch {
-      return '[Objeto]';
-    }
+    const entries = Object.entries(value as Record<string, unknown>)
+      .map(([key, item]) => {
+        const label = typeof key === 'string' ? key.trim() : '';
+        const text = stringifyValue(item);
+
+        if (label.length > 0 && text.length > 0) {
+          return `${label}: ${text}`;
+        }
+
+        if (label.length > 0) {
+          return label;
+        }
+
+        return text;
+      })
+      .filter((entry) => entry.length > 0);
+
+    return entries.length > 0 ? entries.join(', ') : '—';
   }
 
   if (value === null || value === undefined) {
