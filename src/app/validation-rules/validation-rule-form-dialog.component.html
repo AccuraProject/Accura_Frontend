@@ -358,62 +358,49 @@
             <p class="modal__helper">{{ advancedTableHelper }}</p>
 
             <div class="modal__table-toolbar">
-              <div class="modal__table-column">
-                <label class="modal__field modal__field--inline">
-                  <span>Agregar columna</span>
-                  <div class="modal__table-inline-input">
-                    <input
-                      type="text"
-                      [(ngModel)]="advancedColumnDraft"
-                      name="advancedColumnName"
-                      [placeholder]="advancedTableColumnPlaceholder"
-                      (keyup.enter)="addAdvancedColumn()"
-                    />
-                    <button
-                      type="button"
-                      class="modal__action-button"
-                      (click)="addAdvancedColumn()"
-                      [disabled]="!advancedColumnDraft.trim()"
-                    >
-                      Añadir
-                    </button>
-                  </div>
-                </label>
+              <div class="modal__table-column" *ngIf="canUploadAdvancedTable">
+                <input
+                  type="file"
+                  accept=".xlsx,.xls"
+                  (change)="onAdvancedFileChange($event)"
+                  hidden
+                  #advancedFileInput
+                />
+                <button
+                  type="button"
+                  class="modal__action-button"
+                  (click)="advancedFileInput.click()"
+                >
+                  Cargar desde Excel
+                </button>
               </div>
 
               <button
                 type="button"
                 class="modal__action-button modal__action-button--primary"
                 (click)="addAdvancedRow()"
-                [disabled]="advancedTableColumns.length === 0"
+                [disabled]="advancedTableHeaders.length === 0"
               >
                 Agregar fila
               </button>
             </div>
 
-            <p class="modal__helper" *ngIf="advancedTableColumns.length === 0">{{ advancedTableEmptyMessage }}</p>
+            <p class="modal__helper" *ngIf="advancedTableHeaders.length === 0">{{ advancedTableEmptyMessage }}</p>
+            <p class="modal__helper modal__helper--error" *ngIf="advancedUploadError">{{ advancedUploadError }}</p>
 
-            <div class="modal__table-wrapper" *ngIf="advancedTableColumns.length > 0">
+            <div class="modal__table-wrapper" *ngIf="advancedTableHeaders.length > 0">
               <table class="modal__table">
                 <thead>
                   <tr>
-                    <th *ngFor="let column of advancedTableColumns; let colIndex = index; trackBy: trackByIndex">
+                    <th *ngFor="let column of advancedTableHeaders; let colIndex = index; trackBy: trackByIndex">
                       <span>{{ column }}</span>
-                      <button
-                        type="button"
-                        class="modal__icon-button modal__icon-button--neutral"
-                        (click)="removeAdvancedColumn(colIndex)"
-                        [attr.aria-label]="'Eliminar columna ' + column"
-                      >
-                        <span class="material-symbols-rounded" aria-hidden="true">close</span>
-                      </button>
                     </th>
                     <th class="modal__table-actions-cell">Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr *ngFor="let row of advancedTableRows; let rowIndex = index; trackBy: trackByIndex">
-                    <td *ngFor="let column of advancedTableColumns; let colIndex = index; trackBy: trackByIndex">
+                    <td *ngFor="let column of advancedTableHeaders; let colIndex = index; trackBy: trackByIndex">
                       <input
                         type="text"
                         [(ngModel)]="advancedTableRows[rowIndex][column]"
@@ -437,7 +424,7 @@
               </table>
             </div>
 
-            <p class="modal__helper" *ngIf="advancedTableColumns.length > 0 && !hasAdvancedTableValues">
+            <p class="modal__helper" *ngIf="advancedTableHeaders.length > 0 && !hasAdvancedTableValues">
               Completa al menos un valor para guardar la tabla.
             </p>
             <p class="modal__helper modal__helper--error" *ngIf="advancedConfigError">{{ advancedConfigError }}</p>

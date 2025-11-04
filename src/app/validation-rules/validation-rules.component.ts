@@ -536,9 +536,7 @@ export class ValidationRulesComponent implements OnInit {
         break;
       }
       case 'Lista compleja':
-        record['Lista compleja'] = Array.isArray(record['Lista compleja'])
-          ? (record['Lista compleja'] as unknown[])
-          : [];
+        record['Lista compleja'] = this.normalizeAdvancedTable(record['Lista compleja']);
         break;
       case 'Telefono':
         record['Longitud minima'] = this.toNumber(record['Longitud minima'], 1);
@@ -554,9 +552,7 @@ export class ValidationRulesComponent implements OnInit {
         record['Fecha máxima'] = this.sanitizeString(record['Fecha máxima']) ?? '2100-12-31';
         break;
       case 'Dependencia':
-        record['reglas especifica'] = Array.isArray(record['reglas especifica'])
-          ? (record['reglas especifica'] as unknown[]).filter((item) => item && typeof item === 'object')
-          : [];
+        record['reglas especifica'] = this.normalizeAdvancedTable(record['reglas especifica']);
         break;
       case 'Validación conjunta': {
         const values = Array.isArray(record['Nombre de campos'])
@@ -582,6 +578,117 @@ export class ValidationRulesComponent implements OnInit {
     }
 
     return record;
+  }
+
+  private normalizeAdvancedTable(value: unknown): {
+    headers: string[];
+    values: Array<Record<string, string>>;
+    rows: Array<Record<string, string>>;
+  } {
+    if (!value) {
+      return { headers: [], values: [], rows: [] };
+    }
+
+    if (Array.isArray(value)) {
+      const rows = this.normalizeAdvancedRows(value);
+      const headers = this.extractAdvancedHeaders(rows);
+      return { headers, values: rows, rows };
+    }
+
+    if (typeof value === 'object') {
+      const record = value as Record<string, unknown>;
+      const headers = Array.isArray(record['headers'])
+        ? (record['headers'] as unknown[])
+            .map((item) => (typeof item === 'string' ? item.trim() : this.stringifyExampleValue(item)))
+            .filter((item, index, array) => item.length > 0 && array.indexOf(item) === index)
+        : [];
+
+      const sourceRows = record['values'] ?? record['rows'] ?? record['data'];
+      const rows = this.normalizeAdvancedRows(sourceRows);
+
+      if (headers.length === 0) {
+        const inferred = this.extractAdvancedHeaders(rows);
+        return { headers: inferred, values: rows, rows };
+      }
+
+      const alignedRows = rows.map((row) => this.alignAdvancedRow(row, headers));
+      return { headers, values: alignedRows, rows: alignedRows };
+    }
+
+    return { headers: [], values: [], rows: [] };
+  }
+
+  private normalizeAdvancedRows(value: unknown): Array<Record<string, string>> {
+    if (!Array.isArray(value)) {
+      return [];
+    }
+
+    return value
+      .map((item) => this.normalizeAdvancedRow(item))
+      .filter((row): row is Record<string, string> => row !== null)
+      .map((row) => {
+        const cleaned: Record<string, string> = {};
+        Object.entries(row).forEach(([key, cell]) => {
+          const header = typeof key === 'string' ? key.trim() : '';
+          if (!header) {
+            return;
+          }
+
+          cleaned[header] = this.stringifyExampleValue(cell).trim();
+        });
+        return cleaned;
+      })
+      .filter((row) => Object.keys(row).length > 0);
+  }
+
+  private normalizeAdvancedRow(value: unknown): Record<string, string> | null {
+    if (!value) {
+      return null;
+    }
+
+    if (Array.isArray(value)) {
+      const record: Record<string, string> = {};
+      value.forEach((cell, index) => {
+        record[`Columna ${index + 1}`] = this.stringifyExampleValue(cell).trim();
+      });
+      return record;
+    }
+
+    if (typeof value === 'object') {
+      const record: Record<string, string> = {};
+      Object.entries(value as Record<string, unknown>).forEach(([key, cell]) => {
+        const header = typeof key === 'string' ? key.trim() : '';
+        if (!header) {
+          return;
+        }
+
+        record[header] = this.stringifyExampleValue(cell).trim();
+      });
+      return record;
+    }
+
+    return null;
+  }
+
+  private extractAdvancedHeaders(rows: Array<Record<string, string>>): string[] {
+    const headers = new Set<string>();
+    rows.forEach((row) => {
+      Object.keys(row).forEach((key) => {
+        const header = key.trim();
+        if (header.length > 0) {
+          headers.add(header);
+        }
+      });
+    });
+
+    return Array.from(headers);
+  }
+
+  private alignAdvancedRow(row: Record<string, string>, headers: string[]): Record<string, string> {
+    return headers.reduce<Record<string, string>>((acc, header) => {
+      acc[header] = (row[header] ?? '').toString().trim();
+      return acc;
+    }, {});
   }
 
 

@@ -350,7 +350,7 @@ export function generateDefaultRuleConfig(dataType: string): Record<string, unkn
     case 'Lista':
       return { Lista: [] };
     case 'Lista compleja':
-      return { 'Lista compleja': [] };
+      return { 'Lista compleja': { headers: [], values: [], rows: [] } };
     case 'Telefono':
       return { 'Longitud minima': 1, 'Código de país': '+00' };
     case 'Correo':
@@ -358,7 +358,7 @@ export function generateDefaultRuleConfig(dataType: string): Record<string, unkn
     case 'Fecha':
       return { Formato: 'yyyy-MM-dd', 'Fecha mínima': '1900-01-01', 'Fecha máxima': '2100-12-31' };
     case 'Dependencia':
-      return { 'reglas especifica': [] };
+      return { 'reglas especifica': { headers: [], values: [], rows: [] } };
     case 'Validación conjunta':
       return { 'Nombre de campos': [] };
     case 'Duplicados':
@@ -453,13 +453,21 @@ export function describeRuleConfig(payload: RulePayload): string[] {
             .join(', ') : '—'}`
       );
       break;
-    case 'Lista compleja':
-      if (Array.isArray(record['Lista compleja'])) {
-        (record['Lista compleja'] as unknown[]).forEach((item, index) =>
-          entries.push(`Elemento ${index + 1}: ${stringifyValue(item)}`)
-        );
-      }
+    case 'Lista compleja': {
+      const table = record['Lista compleja'] as Record<string, unknown> | undefined;
+      const headers = Array.isArray(table?.['headers'])
+        ? (table?.['headers'] as unknown[]).map((item) => stringifyValue(item)).filter((text) => text.length > 0)
+        : [];
+      const values = Array.isArray(table?.['values'])
+        ? (table?.['values'] as unknown[])
+        : Array.isArray(table?.['rows'])
+          ? (table?.['rows'] as unknown[])
+          : [];
+
+      entries.push(`Columnas configuradas: ${headers.length > 0 ? headers.join(', ') : '—'}`);
+      entries.push(`Filas configuradas: ${values.length}`);
       break;
+    }
     case 'Telefono':
       entries.push(`Longitud mínima: ${record['Longitud minima'] ?? '—'}`);
       entries.push(`Código de país: ${record['Código de país'] ?? '—'}`);
@@ -473,9 +481,16 @@ export function describeRuleConfig(payload: RulePayload): string[] {
       entries.push(`Fecha mínima: ${record['Fecha mínima'] ?? '—'}`);
       entries.push(`Fecha máxima: ${record['Fecha máxima'] ?? '—'}`);
       break;
-    case 'Dependencia':
-      entries.push(`Dependencias configuradas: ${Array.isArray(record['reglas especifica']) ? (record['reglas especifica'] as unknown[]).length : 0}`);
+    case 'Dependencia': {
+      const table = record['reglas especifica'] as Record<string, unknown> | undefined;
+      const values = Array.isArray(table?.['values'])
+        ? (table?.['values'] as unknown[])
+        : Array.isArray(table?.['rows'])
+          ? (table?.['rows'] as unknown[])
+          : [];
+      entries.push(`Dependencias configuradas: ${values.length}`);
       break;
+    }
     case 'Validación conjunta':
       entries.push(
         `Campos relacionados: ${Array.isArray(record['Nombre de campos']) ? (record['Nombre de campos'] as unknown[])
@@ -559,9 +574,7 @@ function sanitizeRuleConfig(value: unknown, dataType: string): Record<string, un
       break;
     }
     case 'Lista compleja':
-      record['Lista compleja'] = Array.isArray(record['Lista compleja'])
-        ? (record['Lista compleja'] as unknown[]).map((item) => (item && typeof item === 'object' ? item : {}))
-        : [];
+      record['Lista compleja'] = sanitizeAdvancedTable(record['Lista compleja']);
       break;
     case 'Telefono':
       record['Longitud minima'] = toNumber(record['Longitud minima'], 1);
@@ -577,9 +590,7 @@ function sanitizeRuleConfig(value: unknown, dataType: string): Record<string, un
       record['Fecha máxima'] = sanitizeString(record['Fecha máxima']) ?? '2100-12-31';
       break;
     case 'Dependencia':
-      record['reglas especifica'] = Array.isArray(record['reglas especifica'])
-        ? (record['reglas especifica'] as unknown[]).filter((item) => item && typeof item === 'object')
-        : [];
+      record['reglas especifica'] = sanitizeAdvancedTable(record['reglas especifica']);
       break;
     case 'Validación conjunta':
       record['Nombre de campos'] = Array.isArray(record['Nombre de campos'])
@@ -599,6 +610,115 @@ function sanitizeRuleConfig(value: unknown, dataType: string): Record<string, un
   }
 
   return record;
+}
+
+function sanitizeAdvancedTable(value: unknown): { headers: string[]; values: Array<Record<string, string>>; rows: Array<Record<string, string>> } {
+  if (!value) {
+    return { headers: [], values: [], rows: [] };
+  }
+
+  if (Array.isArray(value)) {
+    const rows = sanitizeAdvancedRows(value);
+    const headers = extractAdvancedHeaders(rows);
+    return { headers, values: rows, rows };
+  }
+
+  if (typeof value === 'object') {
+    const record = value as Record<string, unknown>;
+    const headers = Array.isArray(record['headers'])
+      ? (record['headers'] as unknown[])
+          .map((item) => (typeof item === 'string' ? item.trim() : ''))
+          .filter((item, index, array) => item.length > 0 && array.indexOf(item) === index)
+      : [];
+
+    const sourceRows = record['values'] ?? record['rows'] ?? record['data'];
+    const rows = sanitizeAdvancedRows(sourceRows);
+
+    if (headers.length === 0) {
+      const inferred = extractAdvancedHeaders(rows);
+      return { headers: inferred, values: rows, rows };
+    }
+
+    const alignedRows = rows.map((row) => alignAdvancedRow(row, headers));
+    return { headers, values: alignedRows, rows: alignedRows };
+  }
+
+  return { headers: [], values: [], rows: [] };
+}
+
+function sanitizeAdvancedRows(value: unknown): Array<Record<string, string>> {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((item) => normalizeAdvancedRow(item))
+    .filter((row): row is Record<string, string> => row !== null)
+    .map((row) => {
+      const cleaned: Record<string, string> = {};
+      Object.entries(row).forEach(([key, cell]) => {
+        const header = typeof key === 'string' ? key.trim() : '';
+        if (!header) {
+          return;
+        }
+        const text = sanitizeString(cell) ?? stringifyValue(cell);
+        cleaned[header] = text;
+      });
+      return cleaned;
+    })
+    .filter((row) => Object.keys(row).length > 0);
+}
+
+function normalizeAdvancedRow(value: unknown): Record<string, string> | null {
+  if (!value) {
+    return null;
+  }
+
+  if (Array.isArray(value)) {
+    const record: Record<string, string> = {};
+    value.forEach((cell, index) => {
+      const header = `Columna ${index + 1}`;
+      record[header] = sanitizeString(cell) ?? stringifyValue(cell);
+    });
+    return record;
+  }
+
+  if (typeof value === 'object') {
+    const record: Record<string, string> = {};
+    Object.entries(value as Record<string, unknown>).forEach(([key, cell]) => {
+      const header = typeof key === 'string' ? key.trim() : '';
+      if (!header) {
+        return;
+      }
+
+      record[header] = sanitizeString(cell) ?? stringifyValue(cell);
+    });
+    return record;
+  }
+
+  return null;
+}
+
+function extractAdvancedHeaders(rows: Array<Record<string, string>>): string[] {
+  const headers = new Set<string>();
+  rows.forEach((row) => {
+    Object.keys(row).forEach((key) => {
+      const header = key.trim();
+      if (header.length > 0) {
+        headers.add(header);
+      }
+    });
+  });
+
+  return Array.from(headers);
+}
+
+function alignAdvancedRow(row: Record<string, string>, headers: string[]): Record<string, string> {
+  return headers.reduce<Record<string, string>>((acc, header) => {
+    const value = row[header] ?? '';
+    acc[header] = typeof value === 'string' ? value : sanitizeString(value) ?? stringifyValue(value);
+    return acc;
+  }, {});
 }
 
 function sanitizeString(value: unknown): string | null {

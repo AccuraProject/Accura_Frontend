@@ -78,9 +78,9 @@ export class ValidationRuleFormDialogComponent {
   protected jointFieldDraft = '';
   protected duplicateFieldDraft = '';
   protected advancedConfigError: string | null = null;
-  protected advancedTableColumns: string[] = [];
+  protected advancedUploadError: string | null = null;
+  protected advancedTableHeaders: string[] = [];
   protected advancedTableRows: Array<Record<string, string>> = [];
-  protected advancedColumnDraft = '';
 
   protected aiPrompt = '';
   protected aiIsLoading = false;
@@ -168,7 +168,7 @@ export class ValidationRuleFormDialogComponent {
         return this.listValues.length > 0;
       case 'Lista compleja':
       case 'Dependencia':
-        return this.advancedTableColumns.length > 0 && this.hasAdvancedTableValues;
+        return this.advancedTableHeaders.length > 0 && this.hasAdvancedTableValues;
       case 'Validación conjunta':
         return this.jointFieldValues.length > 0;
       case 'Duplicados':
@@ -191,7 +191,7 @@ export class ValidationRuleFormDialogComponent {
     this.listItemDraft = '';
     this.jointFieldDraft = '';
     this.duplicateFieldDraft = '';
-    this.advancedColumnDraft = '';
+    this.advancedUploadError = null;
     this.syncAdvancedTableFromRule();
   }
 
@@ -314,7 +314,7 @@ export class ValidationRuleFormDialogComponent {
 
   protected get hasAdvancedTableValues(): boolean {
     return this.advancedTableRows.some((row) =>
-      this.advancedTableColumns.some((column) => (row[column] ?? '').trim().length > 0)
+      this.advancedTableHeaders.some((column) => (row[column] ?? '').trim().length > 0)
     );
   }
 
@@ -326,61 +326,22 @@ export class ValidationRuleFormDialogComponent {
 
   protected get advancedTableEmptyMessage(): string {
     return this.formModel.dataType === 'Dependencia'
-      ? 'Agrega las columnas que necesitas (por ejemplo: Distrito, Provincia, Departamento) para crear la tabla de dependencias.'
-      : 'Agrega columnas para describir cada atributo de la lista (por ejemplo: Tipo Documento, Código, Descripción).';
+      ? 'Carga un archivo Excel con las combinaciones permitidas o agrega filas manualmente en la tabla.'
+      : 'Carga un archivo Excel con los elementos disponibles o completa las filas manualmente.';
   }
 
-  protected get advancedTableColumnPlaceholder(): string {
-    return this.formModel.dataType === 'Dependencia'
-      ? 'Nombre del campo dependiente'
-      : 'Nombre del campo';
-  }
-
-  protected addAdvancedColumn(): void {
-    const draft = this.advancedColumnDraft.trim();
-    if (!draft) {
-      return;
-    }
-
-    const exists = this.advancedTableColumns.some((column) => column.toLowerCase() === draft.toLowerCase());
-    if (exists) {
-      this.advancedConfigError = 'Ya existe una columna con ese nombre.';
-      return;
-    }
-
-    this.advancedConfigError = null;
-    this.advancedTableColumns = [...this.advancedTableColumns, draft];
-    this.advancedTableRows = this.advancedTableRows.map((row) => ({ ...row, [draft]: row[draft] ?? '' }));
-    this.advancedColumnDraft = '';
-    this.updateAdvancedRuleConfigFromTable();
-  }
-
-  protected removeAdvancedColumn(index: number): void {
-    const column = this.advancedTableColumns[index];
-    if (!column) {
-      return;
-    }
-
-    this.advancedConfigError = null;
-    this.advancedTableColumns = this.advancedTableColumns.filter((_, i) => i !== index);
-    this.advancedTableRows = this.advancedTableColumns.length === 0
-      ? []
-      : this.advancedTableRows.map((row) => {
-          const clone = { ...row };
-          delete clone[column];
-          return this.fillAdvancedRow(clone, this.advancedTableColumns);
-        });
-
-    this.updateAdvancedRuleConfigFromTable();
+  protected get canUploadAdvancedTable(): boolean {
+    return this.formModel.dataType === 'Lista compleja' || this.formModel.dataType === 'Dependencia';
   }
 
   protected addAdvancedRow(): void {
-    if (this.advancedTableColumns.length === 0) {
-      this.advancedConfigError = 'Agrega al menos una columna antes de crear filas.';
+    if (this.advancedTableHeaders.length === 0) {
+      this.advancedConfigError =
+        'No hay columnas configuradas. Carga un archivo Excel para establecer los encabezados.';
       return;
     }
 
-    const row = this.advancedTableColumns.reduce<Record<string, string>>((acc, column) => {
+    const row = this.advancedTableHeaders.reduce<Record<string, string>>((acc, column) => {
       acc[column] = '';
       return acc;
     }, {});
@@ -398,6 +359,19 @@ export class ValidationRuleFormDialogComponent {
     this.advancedConfigError = null;
     this.advancedTableRows = this.advancedTableRows.filter((_, i) => i !== index);
     this.updateAdvancedRuleConfigFromTable();
+  }
+
+  protected onAdvancedFileChange(event: Event): void {
+    const input = event.target as HTMLInputElement | null;
+    const file = input?.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    void this.importAdvancedTableFromFile(file);
+    if (input) {
+      input.value = '';
+    }
   }
 
   protected onAdvancedCellChange(): void {
@@ -641,48 +615,101 @@ export class ValidationRuleFormDialogComponent {
   private syncAdvancedTableFromRule(): void {
     const key = this.getAdvancedConfigKey(this.formModel.dataType);
     if (!key) {
-      this.advancedTableColumns = [];
+      this.advancedTableHeaders = [];
       this.advancedTableRows = [];
-      this.advancedColumnDraft = '';
       this.advancedConfigError = null;
+      this.advancedUploadError = null;
       return;
     }
 
     const source = this.formModel.ruleConfig[key];
-    const rows = this.toAdvancedTableRows(source);
-    const columns = this.extractAdvancedColumns(rows);
+    const { headers, rows } = this.toAdvancedTableState(source);
 
-    this.advancedTableColumns = columns;
-    this.advancedTableRows = rows.map((row) => this.fillAdvancedRow(row, columns));
-    this.advancedColumnDraft = '';
+    this.advancedTableHeaders = headers;
+    this.advancedTableRows = rows.map((row) => this.fillAdvancedRow(row, headers));
     this.advancedConfigError = null;
+    this.advancedUploadError = null;
 
     this.updateAdvancedRuleConfigFromTable();
   }
 
-  private toAdvancedTableRows(value: unknown): Array<Record<string, string>> {
+  private toAdvancedTableState(value: unknown): {
+    headers: string[];
+    rows: Array<Record<string, string>>;
+  } {
+    if (!value) {
+      return { headers: [], rows: [] };
+    }
+
+    if (Array.isArray(value)) {
+      const rows = this.toAdvancedTableRowsFromArray(value);
+      const headers = this.extractAdvancedHeadersFromRows(rows);
+      return { headers, rows };
+    }
+
+    if (typeof value === 'object') {
+      const record = value as Record<string, unknown>;
+      const headers = Array.isArray(record['headers'])
+        ? (record['headers'] as unknown[])
+            .map((item) => (typeof item === 'string' ? item.trim() : ''))
+            .filter((item, index, array) => item.length > 0 && array.indexOf(item) === index)
+        : [];
+
+      const rowsSource = record['rows'] ?? record['values'] ?? record['data'];
+      const rows = this.toAdvancedTableRowsFromArray(rowsSource);
+
+      if (headers.length === 0) {
+        const inferredHeaders = this.extractAdvancedHeadersFromRows(rows);
+        return { headers: inferredHeaders, rows };
+      }
+
+      return { headers, rows: rows.map((row) => this.fillAdvancedRow(row, headers)) };
+    }
+
+    return { headers: [], rows: [] };
+  }
+
+  private toAdvancedTableRowsFromArray(value: unknown): Array<Record<string, string>> {
     if (!Array.isArray(value)) {
       return [];
     }
 
     return value
-      .filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === 'object' && !Array.isArray(item))
-      .map((item) => {
-        const record: Record<string, string> = {};
-        Object.entries(item).forEach(([key, cell]) => {
-          const header = typeof key === 'string' ? key.trim() : '';
-          if (!header) {
-            return;
-          }
-
-          const text = this.stringifyExampleValue(cell).trim();
-          record[header] = text;
-        });
-        return record;
-      });
+      .map((item) => this.normalizeAdvancedRow(item))
+      .filter((row): row is Record<string, string> => row !== null);
   }
 
-  private extractAdvancedColumns(rows: Array<Record<string, string>>): string[] {
+  private normalizeAdvancedRow(value: unknown): Record<string, string> | null {
+    if (!value) {
+      return null;
+    }
+
+    if (Array.isArray(value)) {
+      const record: Record<string, string> = {};
+      value.forEach((cell, index) => {
+        record[`Columna ${index + 1}`] = this.stringifyExampleValue(cell).trim();
+      });
+      return record;
+    }
+
+    if (typeof value === 'object') {
+      const record: Record<string, string> = {};
+      Object.entries(value as Record<string, unknown>).forEach(([key, cell]) => {
+        const header = typeof key === 'string' ? key.trim() : '';
+        if (!header) {
+          return;
+        }
+
+        const text = this.stringifyExampleValue(cell).trim();
+        record[header] = text;
+      });
+      return record;
+    }
+
+    return null;
+  }
+
+  private extractAdvancedHeadersFromRows(rows: Array<Record<string, string>>): string[] {
     const columns = new Set<string>();
     rows.forEach((row) => {
       Object.keys(row).forEach((key) => {
@@ -712,7 +739,7 @@ export class ValidationRuleFormDialogComponent {
     const entries = this.advancedTableRows
       .map((row) => {
         const record: Record<string, string> = {};
-        this.advancedTableColumns.forEach((column) => {
+        this.advancedTableHeaders.forEach((column) => {
           const value = (row[column] ?? '').trim();
           if (value.length > 0) {
             record[column] = value;
@@ -722,7 +749,86 @@ export class ValidationRuleFormDialogComponent {
       })
       .filter((record) => Object.keys(record).length > 0);
 
-    this.formModel.ruleConfig[key] = entries;
+    this.formModel.ruleConfig[key] = {
+      headers: [...this.advancedTableHeaders],
+      values: entries,
+      rows: entries
+    };
+  }
+
+  private async importAdvancedTableFromFile(file: File): Promise<void> {
+    try {
+      this.advancedConfigError = null;
+      this.advancedUploadError = null;
+
+      const buffer = await file.arrayBuffer();
+      const xlsx = await import('xlsx');
+      const workbook = xlsx.read(buffer, { type: 'array' });
+      const sheetName = workbook.SheetNames[0];
+
+      if (!sheetName) {
+        this.advancedUploadError = 'El archivo no contiene hojas válidas.';
+        return;
+      }
+
+      const sheet = workbook.Sheets[sheetName];
+      const rows = xlsx.utils.sheet_to_json<(string | number | boolean | null)[]>(sheet, {
+        header: 1,
+        defval: ''
+      });
+
+      if (!Array.isArray(rows) || rows.length === 0) {
+        this.advancedUploadError = 'El archivo no contiene datos.';
+        return;
+      }
+
+      const [headerRowRaw, ...dataRows] = rows;
+      const headerRow = (headerRowRaw ?? []).map((cell) => this.stringifyExampleValue(cell).trim());
+      const headers = headerRow.filter((item, index, array) => item.length > 0 && array.indexOf(item) === index);
+
+      if (headers.length === 0) {
+        this.advancedUploadError = 'No se pudieron determinar los encabezados del archivo.';
+        return;
+      }
+
+      if (this.advancedTableHeaders.length > 0) {
+        const normalizedExisting = this.advancedTableHeaders.map((item) => item.toLowerCase());
+        const normalizedIncoming = headers.map((item) => item.toLowerCase());
+
+        const matches =
+          normalizedExisting.length === normalizedIncoming.length &&
+          normalizedExisting.every((header, index) => header === normalizedIncoming[index]);
+
+        if (!matches) {
+          this.advancedUploadError =
+            'Los encabezados del archivo no coinciden con la configuración de la regla.';
+          return;
+        }
+      }
+
+      const effectiveHeaders = this.advancedTableHeaders.length > 0 ? this.advancedTableHeaders : headers;
+      const parsedRows = dataRows
+        .map((cells) => {
+          const record = effectiveHeaders.reduce<Record<string, string>>((acc, header, index) => {
+            const cell = Array.isArray(cells) ? cells[index] : undefined;
+            acc[header] = this.stringifyExampleValue(cell).trim();
+            return acc;
+          }, {});
+
+          return record;
+        })
+        .filter((record) =>
+          effectiveHeaders.some((header) => (record[header] ?? '').trim().length > 0)
+        );
+
+      this.advancedTableHeaders = [...effectiveHeaders];
+      this.advancedTableRows = parsedRows.map((row) => this.fillAdvancedRow(row, effectiveHeaders));
+
+      this.updateAdvancedRuleConfigFromTable();
+    } catch (error) {
+      console.error('[ValidationRuleFormDialog] Error al importar archivo Excel:', error);
+      this.advancedUploadError = 'No se pudo procesar el archivo seleccionado.';
+    }
   }
 
   private createDefaultRuleConfig(dataType: string): Record<string, unknown> {
