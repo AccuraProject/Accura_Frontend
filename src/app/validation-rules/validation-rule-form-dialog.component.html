@@ -57,7 +57,11 @@
 
             <label *ngIf="aiSuggestions.length > 1" class="modal__ai-select">
               <span>Elegir sugerencia</span>
-              <select [(ngModel)]="selectedAiSuggestionId" (ngModelChange)="onAiSuggestionSelect($event)">
+              <select
+                [(ngModel)]="selectedAiSuggestionId"
+                name="aiSuggestion"
+                (ngModelChange)="onAiSuggestionSelect($event)"
+              >
                 <option
                   *ngFor="let suggestion of aiSuggestions; trackBy: trackBySuggestionId"
                   [value]="suggestion.id"
@@ -416,15 +420,17 @@
                 <thead>
                   <tr>
                     <th *ngFor="let column of advancedTableColumns; let colIndex = index; trackBy: trackByIndex">
-                      <span>{{ column }}</span>
-                      <button
-                        type="button"
-                        class="modal__icon-button modal__icon-button--neutral"
-                        (click)="removeAdvancedColumn(colIndex)"
-                        [attr.aria-label]="'Eliminar columna ' + column"
-                      >
-                        <span class="material-symbols-rounded" aria-hidden="true">close</span>
-                      </button>
+                      <div class="modal__table-header-cell">
+                        <span>{{ column }}</span>
+                        <button
+                          type="button"
+                          class="modal__icon-button modal__icon-button--neutral"
+                          (click)="removeAdvancedColumn(colIndex)"
+                          [attr.aria-label]="'Eliminar columna ' + column"
+                        >
+                          <span class="material-symbols-rounded" aria-hidden="true">close</span>
+                        </button>
+                      </div>
                     </th>
                     <th class="modal__table-actions-cell">Acciones</th>
                   </tr>
@@ -461,6 +467,25 @@
             <p class="modal__helper modal__helper--error" *ngIf="advancedConfigError">{{ advancedConfigError }}</p>
           </div>
         </ng-template>
+
+        <section class="modal__config-summary" *ngIf="ruleConfigSummary.length > 0">
+          <h5>Resumen de la configuración</h5>
+          <ul>
+            <li *ngFor="let entry of ruleConfigSummary; trackBy: trackByIndex">{{ entry }}</li>
+          </ul>
+        </section>
+
+        <section class="modal__config-json" *ngIf="hasRuleConfigJson">
+          <div class="modal__config-json-header">
+            <h6>Detalle en formato JSON</h6>
+            <button type="button" class="modal__icon-button" (click)="toggleJsonView()">
+              <span class="material-symbols-rounded" aria-hidden="true">
+                {{ showRuleConfigJson ? 'visibility_off' : 'visibility' }}
+              </span>
+            </button>
+          </div>
+          <pre *ngIf="showRuleConfigJson" class="modal__config-json-code">{{ ruleConfigJson }}</pre>
+        </section>
         </section>
 
         <section class="modal__section modal__section--examples">

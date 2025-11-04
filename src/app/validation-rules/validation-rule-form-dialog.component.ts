@@ -82,6 +82,7 @@ export class ValidationRuleFormDialogComponent {
   protected advancedTableColumns: string[] = [];
   protected advancedTableRows: Array<Record<string, string>> = [];
   protected advancedColumnDraft = '';
+  protected showRuleConfigJson = true;
 
   protected aiPrompt = '';
   protected aiIsLoading = false;
@@ -309,6 +310,36 @@ export class ValidationRuleFormDialogComponent {
     return this.formModel.ruleConfig as Record<string, any>;
   }
 
+  protected get hasRuleConfigJson(): boolean {
+    const config = this.formModel.ruleConfig;
+    return Boolean(config && typeof config === 'object' && Object.keys(config).length > 0);
+  }
+
+  protected get ruleConfigJson(): string {
+    const config = this.formModel.ruleConfig ?? {};
+    return JSON.stringify(config, null, 2);
+  }
+
+  protected get ruleConfigSummary(): string[] {
+    const headers = [this.formModel.documentType, ...this.formModel.secondaryHeaders]
+      .map((item) => item?.toString().trim())
+      .filter((item): item is string => Boolean(item))
+      .filter((item, index, array) => array.indexOf(item) === index);
+
+    const payload: RulePayload = {
+      'Nombre de la regla': this.formModel.name,
+      'Tipo de dato': this.formModel.dataType,
+      'Campo obligatorio': this.formModel.mandatory,
+      Header: headers,
+      'Mensaje de error': this.formModel.errorMessage,
+      'Descripción': this.formModel.description,
+      'Ejemplo': {},
+      'Regla': this.formModel.ruleConfig ?? {}
+    };
+
+    return describeRuleConfigUtil(payload);
+  }
+
   protected get requiresAdvancedTableData(): boolean {
     return this.getAdvancedConfigKey(this.formModel.dataType) !== null;
   }
@@ -404,6 +435,10 @@ export class ValidationRuleFormDialogComponent {
   protected onAdvancedCellChange(): void {
     this.advancedConfigError = null;
     this.updateAdvancedRuleConfigFromTable();
+  }
+
+  protected toggleJsonView(): void {
+    this.showRuleConfigJson = !this.showRuleConfigJson;
   }
 
   protected async generateRuleWithAi(): Promise<void> {
