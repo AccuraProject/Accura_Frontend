@@ -783,8 +783,8 @@ export class ValidationRuleFormDialogComponent {
       }
 
       const [headerRowRaw, ...dataRows] = rows;
-      const headerRow = (headerRowRaw ?? []).map((cell) => this.stringifyExampleValue(cell).trim());
-      const headers = headerRow.filter((item, index, array) => item.length > 0 && array.indexOf(item) === index);
+      const headerRow = (headerRowRaw ?? []).map((cell: unknown) => this.stringifyExampleValue(cell).trim());
+      const headers = headerRow.filter((item: string, index: number, array: string[]) => item.length > 0 && array.indexOf(item) === index);
 
       if (headers.length === 0) {
         this.advancedUploadError = 'No se pudieron determinar los encabezados del archivo.';
@@ -792,8 +792,8 @@ export class ValidationRuleFormDialogComponent {
       }
 
       if (this.advancedTableHeaders.length > 0) {
-        const normalizedExisting = this.advancedTableHeaders.map((item) => item.toLowerCase());
-        const normalizedIncoming = headers.map((item) => item.toLowerCase());
+        const normalizedExisting = this.advancedTableHeaders.map((item: string) => item.toLowerCase());
+        const normalizedIncoming = headers.map((item: string) => item.toLowerCase());
 
         const matches =
           normalizedExisting.length === normalizedIncoming.length &&
@@ -808,8 +808,8 @@ export class ValidationRuleFormDialogComponent {
 
       const effectiveHeaders = this.advancedTableHeaders.length > 0 ? this.advancedTableHeaders : headers;
       const parsedRows = dataRows
-        .map((cells) => {
-          const record = effectiveHeaders.reduce<Record<string, string>>((acc, header, index) => {
+        .map((cells: unknown) => {
+          const record = effectiveHeaders.reduce<Record<string, string>>((acc: Record<string, string>, header: string, index: number) => {
             const cell = Array.isArray(cells) ? cells[index] : undefined;
             acc[header] = this.stringifyExampleValue(cell).trim();
             return acc;

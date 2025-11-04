@@ -691,6 +691,40 @@ export class ValidationRulesComponent implements OnInit {
     }, {});
   }
 
+  private stringifyExampleValue(value: unknown): string {
+    if (value === null || value === undefined) {
+      return '';
+    }
+
+    if (typeof value === 'string') {
+      return value;
+    }
+
+    if (typeof value === 'number' || typeof value === 'boolean') {
+      return String(value);
+    }
+
+    if (Array.isArray(value)) {
+      return value
+        .map((item) => this.stringifyExampleValue(item))
+        .filter((item) => item.length > 0)
+        .join(', ');
+    }
+
+    if (typeof value === 'object') {
+      return Object.entries(value as Record<string, unknown>)
+        .map(([key, item]) => {
+          const label = typeof key === 'string' ? key.trim() : '';
+          const text = this.stringifyExampleValue(item).trim();
+          return label.length > 0 ? `${label}${text ? `: ${text}` : ''}` : text;
+        })
+        .filter((entry) => entry.length > 0)
+        .join(', ');
+    }
+
+    return String(value);
+  }
+
 
   private persistRule(
     payload: RulePayload,
