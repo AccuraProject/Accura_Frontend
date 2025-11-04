@@ -77,8 +77,10 @@ export class ValidationRuleFormDialogComponent {
   protected listItemDraft = '';
   protected jointFieldDraft = '';
   protected duplicateFieldDraft = '';
-  protected advancedConfigText = '';
   protected advancedConfigError: string | null = null;
+  protected advancedTableColumns: string[] = [];
+  protected advancedTableRows: Array<Record<string, string>> = [];
+  protected advancedColumnDraft = '';
 
   protected aiPrompt = '';
   protected aiIsLoading = false;
@@ -106,7 +108,7 @@ export class ValidationRuleFormDialogComponent {
     this.actionLabel = this.isEditMode ? 'Guardar Cambios' : 'Guardar Regla';
     this.formModel = data.rule ? this.cloneRule(data.rule) : this.createEmptyForm();
     this.ensureCollections();
-    this.updateAdvancedConfigText();
+    this.syncAdvancedTableFromRule();
   }
 
   protected close(): void {
@@ -164,6 +166,9 @@ export class ValidationRuleFormDialogComponent {
     switch (this.formModel.dataType) {
       case 'Lista':
         return this.listValues.length > 0;
+      case 'Lista compleja':
+      case 'Dependencia':
+        return this.advancedTableColumns.length > 0 && this.hasAdvancedTableValues;
       case 'Validación conjunta':
         return this.jointFieldValues.length > 0;
       case 'Duplicados':
@@ -186,7 +191,8 @@ export class ValidationRuleFormDialogComponent {
     this.listItemDraft = '';
     this.jointFieldDraft = '';
     this.duplicateFieldDraft = '';
-    this.updateAdvancedConfigText();
+    this.advancedColumnDraft = '';
+    this.syncAdvancedTableFromRule();
   }
 
   protected addSecondaryHeader(): void {
@@ -302,33 +308,101 @@ export class ValidationRuleFormDialogComponent {
     return this.formModel.ruleConfig as Record<string, any>;
   }
 
-  protected showAdvancedConfig(): boolean {
-    return ['Lista compleja', 'Dependencia'].includes(this.formModel.dataType);
+  protected get requiresAdvancedTableData(): boolean {
+    return this.getAdvancedConfigKey(this.formModel.dataType) !== null;
   }
 
-  protected onAdvancedConfigChange(value: string): void {
-    this.advancedConfigText = value;
+  protected get hasAdvancedTableValues(): boolean {
+    return this.advancedTableRows.some((row) =>
+      this.advancedTableColumns.some((column) => (row[column] ?? '').trim().length > 0)
+    );
+  }
 
-    const key = this.formModel.dataType === 'Lista compleja' ? 'Lista compleja' : 'reglas especifica';
+  protected get advancedTableHelper(): string {
+    return this.formModel.dataType === 'Dependencia'
+      ? 'Define las combinaciones válidas entre los campos dependientes. Cada fila representa una relación permitida.'
+      : 'Organiza los elementos de la lista especificando sus atributos en columnas para facilitar su comprensión.';
+  }
 
-    if (!value.trim()) {
-      this.formModel.ruleConfig[key] = [];
-      this.advancedConfigError = null;
+  protected get advancedTableEmptyMessage(): string {
+    return this.formModel.dataType === 'Dependencia'
+      ? 'Agrega las columnas que necesitas (por ejemplo: Distrito, Provincia, Departamento) para crear la tabla de dependencias.'
+      : 'Agrega columnas para describir cada atributo de la lista (por ejemplo: Tipo Documento, Código, Descripción).';
+  }
+
+  protected get advancedTableColumnPlaceholder(): string {
+    return this.formModel.dataType === 'Dependencia'
+      ? 'Nombre del campo dependiente'
+      : 'Nombre del campo';
+  }
+
+  protected addAdvancedColumn(): void {
+    const draft = this.advancedColumnDraft.trim();
+    if (!draft) {
       return;
     }
 
-    try {
-      const parsed = JSON.parse(value);
-      if (!Array.isArray(parsed)) {
-        throw new Error('El contenido debe ser un arreglo JSON.');
-      }
-
-      this.formModel.ruleConfig[key] = parsed;
-      this.advancedConfigError = null;
-    } catch (error) {
-      console.error('[ValidationRuleFormDialog] Error al procesar la configuración avanzada:', error);
-      this.advancedConfigError = 'Ingresa un arreglo JSON válido.';
+    const exists = this.advancedTableColumns.some((column) => column.toLowerCase() === draft.toLowerCase());
+    if (exists) {
+      this.advancedConfigError = 'Ya existe una columna con ese nombre.';
+      return;
     }
+
+    this.advancedConfigError = null;
+    this.advancedTableColumns = [...this.advancedTableColumns, draft];
+    this.advancedTableRows = this.advancedTableRows.map((row) => ({ ...row, [draft]: row[draft] ?? '' }));
+    this.advancedColumnDraft = '';
+    this.updateAdvancedRuleConfigFromTable();
+  }
+
+  protected removeAdvancedColumn(index: number): void {
+    const column = this.advancedTableColumns[index];
+    if (!column) {
+      return;
+    }
+
+    this.advancedConfigError = null;
+    this.advancedTableColumns = this.advancedTableColumns.filter((_, i) => i !== index);
+    this.advancedTableRows = this.advancedTableColumns.length === 0
+      ? []
+      : this.advancedTableRows.map((row) => {
+          const clone = { ...row };
+          delete clone[column];
+          return this.fillAdvancedRow(clone, this.advancedTableColumns);
+        });
+
+    this.updateAdvancedRuleConfigFromTable();
+  }
+
+  protected addAdvancedRow(): void {
+    if (this.advancedTableColumns.length === 0) {
+      this.advancedConfigError = 'Agrega al menos una columna antes de crear filas.';
+      return;
+    }
+
+    const row = this.advancedTableColumns.reduce<Record<string, string>>((acc, column) => {
+      acc[column] = '';
+      return acc;
+    }, {});
+
+    this.advancedConfigError = null;
+    this.advancedTableRows = [...this.advancedTableRows, row];
+    this.updateAdvancedRuleConfigFromTable();
+  }
+
+  protected removeAdvancedRow(index: number): void {
+    if (index < 0 || index >= this.advancedTableRows.length) {
+      return;
+    }
+
+    this.advancedConfigError = null;
+    this.advancedTableRows = this.advancedTableRows.filter((_, i) => i !== index);
+    this.updateAdvancedRuleConfigFromTable();
+  }
+
+  protected onAdvancedCellChange(): void {
+    this.advancedConfigError = null;
+    this.updateAdvancedRuleConfigFromTable();
   }
 
   protected async generateRuleWithAi(): Promise<void> {
@@ -463,7 +537,7 @@ export class ValidationRuleFormDialogComponent {
     this.duplicateFieldDraft = '';
 
     this.ensureCollections();
-    this.updateAdvancedConfigText();
+    this.syncAdvancedTableFromRule();
   }
 
   private generateSuggestionId(): string {
@@ -552,23 +626,103 @@ export class ValidationRuleFormDialogComponent {
     this.ensureExampleEntries();
   }
 
-  private updateAdvancedConfigText(): void {
-    if (this.formModel.dataType === 'Lista compleja') {
-      const value = this.formModel.ruleConfig['Lista compleja'];
-      this.advancedConfigText = JSON.stringify(Array.isArray(value) ? value : [], null, 2);
+  private getAdvancedConfigKey(dataType: string): 'Lista compleja' | 'reglas especifica' | null {
+    if (dataType === 'Lista compleja') {
+      return 'Lista compleja';
+    }
+
+    if (dataType === 'Dependencia') {
+      return 'reglas especifica';
+    }
+
+    return null;
+  }
+
+  private syncAdvancedTableFromRule(): void {
+    const key = this.getAdvancedConfigKey(this.formModel.dataType);
+    if (!key) {
+      this.advancedTableColumns = [];
+      this.advancedTableRows = [];
+      this.advancedColumnDraft = '';
       this.advancedConfigError = null;
       return;
     }
 
-    if (this.formModel.dataType === 'Dependencia') {
-      const value = this.formModel.ruleConfig['reglas especifica'];
-      this.advancedConfigText = JSON.stringify(Array.isArray(value) ? value : [], null, 2);
-      this.advancedConfigError = null;
-      return;
-    }
+    const source = this.formModel.ruleConfig[key];
+    const rows = this.toAdvancedTableRows(source);
+    const columns = this.extractAdvancedColumns(rows);
 
-    this.advancedConfigText = '';
+    this.advancedTableColumns = columns;
+    this.advancedTableRows = rows.map((row) => this.fillAdvancedRow(row, columns));
+    this.advancedColumnDraft = '';
     this.advancedConfigError = null;
+
+    this.updateAdvancedRuleConfigFromTable();
+  }
+
+  private toAdvancedTableRows(value: unknown): Array<Record<string, string>> {
+    if (!Array.isArray(value)) {
+      return [];
+    }
+
+    return value
+      .filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === 'object' && !Array.isArray(item))
+      .map((item) => {
+        const record: Record<string, string> = {};
+        Object.entries(item).forEach(([key, cell]) => {
+          const header = typeof key === 'string' ? key.trim() : '';
+          if (!header) {
+            return;
+          }
+
+          const text = this.stringifyExampleValue(cell).trim();
+          record[header] = text;
+        });
+        return record;
+      });
+  }
+
+  private extractAdvancedColumns(rows: Array<Record<string, string>>): string[] {
+    const columns = new Set<string>();
+    rows.forEach((row) => {
+      Object.keys(row).forEach((key) => {
+        const header = key.trim();
+        if (header.length > 0) {
+          columns.add(header);
+        }
+      });
+    });
+
+    return Array.from(columns);
+  }
+
+  private fillAdvancedRow(row: Record<string, string>, columns: string[]): Record<string, string> {
+    return columns.reduce<Record<string, string>>((acc, column) => {
+      acc[column] = row[column] ?? '';
+      return acc;
+    }, {});
+  }
+
+  private updateAdvancedRuleConfigFromTable(): void {
+    const key = this.getAdvancedConfigKey(this.formModel.dataType);
+    if (!key) {
+      return;
+    }
+
+    const entries = this.advancedTableRows
+      .map((row) => {
+        const record: Record<string, string> = {};
+        this.advancedTableColumns.forEach((column) => {
+          const value = (row[column] ?? '').trim();
+          if (value.length > 0) {
+            record[column] = value;
+          }
+        });
+        return record;
+      })
+      .filter((record) => Object.keys(record).length > 0);
+
+    this.formModel.ruleConfig[key] = entries;
   }
 
   private createDefaultRuleConfig(dataType: string): Record<string, unknown> {
@@ -590,7 +744,10 @@ export class ValidationRuleFormDialogComponent {
     const sanitized = entries
       .map((entry) => ({
         key: typeof entry?.key === 'string' ? entry.key.trim() : '',
-        value: typeof entry?.value === 'string' ? entry.value.trim() : ''
+        value:
+          typeof entry?.value === 'string' && entry.value.trim().length > 0
+            ? this.formatExampleValue(entry.value.trim())
+            : ''
       }))
       .filter((entry) => entry.key.length > 0 || entry.value.length > 0);
 
@@ -614,6 +771,90 @@ export class ValidationRuleFormDialogComponent {
         value: invalidEntry?.value ?? fallback[0]?.value ?? sanitized[1]?.value ?? ''
       }
     ];
+  }
+
+  private formatExampleValue(value: string): string {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return '';
+    }
+
+    if (!/^[\[{]/.test(trimmed)) {
+      return value;
+    }
+
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (Array.isArray(parsed)) {
+        const entries = parsed
+          .map((item) => this.formatExampleValueFromObject(item))
+          .filter((item) => item.length > 0);
+        return entries.join('\n\n');
+      }
+
+      if (parsed && typeof parsed === 'object') {
+        return this.formatExampleValueFromObject(parsed);
+      }
+    } catch (error) {
+      console.warn('[ValidationRuleFormDialog] No se pudo formatear el ejemplo como JSON legible:', error);
+      return value;
+    }
+
+    return value;
+  }
+
+  private formatExampleValueFromObject(record: unknown): string {
+    if (!record || typeof record !== 'object') {
+      return '';
+    }
+
+    const entries = Object.entries(record as Record<string, unknown>)
+      .map(([key, cell]) => {
+        const label = key.trim();
+        if (!label) {
+          return '';
+        }
+
+        const text = this.stringifyExampleValue(cell).trim();
+        return text.length > 0 ? `• ${label}: ${text}` : `• ${label}`;
+      })
+      .filter((line) => line.length > 0);
+
+    return entries.join('\n');
+  }
+
+  private stringifyExampleValue(value: unknown): string {
+    if (value === null || value === undefined) {
+      return '';
+    }
+
+    if (typeof value === 'string') {
+      return value;
+    }
+
+    if (typeof value === 'number' || typeof value === 'boolean') {
+      return String(value);
+    }
+
+    if (Array.isArray(value)) {
+      return value
+        .map((item) => this.stringifyExampleValue(item))
+        .filter((item) => item.length > 0)
+        .join(', ');
+    }
+
+    if (typeof value === 'object') {
+      return Object.entries(value as Record<string, unknown>)
+        .map(([key, item]) => {
+          const label = key.trim();
+          const text = this.stringifyExampleValue(item).trim();
+          return label.length > 0 ? `${label}${text ? `: ${text}` : ''}` : text;
+        })
+        .filter((entry) => entry.length > 0)
+        .join(', ');
+    }
+
+    return String(value);
   }
 
   private createDefaultExamples(): Array<{ key: string; value: string }> {
