@@ -238,17 +238,9 @@
               </ul>
             </div>
 
-            <div *ngSwitchCase="'Lista compleja'" class="modal__stack">
-              <textarea
-                rows="6"
-                [(ngModel)]="advancedConfigText"
-                name="complexList"
-                (ngModelChange)="onAdvancedConfigChange($event)"
-                placeholder='Ingresa un arreglo JSON de objetos con los campos necesarios'
-              ></textarea>
-             <p class="modal__helper" *ngIf="!advancedConfigError">Utiliza JSON válido. Ejemplo: [&#123; "Pais": "Perú" &#125;]</p>
-              <p class="modal__helper modal__helper--error" *ngIf="advancedConfigError">{{ advancedConfigError }}</p>
-            </div>
+            <ng-container *ngSwitchCase="'Lista compleja'">
+              <ng-container *ngTemplateOutlet="advancedConfigTable"></ng-container>
+            </ng-container>
 
             <div *ngSwitchCase="'Telefono'" class="modal__grid">
               <label class="modal__field">
@@ -291,17 +283,9 @@
               </label>
             </div>
 
-            <div *ngSwitchCase="'Dependencia'" class="modal__stack">
-              <textarea
-                rows="6"
-                [(ngModel)]="advancedConfigText"
-                name="dependencyConfig"
-                (ngModelChange)="onAdvancedConfigChange($event)"
-                placeholder='Ingresa un arreglo JSON con las reglas dependientes'
-              ></textarea>
-             <p class="modal__helper" *ngIf="!advancedConfigError">Ejemplo: [&#123; "Texto": &#123; "Longitud minima": 5 &#125; &#125;]</p>
-              <p class="modal__helper modal__helper--error" *ngIf="advancedConfigError">{{ advancedConfigError }}</p>
-            </div>
+            <ng-container *ngSwitchCase="'Dependencia'">
+              <ng-container *ngTemplateOutlet="advancedConfigTable"></ng-container>
+            </ng-container>
 
             <div *ngSwitchCase="'Validación conjunta'" class="modal__stack">
               <div class="tag-input">
@@ -368,7 +352,97 @@
             <div *ngSwitchDefault class="modal__helper">
               Configura los parámetros necesarios para este tipo de dato.
             </div>
-          </ng-container>
+        </ng-container>
+        <ng-template #advancedConfigTable>
+          <div class="modal__stack modal__stack--table">
+            <p class="modal__helper">{{ advancedTableHelper }}</p>
+
+            <div class="modal__table-toolbar">
+              <div class="modal__table-column">
+                <label class="modal__field modal__field--inline">
+                  <span>Agregar columna</span>
+                  <div class="modal__table-inline-input">
+                    <input
+                      type="text"
+                      [(ngModel)]="advancedColumnDraft"
+                      name="advancedColumnName"
+                      [placeholder]="advancedTableColumnPlaceholder"
+                      (keyup.enter)="addAdvancedColumn()"
+                    />
+                    <button
+                      type="button"
+                      class="modal__action-button"
+                      (click)="addAdvancedColumn()"
+                      [disabled]="!advancedColumnDraft.trim()"
+                    >
+                      Añadir
+                    </button>
+                  </div>
+                </label>
+              </div>
+
+              <button
+                type="button"
+                class="modal__action-button modal__action-button--primary"
+                (click)="addAdvancedRow()"
+                [disabled]="advancedTableColumns.length === 0"
+              >
+                Agregar fila
+              </button>
+            </div>
+
+            <p class="modal__helper" *ngIf="advancedTableColumns.length === 0">{{ advancedTableEmptyMessage }}</p>
+
+            <div class="modal__table-wrapper" *ngIf="advancedTableColumns.length > 0">
+              <table class="modal__table">
+                <thead>
+                  <tr>
+                    <th *ngFor="let column of advancedTableColumns; let colIndex = index; trackBy: trackByIndex">
+                      <span>{{ column }}</span>
+                      <button
+                        type="button"
+                        class="modal__icon-button modal__icon-button--neutral"
+                        (click)="removeAdvancedColumn(colIndex)"
+                        [attr.aria-label]="'Eliminar columna ' + column"
+                      >
+                        <span class="material-symbols-rounded" aria-hidden="true">close</span>
+                      </button>
+                    </th>
+                    <th class="modal__table-actions-cell">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let row of advancedTableRows; let rowIndex = index; trackBy: trackByIndex">
+                    <td *ngFor="let column of advancedTableColumns; let colIndex = index; trackBy: trackByIndex">
+                      <input
+                        type="text"
+                        [(ngModel)]="advancedTableRows[rowIndex][column]"
+                        (ngModelChange)="onAdvancedCellChange()"
+                        [attr.name]="'advancedCell' + rowIndex + '-' + colIndex"
+                        autocomplete="off"
+                      />
+                    </td>
+                    <td class="modal__table-actions-cell">
+                      <button
+                        type="button"
+                        class="modal__icon-button"
+                        (click)="removeAdvancedRow(rowIndex)"
+                        aria-label="Eliminar fila"
+                      >
+                        <span class="material-symbols-rounded" aria-hidden="true">delete</span>
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <p class="modal__helper" *ngIf="advancedTableColumns.length > 0 && !hasAdvancedTableValues">
+              Completa al menos un valor para guardar la tabla.
+            </p>
+            <p class="modal__helper modal__helper--error" *ngIf="advancedConfigError">{{ advancedConfigError }}</p>
+          </div>
+        </ng-template>
         </section>
 
         <section class="modal__section modal__section--examples">

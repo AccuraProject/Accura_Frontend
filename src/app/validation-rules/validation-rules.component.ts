@@ -266,9 +266,9 @@ export class ValidationRulesComponent implements OnInit {
       ValidationRuleFormDialogResult
     >(ValidationRuleFormDialogComponent, {
       disableClose: true,
-      width: '80vw',
-      maxWidth: '80vw',
-      maxHeight: '80vh',
+      width: '92vw',
+      maxWidth: '1240px',
+      maxHeight: '95vh',
       panelClass: 'validation-rule-dialog',
       data: {
         mode: 'create'
@@ -291,9 +291,9 @@ export class ValidationRulesComponent implements OnInit {
       ValidationRuleFormDialogResult
     >(ValidationRuleFormDialogComponent, {
       disableClose: true,
-      width: '80vw',
-      maxWidth: '80vw',
-      maxHeight: '80vh',
+      width: '92vw',
+      maxWidth: '1240px',
+      maxHeight: '95vh',
       panelClass: 'validation-rule-dialog',
       data: {
         mode: 'edit',
@@ -601,9 +601,11 @@ export class ValidationRulesComponent implements OnInit {
   ): Promise<void> {
     const session = await this.getSessionSnapshot();
     const body = {
-      payload,
-      status,
-      source,
+      rule: {
+        payload,
+        status,
+        source
+      },
       is_admin: this.isAdmin(session)
     };
 
