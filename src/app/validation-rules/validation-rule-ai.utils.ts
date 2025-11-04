@@ -437,6 +437,10 @@ export function describeRuleConfig(payload: RulePayload): string[] {
   const record = config as Record<string, unknown>;
   const entries: string[] = [];
 
+  if (payload['Tipo de dato'] === 'Lista compleja') {
+    return entries;
+  }
+
   switch (payload['Tipo de dato']) {
     case 'Texto':
       entries.push(`Longitud mínima: ${record['Longitud minima'] ?? '—'}`);
@@ -457,13 +461,6 @@ export function describeRuleConfig(payload: RulePayload): string[] {
             .map((item) => stringifyValue(item))
             .join(', ') : '—'}`
       );
-      break;
-    case 'Lista compleja':
-      if (Array.isArray(record['Lista compleja'])) {
-        (record['Lista compleja'] as unknown[]).forEach((item, index) =>
-          entries.push(`Elemento ${index + 1}: ${stringifyValue(item)}`)
-        );
-      }
       break;
     case 'Telefono':
       entries.push(`Longitud mínima: ${record['Longitud minima'] ?? '—'}`);
@@ -542,51 +539,63 @@ export function extractRuleTable(payload: RulePayload): RuleTableData | null {
     return headers.length > 0 ? { columns: headers, rows: [] } : null;
   }
 
-  const rows = source.filter(
-    (item): item is Record<string, unknown> => Boolean(item) && typeof item === 'object' && !Array.isArray(item)
-  );
+  const rows = source
+    .filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === 'object' && !Array.isArray(item))
+    .map((item) => sanitizeComplexListRow(item))
+    .filter((row) => Object.keys(row).length > 0);
 
   if (rows.length === 0) {
     return headers.length > 0 ? { columns: headers, rows: [] } : null;
   }
 
-  const columns: string[] = [...headers];
+  const columns: string[] = [];
+  const hasColumn = (list: string[], label: string): boolean =>
+    list.some((column) => column.trim().toLowerCase() === label.trim().toLowerCase());
+
+  headers.forEach((header) => {
+    if (header && !hasColumn(columns, header)) {
+      columns.push(header);
+    }
+  });
 
   rows.forEach((row) => {
     Object.keys(row).forEach((key) => {
       const label = key.trim();
-      if (!label) {
+      if (!label || hasColumn(columns, label)) {
         return;
       }
 
-      const exists = columns.some((column) => column.toLowerCase() === label.toLowerCase());
-      if (!exists) {
-        columns.push(label);
-      }
+      columns.push(label);
     });
   });
 
-  const normalizedRows = rows.map((row) => {
-    const normalized = Object.entries(row).reduce<Record<string, { label: string; value: unknown }>>(
-      (acc, [key, value]) => {
+  if (columns.length === 0) {
+    return null;
+  }
+
+  const normalizedRows = rows
+    .map((row) => {
+      const normalized = Object.entries(row).reduce<Record<string, string>>((acc, [key, value]) => {
         const label = typeof key === 'string' ? key.trim() : '';
         if (label.length === 0) {
           return acc;
         }
 
-        acc[label.toLowerCase()] = { label, value };
+        acc[label.toLowerCase()] = value;
         return acc;
-      },
-      {}
-    );
+      }, {});
 
-    return columns.reduce<Record<string, string>>((acc, column) => {
-      const match = normalized[column.toLowerCase()];
-      const value = match ? match.value : undefined;
-      acc[column] = stringifyValue(value);
-      return acc;
-    }, {});
-  });
+      return columns.reduce<Record<string, string>>((acc, column) => {
+        const text = normalized[column.toLowerCase()] ?? '';
+        acc[column] = text === '—' ? '' : text;
+        return acc;
+      }, {});
+    })
+    .filter((row) => columns.some((column) => (row[column] ?? '').trim().length > 0));
+
+  if (normalizedRows.length === 0) {
+    return { columns, rows: [] };
+  }
 
   return { columns, rows: normalizedRows };
 }
@@ -641,7 +650,9 @@ function sanitizeRuleConfig(value: unknown, dataType: string): Record<string, un
     }
     case 'Lista compleja':
       record['Lista compleja'] = Array.isArray(record['Lista compleja'])
-        ? (record['Lista compleja'] as unknown[]).map((item) => (item && typeof item === 'object' ? item : {}))
+        ? (record['Lista compleja'] as unknown[])
+            .map((item) => sanitizeComplexListRow(item))
+            .filter((row) => Object.keys(row).length > 0)
         : [];
       break;
     case 'Telefono':
@@ -680,6 +691,32 @@ function sanitizeRuleConfig(value: unknown, dataType: string): Record<string, un
   }
 
   return record;
+}
+
+function sanitizeComplexListRow(value: unknown): Record<string, string> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return {};
+  }
+
+  const entries = Object.entries(value as Record<string, unknown>).reduce<Record<string, string>>(
+    (acc, [key, cell]) => {
+      const label = typeof key === 'string' ? key.trim() : '';
+      if (!label) {
+        return acc;
+      }
+
+      const text = stringifyValue(cell).trim();
+      if (text.length === 0 || text === '—') {
+        return acc;
+      }
+
+      acc[label] = text;
+      return acc;
+    },
+    {}
+  );
+
+  return entries;
 }
 
 function sanitizeString(value: unknown): string | null {
