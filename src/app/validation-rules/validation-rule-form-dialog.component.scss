@@ -427,7 +427,10 @@ mat-dialog-content {
   color: #1e293b;
   background: rgba(241, 245, 249, 0.6);
   position: relative;
+  display: table-cell;
   vertical-align: middle;
+  writing-mode: horizontal-tb;
+  text-orientation: mixed;
 }
 
 .modal__table-header-cell {

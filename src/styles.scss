@@ -437,9 +437,7 @@ button {
   color: #1e293b;
   background: rgba(241, 245, 249, 0.6);
   position: relative;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+  vertical-align: middle;
 }
 
 .modal__table th span {

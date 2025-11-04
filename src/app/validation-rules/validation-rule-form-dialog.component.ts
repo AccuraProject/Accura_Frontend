@@ -15,8 +15,7 @@ import {
   extractAiPayloads,
   generateDefaultRuleConfig,
   getExampleEntries as getExampleEntriesUtil,
-  normalizeAiPayload,
-  extractRuleTable as extractRuleTableUtil
+  normalizeAiPayload
 } from './validation-rule-ai.utils';
 
 export interface ValidationRuleFormDialogResult {
@@ -508,7 +507,28 @@ export class ValidationRuleFormDialogComponent {
 
   protected get aiPreviewDetails(): string[] {
     const preview = this.aiPreview;
-    return preview ? describeRuleConfigUtil(preview) : [];
+    if (!preview) {
+      return [];
+    }
+
+    const details = describeRuleConfigUtil(preview);
+    const dataType = typeof preview['Tipo de dato'] === 'string' ? preview['Tipo de dato'] : '';
+    const tableSuggestion = this.buildAdvancedTableSuggestion(preview, dataType);
+
+    if (tableSuggestion) {
+      tableSuggestion.rows.forEach((row, index) => {
+        const summary = tableSuggestion.columns
+          .map((column) => {
+            const value = (row[column] ?? '').trim();
+            return `${column}: ${value.length > 0 ? value : '—'}`;
+          })
+          .join(' | ');
+
+        details.push(`Fila ${index + 1}: ${summary}`);
+      });
+    }
+
+    return details;
   }
 
   protected get aiPreviewHeaders(): string[] {
@@ -530,19 +550,6 @@ export class ValidationRuleFormDialogComponent {
     }
 
     return getExampleEntriesUtil(preview).filter((entry) => entry.key.trim().length > 0);
-  }
-
-  protected get hasAiPreviewAdvancedTable(): boolean {
-    const table = this.getAiPreviewTableData();
-    return Boolean(table && table.columns.length > 0 && table.rows.length > 0);
-  }
-
-  protected get aiPreviewAdvancedTableColumns(): string[] {
-    return this.getAiPreviewTableData()?.columns ?? [];
-  }
-
-  protected get aiPreviewAdvancedTableRows(): Array<Record<string, string>> {
-    return this.getAiPreviewTableData()?.rows ?? [];
   }
 
   private applyAiPayload(payload: RulePayload): void {
@@ -586,28 +593,80 @@ export class ValidationRuleFormDialogComponent {
     this.duplicateFieldDraft = '';
 
     this.ensureCollections();
-    this.syncAdvancedTableFromRule();
+
+    const tableSuggestion = this.buildAdvancedTableSuggestion(payload, dataType);
+    if (tableSuggestion) {
+      this.applyAdvancedTableSuggestion(tableSuggestion);
+    } else {
+      this.syncAdvancedTableFromRule();
+    }
   }
 
   private generateSuggestionId(): string {
     return `ai-suggestion-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
   }
 
-  private getAiPreviewTableData(): { columns: string[]; rows: Array<Record<string, string>> } | null {
-    const preview = this.aiPreview;
-    if (!preview) {
+  private buildAdvancedTableSuggestion(
+    payload: RulePayload,
+    dataType: string
+  ): { columns: string[]; rows: Array<Record<string, string>> } | null {
+    const key = this.getAdvancedConfigKey(dataType);
+    if (!key) {
       return null;
     }
 
-    const table = extractRuleTableUtil(preview);
-    if (!table) {
+    const config = payload['Regla'];
+    if (!config || typeof config !== 'object' || Array.isArray(config)) {
+      return null;
+    }
+
+    const source = (config as Record<string, unknown>)[key];
+    const rows = this.toAdvancedTableRows(source);
+    const columns = this.extractAdvancedColumns(rows)
+      .map((column) => column.trim())
+      .filter((column, index, array) => column.length > 0 && array.indexOf(column) === index);
+
+    if (columns.length === 0 || rows.length === 0) {
+      return null;
+    }
+
+    const normalizedRows = rows
+      .map((row) => this.fillAdvancedRow(row, columns))
+      .map((row) => {
+        const normalized: Record<string, string> = {};
+        columns.forEach((column) => {
+          normalized[column] = (row[column] ?? '').trim();
+        });
+        return normalized;
+      })
+      .filter((row) => columns.some((column) => row[column].length > 0));
+
+    if (normalizedRows.length === 0) {
       return null;
     }
 
     return {
-      columns: [...table.columns],
-      rows: table.rows.map((row) => ({ ...row }))
+      columns,
+      rows: normalizedRows.map((row) => ({ ...row }))
     };
+  }
+
+  private applyAdvancedTableSuggestion(data: {
+    columns: string[];
+    rows: Array<Record<string, string>>;
+  }): void {
+    const key = this.getAdvancedConfigKey(this.formModel.dataType);
+    if (!key) {
+      this.syncAdvancedTableFromRule();
+      return;
+    }
+
+    this.advancedTableColumns = [...data.columns];
+    this.advancedTableRows = data.rows.map((row) => this.fillAdvancedRow({ ...row }, data.columns));
+    this.advancedColumnDraft = '';
+    this.advancedConfigError = null;
+
+    this.updateAdvancedRuleConfigFromTable();
   }
 
   private async postAuthorized<T>(path: string, body: unknown, session: SessionState | null): Promise<T> {
