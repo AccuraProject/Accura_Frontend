@@ -742,24 +742,86 @@ export class ValidationRuleFormDialogComponent {
           }
 
           const text = this.stringifyExampleValue(cell).trim();
+          if (text.length === 0 || text === '—') {
+            return;
+          }
+
           record[header] = text;
         });
-        return record;
-      });
+
+        return Object.values(record).some((value) => value.trim().length > 0) ? record : null;
+      })
+      .filter((record): record is Record<string, string> => Boolean(record));
   }
 
   private extractAdvancedColumns(rows: Array<Record<string, string>>): string[] {
-    const columns = new Set<string>();
+    const collected: string[] = [];
+    const append = (label: string): void => {
+      const header = label.trim();
+      if (!header) {
+        return;
+      }
+
+      const exists = collected.some((column) => column.toLowerCase() === header.toLowerCase());
+      if (!exists) {
+        collected.push(header);
+      }
+    };
+
     rows.forEach((row) => {
-      Object.keys(row).forEach((key) => {
-        const header = key.trim();
-        if (header.length > 0) {
-          columns.add(header);
-        }
-      });
+      Object.keys(row).forEach((key) => append(key));
     });
 
-    return Array.from(columns);
+    const preferred = this.getPreferredAdvancedColumns();
+    const ordered = this.orderAdvancedColumns(preferred, collected);
+
+    return ordered.length > 0 ? ordered : preferred;
+  }
+
+  private getPreferredAdvancedColumns(): string[] {
+    const headers = [this.formModel.documentType, ...this.formModel.secondaryHeaders]
+      .map((item) => (typeof item === 'string' ? item.trim() : ''))
+      .filter((item) => item.length > 0);
+
+    const unique: string[] = [];
+    headers.forEach((header) => {
+      const exists = unique.some((item) => item.toLowerCase() === header.toLowerCase());
+      if (!exists) {
+        unique.push(header);
+      }
+    });
+
+    return unique;
+  }
+
+  private orderAdvancedColumns(preferred: string[], columns: string[]): string[] {
+    const normalize = (value: string): string => value.trim().toLowerCase();
+    const result: string[] = [];
+    const seen = new Set<string>();
+
+    const append = (label: string): void => {
+      const text = label.trim();
+      if (!text) {
+        return;
+      }
+
+      const key = normalize(text);
+      if (seen.has(key)) {
+        return;
+      }
+
+      seen.add(key);
+      result.push(text);
+    };
+
+    preferred.forEach((label) => {
+      const match = columns.find((column) => normalize(column) === normalize(label));
+      append(match ?? label);
+    });
+
+    columns.forEach((column) => append(column));
+
+    return result;
   }
 
   private fillAdvancedRow(row: Record<string, string>, columns: string[]): Record<string, string> {
