@@ -5,7 +5,6 @@ export interface RulePayload {
   'Tipo de dato': string;
   'Campo obligatorio': boolean;
   Header: string[];
-  'Mensaje de error': string;
   'Descripción': string;
   'Ejemplo': RuleExample;
   'Regla': Record<string, unknown>;
@@ -421,7 +420,6 @@ export function normalizeAiPayload(payload: unknown): RulePayload | null {
     'Tipo de dato': dataType,
     'Campo obligatorio': mandatory,
     Header: header.length > 0 ? header : ['Plantilla Global'],
-    'Mensaje de error': errorMessage,
     'Descripción': description,
     'Ejemplo': example,
     'Regla': ruleConfig

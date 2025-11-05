@@ -73,7 +73,6 @@
 
             <ul class="modal__ai-meta">
               <li><strong>Obligatorio:</strong> {{ aiPreview?.['Campo obligatorio'] ? 'Sí' : 'No' }}</li>
-              <li><strong>Mensaje de error:</strong> {{ aiPreview?.['Mensaje de error'] }}</li>
             </ul>
 
             <div class="modal__ai-tags" *ngIf="aiPreviewHeaders.length > 0">
@@ -119,22 +118,6 @@
               <span>Nombre de la regla</span>
               <input type="text" [(ngModel)]="formModel.name" name="name" required />
             </label>
-            <label class="modal__field">
-              <span>Tipo de dato</span>
-              <select [(ngModel)]="formModel.dataType" name="dataType" (ngModelChange)="onDataTypeChange()">
-                <option *ngFor="let option of dataTypeOptions" [value]="option">{{ option }}</option>
-              </select>
-            </label>
-            <label class="modal__field">
-              <span>Plantilla / Tipo de documento</span>
-              <input
-                type="text"
-                [(ngModel)]="formModel.documentType"
-                name="documentType"
-                placeholder="Plantilla Global"
-                required
-              />
-            </label>
           </div>
 
           <div class="modal__toggles">
@@ -147,10 +130,6 @@
               <select [(ngModel)]="formModel.status" name="status">
                 <option *ngFor="let option of statusOptions" [value]="option">{{ option }}</option>
               </select>
-            </label>
-            <label class="modal__field modal__field--grow">
-              <span>Mensaje de error</span>
-              <input type="text" [(ngModel)]="formModel.errorMessage" name="errorMessage" required />
             </label>
           </div>
 

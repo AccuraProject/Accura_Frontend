@@ -4,7 +4,6 @@ import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/materia
 
 export interface ValidationRuleDeleteDialogData {
   name: string;
-  documentType: string;
 }
 
 @Component({

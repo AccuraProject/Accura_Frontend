@@ -38,9 +38,7 @@ interface ValidationRule {
   name: string;
   dataType: string;
   mandatory: boolean;
-  errorMessage: string;
   status: 'Activa' | 'Inactiva';
-  documentType: string;
   description: string;
   header: string[];
   example: RuleExample;
@@ -121,8 +119,7 @@ export class ValidationRulesComponent implements OnInit {
       return (
         rule.name.toLowerCase().includes(term) ||
         rule.dataType.toLowerCase().includes(term) ||
-        rule.status.toLowerCase().includes(term) ||
-        rule.documentType.toLowerCase().includes(term)
+        rule.status.toLowerCase().includes(term)
       );
     });
   }
@@ -137,10 +134,6 @@ export class ValidationRulesComponent implements OnInit {
 
   protected get dataTypesCount(): number {
     return new Set(this.rules.map((rule) => rule.dataType)).size;
-  }
-
-  protected get documentTypesCount(): number {
-    return new Set(this.rules.map((rule) => rule.documentType)).size;
   }
 
   protected get selectedAiRule(): AiRuleOption | undefined {
@@ -242,7 +235,6 @@ export class ValidationRulesComponent implements OnInit {
       'Tipo de dato': dataType,
       'Campo obligatorio': mandatory,
       Header: header,
-      'Mensaje de error': errorMessage,
       'Descripción': description,
       'Ejemplo': example,
       'Regla': ruleConfig
@@ -318,8 +310,7 @@ export class ValidationRulesComponent implements OnInit {
     >(ValidationRuleDeleteDialogComponent, {
       disableClose: true,
       data: {
-        name: rule.name,
-        documentType: rule.documentType
+        name: rule.name
       }
     });
 
@@ -459,9 +450,7 @@ export class ValidationRulesComponent implements OnInit {
       name: clone['Nombre de la regla'],
       dataType: clone['Tipo de dato'],
       mandatory: clone['Campo obligatorio'],
-      errorMessage: clone['Mensaje de error'],
       status,
-      documentType: header.length > 0 ? header[0] : 'Plantilla Global',
       description: clone['Descripción'],
       header,
       example,
@@ -474,11 +463,10 @@ export class ValidationRulesComponent implements OnInit {
   private buildPayloadFromFormResult(result: ValidationRuleFormDialogResult): RulePayload {
     const name = result.name.trim();
     const dataType = result.dataType;
-    const primaryHeader = result.documentType.trim() || 'Plantilla Global';
     const additionalHeaders = result.secondaryHeaders
       .map((item) => item.trim())
-      .filter((item, index, array) => item.length > 0 && array.indexOf(item) === index && item !== primaryHeader);
-    const headers = [primaryHeader, ...additionalHeaders];
+      .filter((item, index, array) => item.length > 0 && array.indexOf(item) === index);
+    const headers = [...additionalHeaders];
 
     const example = result.exampleEntries.reduce<RuleExample>((acc, entry) => {
       const key = entry.key.trim();
@@ -495,7 +483,6 @@ export class ValidationRulesComponent implements OnInit {
       'Tipo de dato': dataType,
       'Campo obligatorio': result.mandatory,
       Header: headers,
-      'Mensaje de error': result.errorMessage.trim(),
       'Descripción': result.description.trim(),
       'Ejemplo': example,
       'Regla': this.normalizeManualRuleConfig(result.ruleConfig, dataType)
@@ -697,9 +684,7 @@ export class ValidationRulesComponent implements OnInit {
       name: rule.name,
       dataType: rule.dataType,
       mandatory: rule.mandatory,
-      errorMessage: rule.errorMessage,
       status: rule.status,
-      documentType: rule.documentType,
       description: rule.description,
       secondaryHeaders: rule.header.slice(1),
       exampleEntries: this.buildDialogExamples(rule.payload),

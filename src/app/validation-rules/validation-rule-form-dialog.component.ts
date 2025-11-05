@@ -22,9 +22,7 @@ export interface ValidationRuleFormDialogResult {
   name: string;
   dataType: string;
   mandatory: boolean;
-  errorMessage: string;
   status: 'Activa' | 'Inactiva';
-  documentType: string;
   description: string;
   secondaryHeaders: string[];
   exampleEntries: Array<{ key: string; value: string }>;
@@ -121,10 +119,9 @@ export class ValidationRuleFormDialogComponent {
       return;
     }
 
-    const documentType = this.formModel.documentType.trim() || 'Plantilla Global';
     const secondaryHeaders = this.formModel.secondaryHeaders
       .map((item) => item.trim())
-      .filter((item, index, array) => item.length > 0 && array.indexOf(item) === index && item !== documentType);
+      .filter((item, index, array) => item.length > 0 && array.indexOf(item) === index);
 
     const exampleEntries = this.formModel.exampleEntries.map((entry) => ({
       key: entry.key.trim(),
@@ -136,9 +133,7 @@ export class ValidationRuleFormDialogComponent {
     const result: ValidationRuleFormDialogResult = {
       ...this.formModel,
       name: this.formModel.name.trim(),
-      errorMessage: this.formModel.errorMessage.trim(),
       description: this.formModel.description.trim(),
-      documentType,
       secondaryHeaders,
       exampleEntries,
       ruleConfig: JSON.parse(JSON.stringify(this.formModel.ruleConfig)) as Record<string, unknown>
@@ -148,11 +143,7 @@ export class ValidationRuleFormDialogComponent {
   }
 
   protected get canSave(): boolean {
-    if (!this.formModel.name.trim() || !this.formModel.errorMessage.trim()) {
-      return false;
-    }
-
-    if (!this.formModel.documentType.trim()) {
+    if (!this.formModel.name.trim()) {
       return false;
     }
 
@@ -202,7 +193,7 @@ export class ValidationRuleFormDialogComponent {
       return;
     }
 
-    if (!this.formModel.secondaryHeaders.includes(value) && value !== this.formModel.documentType.trim()) {
+    if (!this.formModel.secondaryHeaders.includes(value)) {
       this.formModel.secondaryHeaders.push(value);
     }
 
@@ -320,7 +311,7 @@ export class ValidationRuleFormDialogComponent {
   }
 
   protected get ruleConfigSummary(): string[] {
-    const headers = [this.formModel.documentType, ...this.formModel.secondaryHeaders]
+    const headers = [...this.formModel.secondaryHeaders]
       .map((item) => item?.toString().trim())
       .filter((item): item is string => Boolean(item))
       .filter((item, index, array) => array.indexOf(item) === index);
@@ -330,7 +321,6 @@ export class ValidationRuleFormDialogComponent {
       'Tipo de dato': this.formModel.dataType,
       'Campo obligatorio': this.formModel.mandatory,
       Header: headers,
-      'Mensaje de error': this.formModel.errorMessage,
       'Descripción': this.formModel.description,
       'Ejemplo': {},
       'Regla': this.formModel.ruleConfig ?? {}
@@ -568,13 +558,9 @@ export class ValidationRuleFormDialogComponent {
       : this.formModel.name;
     this.formModel.dataType = dataType;
     this.formModel.mandatory = Boolean(payload['Campo obligatorio']);
-    this.formModel.errorMessage = typeof payload['Mensaje de error'] === 'string'
-      ? payload['Mensaje de error']
-      : this.formModel.errorMessage;
     this.formModel.description = typeof payload['Descripción'] === 'string'
       ? payload['Descripción']
       : this.formModel.description;
-    this.formModel.documentType = primaryHeader;
     this.formModel.secondaryHeaders = secondaryHeaders;
 
     const configSource = payload['Regla'] ?? generateDefaultRuleConfig(dataType);
@@ -724,9 +710,7 @@ export class ValidationRuleFormDialogComponent {
       name: 'Nueva Regla de Validación',
       dataType: 'Texto',
       mandatory: false,
-      errorMessage: 'Define el mensaje de error que verán tus usuarios.',
       status: 'Activa',
-      documentType: 'Plantilla Global',
       description: 'Describe la regla para que otros usuarios entiendan su propósito.',
       secondaryHeaders: [],
       exampleEntries: this.createDefaultExamples(),
@@ -838,7 +822,7 @@ export class ValidationRuleFormDialogComponent {
   }
 
   private getPreferredAdvancedColumns(): string[] {
-    const headers = [this.formModel.documentType, ...this.formModel.secondaryHeaders]
+    const headers = [...this.formModel.secondaryHeaders]
       .map((item) => (typeof item === 'string' ? item.trim() : ''))
       .filter((item) => item.length > 0);
 
