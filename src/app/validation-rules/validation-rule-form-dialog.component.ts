@@ -24,6 +24,7 @@ export interface ValidationRuleFormDialogResult {
   mandatory: boolean;
   status: 'Activa' | 'Inactiva';
   description: string;
+  primaryHeader: string;
   secondaryHeaders: string[];
   exampleEntries: Array<{ key: string; value: string }>;
   ruleConfig: Record<string, unknown>;
@@ -124,6 +125,9 @@ export class ValidationRuleFormDialogComponent {
       return;
     }
 
+    const primaryHeader = this.formModel.primaryHeader.trim();
+    const sanitizedPrimaryHeader = primaryHeader.length > 0 ? primaryHeader : 'Plantilla Global';
+
     const secondaryHeaders = this.formModel.secondaryHeaders
       .map((item) => item.trim())
       .filter((item, index, array) => item.length > 0 && array.indexOf(item) === index);
@@ -134,11 +138,13 @@ export class ValidationRuleFormDialogComponent {
     }));
 
     this.formModel.exampleEntries = exampleEntries.map((entry) => ({ ...entry }));
+    this.formModel.primaryHeader = sanitizedPrimaryHeader;
 
     const result: ValidationRuleFormDialogResult = {
       ...this.formModel,
       name: this.formModel.name.trim(),
       description: this.formModel.description.trim(),
+      primaryHeader: sanitizedPrimaryHeader,
       secondaryHeaders,
       exampleEntries,
       ruleConfig: JSON.parse(JSON.stringify(this.formModel.ruleConfig)) as Record<string, unknown>
@@ -164,8 +170,9 @@ export class ValidationRuleFormDialogComponent {
       case 'Lista':
         return this.listValues.length > 0;
       case 'Lista compleja':
-      case 'Dependencia':
         return this.advancedTableColumns.length > 0 && this.hasAdvancedTableValues;
+      case 'Dependencia':
+        return this.dependencyTableColumns.length > 0 && this.hasDependencyValues;
       case 'Validación conjunta':
         return this.jointFieldValues.length > 0;
       case 'Duplicados':
@@ -273,6 +280,21 @@ export class ValidationRuleFormDialogComponent {
     this.formModel.ruleConfig['Campos'] = values;
   }
 
+  protected removeDependencyRow(index: number): void {
+    if (index < 0) {
+      return;
+    }
+
+    const rules = this.getDependencyRules();
+    if (index >= rules.length) {
+      return;
+    }
+
+    this.advancedConfigError = null;
+    const updated = rules.filter((_, i) => i !== index);
+    this.formModel.ruleConfig['reglas especifica'] = updated;
+  }
+
   protected toggleIgnoreEmpty(value: boolean): void {
     this.formModel.ruleConfig['Ignorar vacios'] = value;
   }
@@ -317,7 +339,7 @@ export class ValidationRuleFormDialogComponent {
   }
 
   protected get ruleConfigSummary(): string[] {
-    const headers = [...this.formModel.secondaryHeaders]
+    const headers = [this.formModel.primaryHeader, ...this.formModel.secondaryHeaders]
       .map((item) => item?.toString().trim())
       .filter((item): item is string => Boolean(item))
       .filter((item, index, array) => array.indexOf(item) === index);
@@ -345,6 +367,56 @@ export class ValidationRuleFormDialogComponent {
     );
   }
 
+  protected get dependencyTableColumns(): string[] {
+    if (this.formModel.dataType !== 'Dependencia') {
+      return [];
+    }
+
+    const headers = [this.formModel.primaryHeader, ...this.formModel.secondaryHeaders]
+      .map((item) => (typeof item === 'string' ? item.trim() : ''))
+      .filter((item, index, array) => item.length > 0 && array.indexOf(item) === index);
+
+    if (headers.length > 0) {
+      return headers;
+    }
+
+    return this.collectDependencyColumnsFromRules();
+  }
+
+  protected get dependencyTableRows(): Array<Record<string, string>> {
+    if (this.formModel.dataType !== 'Dependencia') {
+      return [];
+    }
+
+    const columns = this.dependencyTableColumns;
+    const rules = this.getDependencyRules();
+
+    if (columns.length === 0 || rules.length === 0) {
+      return [];
+    }
+
+    return rules.map((rule) => this.buildDependencyRow(rule, columns));
+  }
+
+  protected get dependencyTableEmptyMessage(): string {
+    if (this.dependencyTableColumns.length === 0) {
+      return 'No se encontraron encabezados para las reglas de dependencia.';
+    }
+
+    return 'No hay reglas de dependencia configuradas.';
+  }
+
+  protected get hasDependencyValues(): boolean {
+    const columns = this.dependencyTableColumns;
+    if (columns.length === 0) {
+      return false;
+    }
+
+    return this.dependencyTableRows.some((row) =>
+      columns.some((column) => (row[column] ?? '').trim().length > 0)
+    );
+  }
+
   protected get advancedTableHelper(): string {
     return this.formModel.dataType === 'Dependencia'
       ? 'Define las combinaciones válidas entre los campos dependientes. Cada fila representa una relación permitida.'
@@ -353,7 +425,7 @@ export class ValidationRuleFormDialogComponent {
 
   protected get advancedTableEmptyMessage(): string {
     return this.formModel.dataType === 'Dependencia'
-      ? 'Agrega las columnas que necesitas (por ejemplo: Distrito, Provincia, Departamento) para crear la tabla de dependencias.'
+      ? 'La tabla de dependencias se genera con los encabezados que define la regla recibida.'
       : 'Agrega columnas para describir cada atributo de la lista (por ejemplo: Tipo Documento, Código, Descripción).';
   }
 
@@ -569,6 +641,7 @@ export class ValidationRuleFormDialogComponent {
     this.formModel.description = typeof payload['Descripción'] === 'string'
       ? payload['Descripción']
       : this.formModel.description;
+    this.formModel.primaryHeader = primaryHeader;
     this.formModel.secondaryHeaders = secondaryHeaders;
     this.syncListTableHeader(dataType === 'Lista' ? primaryHeader : null);
 
@@ -724,6 +797,7 @@ export class ValidationRuleFormDialogComponent {
       mandatory: false,
       status: 'Activa',
       description: 'Describe la regla para que otros usuarios entiendan su propósito.',
+      primaryHeader: 'Plantilla Global',
       secondaryHeaders: [],
       exampleEntries: this.createDefaultExamples(),
       ruleConfig: this.createDefaultRuleConfig('Texto')
@@ -733,6 +807,7 @@ export class ValidationRuleFormDialogComponent {
   private cloneRule(rule: ValidationRuleFormDialogResult): ValidationRuleFormDialogResult {
     return {
       ...rule,
+      primaryHeader: typeof rule.primaryHeader === 'string' ? rule.primaryHeader : 'Plantilla Global',
       secondaryHeaders: [...(rule.secondaryHeaders ?? [])],
       exampleEntries: this.normalizeExampleEntries(rule.exampleEntries ?? []),
       ruleConfig: JSON.parse(JSON.stringify(rule.ruleConfig ?? {})) as Record<string, unknown>
@@ -740,6 +815,10 @@ export class ValidationRuleFormDialogComponent {
   }
 
   private ensureCollections(): void {
+    if (typeof this.formModel.primaryHeader !== 'string') {
+      this.formModel.primaryHeader = 'Plantilla Global';
+    }
+
     if (!Array.isArray(this.formModel.secondaryHeaders)) {
       this.formModel.secondaryHeaders = [];
     }
@@ -753,17 +832,13 @@ export class ValidationRuleFormDialogComponent {
       return;
     }
 
-    const text = typeof source === 'string' ? source.trim() : '';
-    this.listTableHeader = text.length > 0 ? text : this.defaultListTableHeader;
+    const fallback = typeof source === 'string' ? source.trim() : this.formModel.primaryHeader.trim();
+    this.listTableHeader = fallback.length > 0 ? fallback : this.defaultListTableHeader;
   }
 
-  private getAdvancedConfigKey(dataType: string): 'Lista compleja' | 'reglas especifica' | null {
+  private getAdvancedConfigKey(dataType: string): 'Lista compleja' | null {
     if (dataType === 'Lista compleja') {
       return 'Lista compleja';
-    }
-
-    if (dataType === 'Dependencia') {
-      return 'reglas especifica';
     }
 
     return null;
@@ -916,6 +991,110 @@ export class ValidationRuleFormDialogComponent {
       .filter((record) => Object.keys(record).length > 0);
 
     this.formModel.ruleConfig[key] = entries;
+  }
+
+  private getDependencyRules(): Array<Record<string, unknown>> {
+    const config = this.formModel.ruleConfig;
+    if (!config || typeof config !== 'object') {
+      return [];
+    }
+
+    const source = (config as Record<string, unknown>)['reglas especifica'];
+    if (!Array.isArray(source)) {
+      return [];
+    }
+
+    return source.filter((item): item is Record<string, unknown> => this.isPlainObject(item));
+  }
+
+  private collectDependencyColumnsFromRules(): string[] {
+    const collected: string[] = [];
+    const rules = this.getDependencyRules();
+
+    rules.forEach((rule) => this.collectColumnsFromRecord(rule, collected));
+
+    return collected;
+  }
+
+  private collectColumnsFromRecord(record: Record<string, unknown>, collected: string[]): void {
+    Object.entries(record).forEach(([key, value]) => {
+      const label = typeof key === 'string' ? key.trim() : '';
+      if (label && !this.isPlainObject(value)) {
+        const exists = collected.some((item) => item.toLowerCase() === label.toLowerCase());
+        if (!exists) {
+          collected.push(label);
+        }
+      }
+
+      if (this.isPlainObject(value)) {
+        this.collectColumnsFromRecord(value as Record<string, unknown>, collected);
+      } else if (Array.isArray(value)) {
+        value.forEach((item) => {
+          if (this.isPlainObject(item)) {
+            this.collectColumnsFromRecord(item as Record<string, unknown>, collected);
+          }
+        });
+      }
+    });
+  }
+
+  private buildDependencyRow(
+    record: Record<string, unknown>,
+    columns: string[]
+  ): Record<string, string> {
+    return columns.reduce<Record<string, string>>((acc, column) => {
+      acc[column] = this.findDependencyValue(record, column);
+      return acc;
+    }, {});
+  }
+
+  private findDependencyValue(record: Record<string, unknown>, header: string): string {
+    const target = header.trim().toLowerCase();
+    if (!target) {
+      return '';
+    }
+
+    const visited = new Set<unknown>();
+    const queue: unknown[] = [record];
+
+    while (queue.length > 0) {
+      const current = queue.shift();
+      if (!current || typeof current !== 'object') {
+        continue;
+      }
+
+      if (visited.has(current)) {
+        continue;
+      }
+
+      visited.add(current);
+
+      if (Array.isArray(current)) {
+        current.forEach((item) => {
+          if (item && typeof item === 'object') {
+            queue.push(item);
+          }
+        });
+        continue;
+      }
+
+      for (const [key, value] of Object.entries(current as Record<string, unknown>)) {
+        const label = typeof key === 'string' ? key.trim().toLowerCase() : '';
+        if (label === target) {
+          return this.stringifyExampleValue(value).trim();
+        }
+
+        if (value && typeof value === 'object') {
+          queue.push(value);
+        }
+      }
+    }
+
+    return '';
+  }
+
+  private isPlainObject(value: unknown): value is Record<string, unknown> {
+    return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
   }
 
   private createDefaultRuleConfig(dataType: string): Record<string, unknown> {

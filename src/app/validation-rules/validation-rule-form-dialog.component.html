@@ -376,7 +376,42 @@
             </div>
 
             <ng-container *ngSwitchCase="'Dependencia'">
-              <ng-container *ngTemplateOutlet="advancedConfigTable"></ng-container>
+              <div class="modal__stack">
+                <p class="modal__helper">{{ advancedTableHelper }}</p>
+                <p class="modal__helper" *ngIf="dependencyTableColumns.length === 0 || dependencyTableRows.length === 0">
+                  {{ dependencyTableEmptyMessage }}
+                </p>
+                <div
+                  class="modal__table-wrapper"
+                  *ngIf="dependencyTableColumns.length > 0 && dependencyTableRows.length > 0"
+                >
+                  <table class="modal__table">
+                    <thead>
+                      <tr>
+                        <th *ngFor="let column of dependencyTableColumns; trackBy: trackByIndex">{{ column }}</th>
+                        <th class="modal__table-actions-cell">Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr *ngFor="let row of dependencyTableRows; let rowIndex = index; trackBy: trackByIndex">
+                        <td *ngFor="let column of dependencyTableColumns; trackBy: trackByIndex">
+                          {{ row[column] || '—' }}
+                        </td>
+                        <td class="modal__table-actions-cell">
+                          <button
+                            type="button"
+                            class="modal__icon-button"
+                            (click)="removeDependencyRow(rowIndex)"
+                            aria-label="Eliminar fila"
+                          >
+                            <span class="material-symbols-rounded" aria-hidden="true">delete</span>
+                          </button>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </ng-container>
 
             <div *ngSwitchCase="'Validación conjunta'" class="modal__stack">
