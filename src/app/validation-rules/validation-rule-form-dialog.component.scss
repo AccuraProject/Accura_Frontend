@@ -70,16 +70,6 @@ mat-dialog-content {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
 }
 
-.modal__ai-input {
-  display: flex;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-}
-
-.modal__ai-input input {
-  flex: 1 1 240px;
-}
-
 .modal__ai-button {
   border: none;
   border-radius: 12px;
