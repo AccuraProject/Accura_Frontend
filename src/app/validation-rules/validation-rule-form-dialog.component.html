@@ -15,7 +15,7 @@
         <section class="modal__section modal__section--ai">
           <div class="modal__section-header">
             <div>
-              <h4>Crear Regla con IA (Opcional)</h4>
+              <h4>Crear Regla con IA</h4>
               <p class="modal__helper">
                 Describe la validación y genera una propuesta automática. Una vez procesada podrás revisarla y
                 editarla manualmente.
@@ -121,14 +121,11 @@
             </div>
             <div class="form-field">
               <label for="rule-dataType">Tipo de dato</label>
-              <select
+              <input
                 id="rule-dataType"
                 [(ngModel)]="formModel.dataType"
                 name="dataType"
-                (ngModelChange)="onDataTypeChange()"
-              >
-                <option *ngFor="let option of dataTypeOptions" [ngValue]="option">{{ option }}</option>
-              </select>
+                readonly="true"/>
             </div>
           </div>
 
@@ -250,7 +247,7 @@
             </div>
 
             <div *ngSwitchCase="'Lista'" class="modal__stack">
-              <div class="tag-input">
+              <div class="form-field tag-input">
                 <input
                   type="text"
                   [(ngModel)]="listItemDraft"
