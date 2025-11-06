@@ -80,6 +80,7 @@ export class ValidationRuleFormDialogComponent {
   protected advancedTableRows: Array<Record<string, string>> = [];
   protected advancedColumnDraft = '';
   protected showRuleConfigJson = true;
+  protected manualFormEnabled: boolean;
 
   protected aiPrompt = '';
   protected aiIsLoading = false;
@@ -106,6 +107,7 @@ export class ValidationRuleFormDialogComponent {
       : 'Define una regla global que podrás asignar a columnas de plantillas según su tipo de dato.';
     this.actionLabel = this.isEditMode ? 'Guardar Cambios' : 'Guardar Regla';
     this.formModel = data.rule ? this.cloneRule(data.rule) : this.createEmptyForm();
+    this.manualFormEnabled = this.isEditMode;
     this.ensureCollections();
     this.syncAdvancedTableFromRule();
   }
@@ -543,6 +545,8 @@ export class ValidationRuleFormDialogComponent {
   }
 
   private applyAiPayload(payload: RulePayload): void {
+    this.manualFormEnabled = true;
+
     const headers = Array.isArray(payload.Header)
       ? (payload.Header as unknown[])
           .map((item) => (typeof item === 'string' ? item.trim() : ''))

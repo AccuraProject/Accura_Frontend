@@ -10,13 +10,16 @@
   </header>
 
   <div mat-dialog-content>
-    <div class="modal__layout">
+    <div class="modal__layout" [class.modal__layout--dual]="manualFormEnabled">
       <div class="modal__column modal__column--left">
         <section class="modal__section modal__section--ai">
           <div class="modal__section-header">
             <div>
               <h4>Crear Regla con IA (Opcional)</h4>
-              <p class="modal__helper">Describe la validación y genera una propuesta automática.</p>
+              <p class="modal__helper">
+                Describe la validación y genera una propuesta automática. Una vez procesada podrás revisarla y
+                editarla manualmente.
+              </p>
             </div>
           </div>
 
@@ -47,75 +50,67 @@
             <span class="modal__ai-spinner" aria-hidden="true"></span>
             <span>Analizando descripción...</span>
           </div>
-
-          <article *ngIf="hasAiPreview && !aiIsLoading" class="modal__ai-preview">
-            <header class="modal__ai-preview-header">
-              <div>
-                <h5>{{ aiPreview?.['Nombre de la regla'] }}</h5>
-                <p>{{ aiPreview?.['Descripción'] }}</p>
-              </div>
-              <span class="modal__ai-badge">{{ aiPreview?.['Tipo de dato'] }}</span>
-            </header>
-
-            <label *ngIf="aiSuggestions.length > 1" class="modal__ai-select">
-              <span>Elegir sugerencia</span>
-              <select
-                [(ngModel)]="selectedAiSuggestionId"
-                name="aiSuggestion"
-                (ngModelChange)="onAiSuggestionSelect($event)"
-              >
-                <option
-                  *ngFor="let suggestion of aiSuggestions; trackBy: trackBySuggestionId"
-                  [value]="suggestion.id"
-                >
-                  {{ suggestion.payload['Nombre de la regla'] }}
-                </option>
-              </select>
-            </label>
-
-            <ul class="modal__ai-meta">
-              <li>
-                <strong>Obligatorio:</strong> {{ aiPreview?.['Campo obligatorio'] ? 'Sí' : 'No' }}
-              </li>
-            </ul>
-
-            <div class="modal__ai-tags" *ngIf="aiPreviewHeaders.length > 0">
-              <span *ngFor="let header of aiPreviewHeaders">{{ header }}</span>
-            </div>
-
-            <section class="modal__ai-detail" *ngIf="aiPreviewDetails.length > 0">
-              <h6>Configuración sugerida</h6>
-              <ul>
-                <li *ngFor="let detail of aiPreviewDetails">{{ detail }}</li>
-              </ul>
-            </section>
-
-            <section class="modal__ai-detail" *ngIf="aiPreviewExamples.length > 0">
-              <h6>Ejemplos sugeridos</h6>
-              <ul>
-                <li *ngFor="let example of aiPreviewExamples">
-                  <strong>{{ example.key }}:</strong> {{ example.value }}
-                </li>
-              </ul>
-            </section>
-          </article>
         </section>
 
-        <section class="modal__section modal__section--info">
-          <div class="modal__summary-card">
-            <div class="modal__summary-main">
-              <span class="modal__summary-label">Nombre de la regla</span>
-              <h4 class="modal__summary-title">
-                {{ formModel.name || 'Define un nombre para tu regla' }}
-              </h4>
+        <article *ngIf="manualFormEnabled && hasAiPreview && !aiIsLoading" class="modal__ai-preview">
+          <header class="modal__ai-preview-header">
+            <div>
+              <h5>{{ aiPreview?.['Nombre de la regla'] }}</h5>
+              <p>{{ aiPreview?.['Descripción'] }}</p>
             </div>
-            <div class="modal__summary-chip">
-              <span>Tipo de dato</span>
-              <strong>{{ formModel.dataType }}</strong>
-            </div>
-            <div class="modal__summary-chip">
-              <span>Estado</span>
-              <strong>{{ formModel.status }}</strong>
+            <span class="modal__ai-badge">{{ aiPreview?.['Tipo de dato'] }}</span>
+          </header>
+
+          <label *ngIf="aiSuggestions.length > 1" class="modal__ai-select">
+            <span>Elegir sugerencia</span>
+            <select
+              [(ngModel)]="selectedAiSuggestionId"
+              name="aiSuggestion"
+              (ngModelChange)="onAiSuggestionSelect($event)"
+            >
+              <option
+                *ngFor="let suggestion of aiSuggestions; trackBy: trackBySuggestionId"
+                [value]="suggestion.id"
+              >
+                {{ suggestion.payload['Nombre de la regla'] }}
+              </option>
+            </select>
+          </label>
+
+          <ul class="modal__ai-meta">
+            <li>
+              <strong>Obligatorio:</strong> {{ aiPreview?.['Campo obligatorio'] ? 'Sí' : 'No' }}
+            </li>
+          </ul>
+
+          <div class="modal__ai-tags" *ngIf="aiPreviewHeaders.length > 0">
+            <span *ngFor="let header of aiPreviewHeaders">{{ header }}</span>
+          </div>
+
+          <section class="modal__ai-detail" *ngIf="aiPreviewDetails.length > 0">
+            <h6>Configuración sugerida</h6>
+            <ul>
+              <li *ngFor="let detail of aiPreviewDetails">{{ detail }}</li>
+            </ul>
+          </section>
+
+          <section class="modal__ai-detail" *ngIf="aiPreviewExamples.length > 0">
+            <h6>Ejemplos sugeridos</h6>
+            <ul>
+              <li *ngFor="let example of aiPreviewExamples">
+                <strong>{{ example.key }}:</strong> {{ example.value }}
+              </li>
+            </ul>
+          </section>
+        </article>
+      </div>
+
+      <div *ngIf="manualFormEnabled" class="modal__column modal__column--right">
+        <section class="modal__section modal__section--general">
+          <div class="modal__section-header">
+            <div>
+              <h4>Configuración general</h4>
+              <p class="modal__helper">Completa los datos básicos de la regla.</p>
             </div>
           </div>
 
@@ -124,9 +119,20 @@
               <label for="rule-name">Nombre de la regla</label>
               <input type="text" id="rule-name" [(ngModel)]="formModel.name" name="name" required />
             </div>
+            <div class="form-field">
+              <label for="rule-dataType">Tipo de dato</label>
+              <select
+                id="rule-dataType"
+                [(ngModel)]="formModel.dataType"
+                name="dataType"
+                (ngModelChange)="onDataTypeChange()"
+              >
+                <option *ngFor="let option of dataTypeOptions" [ngValue]="option">{{ option }}</option>
+              </select>
+            </div>
           </div>
 
-          <div class="">
+          <div class="modal__grid modal__grid--info modal__grid--aligned">
             <div class="form-field checkbox-field">
               <input
                 type="checkbox"
@@ -155,13 +161,13 @@
             ></textarea>
           </div>
         </section>
-      </div>
 
-      <div class="modal__column modal__column--right">
         <section class="modal__section">
           <div class="modal__section-header">
-            <h4>Configuración de la regla</h4>
-            <p class="modal__helper">Personaliza los parámetros según el tipo de dato.</p>
+            <div>
+              <h4>Configuración avanzada</h4>
+              <p class="modal__helper">Personaliza los parámetros según el tipo de dato.</p>
+            </div>
           </div>
 
           <ng-container [ngSwitch]="formModel.dataType">
@@ -439,6 +445,7 @@
               Configura los parámetros necesarios para este tipo de dato.
             </div>
           </ng-container>
+
           <ng-template #advancedConfigTable>
             <div class="modal__stack modal__stack--table">
               <p class="modal__helper">{{ advancedTableHelper }}</p>
