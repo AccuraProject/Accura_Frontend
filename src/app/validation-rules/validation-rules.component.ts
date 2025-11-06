@@ -339,53 +339,6 @@ export class ValidationRulesComponent implements OnInit {
     return status === 'Activa' ? 'badge--active' : 'badge--inactive';
   }
 
-  protected openAssistantPanel(): void {
-    if (!this.assistantPanelOpen) {
-      this.assistantPanelOpen = true;
-    }
-
-    if (!this.aiIsLoading && !this.hasAiFetched) {
-      void this.loadAiSuggestions();
-    }
-  }
-
-  protected async loadAiSuggestions(): Promise<void> {
-    if (this.aiIsLoading) {
-      return;
-    }
-
-    this.aiIsLoading = true;
-    this.aiError = null;
-
-    try {
-      const session = await this.getSessionSnapshot();
-      const body = { schema: this.aiRuleSchema, is_admin: this.isAdmin(session) };
-      const data = await this.postAuthorized<unknown>('/assistant/analyze', body, session);
-      console.log('[ValidationRules] Respuesta bruta de la IA:', data);
-
-      const payloads = extractAiPayloads(data)
-        .map((item) => normalizeAiPayload(item))
-        .filter((item): item is RulePayload => item !== null);
-
-      console.log('[ValidationRules] Respuesta normalizada de la IA:', payloads);
-
-      this.aiRuleOptions = payloads.map((payload) => ({
-        id: this.generateId(),
-        payload: JSON.parse(JSON.stringify(payload)) as RulePayload
-      }));
-
-      this.selectedAiRuleId = this.aiRuleOptions.length > 0 ? this.aiRuleOptions[0].id : null;
-    } catch (error) {
-      console.error('[ValidationRules] Error al consultar la IA:', error);
-      this.aiError = this.getErrorMessage(error);
-      this.aiRuleOptions = [];
-      this.selectedAiRuleId = null;
-    } finally {
-      this.hasAiFetched = true;
-      this.aiIsLoading = false;
-    }
-  }
-
   protected applyAiRule(option: AiRuleOption): void {
     console.log('[ValidationRules] Payload listo para enviar (IA):', option.payload);
     const payloadClone = JSON.parse(JSON.stringify(option.payload)) as RulePayload;
