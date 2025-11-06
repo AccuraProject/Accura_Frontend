@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { Store } from '@ngrx/store';
 import { firstValueFrom } from 'rxjs';
+import { read, utils } from 'xlsx';
 
 import { environment } from '../../environments/environment';
 import { selectSessionState, SessionState } from '../core/store/session/session.reducer';
@@ -81,6 +82,8 @@ export class ValidationRuleFormDialogComponent {
   protected advancedTableColumns: string[] = [];
   protected advancedTableRows: Array<Record<string, string>> = [];
   protected advancedColumnDraft = '';
+  protected complexListDraftRow: Record<string, string> = {};
+  protected dependencyDraftRow: Record<string, string> = {};
   protected showRuleConfigJson = true;
   protected manualFormEnabled: boolean;
   protected listTableHeader = this.defaultListTableHeader;
@@ -114,6 +117,8 @@ export class ValidationRuleFormDialogComponent {
     this.ensureCollections();
     this.syncAdvancedTableFromRule();
     this.syncListTableHeader();
+    this.syncComplexListDraftRow();
+    this.syncDependencyDraftRow();
   }
 
   protected close(): void {
@@ -198,6 +203,9 @@ export class ValidationRuleFormDialogComponent {
     this.advancedColumnDraft = '';
     this.syncAdvancedTableFromRule();
     this.syncListTableHeader();
+    this.advancedConfigError = null;
+    this.syncComplexListDraftRow(false);
+    this.syncDependencyDraftRow(false);
   }
 
   protected addSecondaryHeader(): void {
@@ -210,6 +218,10 @@ export class ValidationRuleFormDialogComponent {
       this.formModel.secondaryHeaders.push(value);
       if (this.formModel.dataType === 'Lista compleja') {
         this.syncAdvancedTableFromRule();
+        this.syncComplexListDraftRow();
+      }
+      if (this.formModel.dataType === 'Dependencia') {
+        this.syncDependencyDraftRow();
       }
     }
 
@@ -220,6 +232,10 @@ export class ValidationRuleFormDialogComponent {
     this.formModel.secondaryHeaders.splice(index, 1);
     if (this.formModel.dataType === 'Lista compleja') {
       this.syncAdvancedTableFromRule();
+      this.syncComplexListDraftRow();
+    }
+    if (this.formModel.dataType === 'Dependencia') {
+      this.syncDependencyDraftRow();
     }
   }
 
@@ -236,12 +252,14 @@ export class ValidationRuleFormDialogComponent {
 
     this.formModel.ruleConfig['Lista'] = values;
     this.listItemDraft = '';
+    this.advancedConfigError = null;
   }
 
   protected removeListValue(index: number): void {
     const values = this.listValues;
     values.splice(index, 1);
     this.formModel.ruleConfig['Lista'] = values;
+    this.advancedConfigError = null;
   }
 
   protected addJointField(): void {
@@ -299,6 +317,7 @@ export class ValidationRuleFormDialogComponent {
     this.advancedConfigError = null;
     const updated = rules.filter((_, i) => i !== index);
     this.formModel.ruleConfig['reglas especifica'] = updated;
+    this.syncDependencyDraftRow();
   }
 
   protected toggleIgnoreEmpty(value: boolean): void {
@@ -306,10 +325,17 @@ export class ValidationRuleFormDialogComponent {
   }
 
   protected get listValues(): string[] {
-    const values = this.formModel.ruleConfig['Lista'];
-    return Array.isArray(values)
-      ? (values as unknown[]).filter((item): item is string => typeof item === 'string')
-      : [];
+    return this.getRawListValues()
+      .map((item) => item.trim())
+      .filter((item, index, array) => item.length > 0 && array.indexOf(item) === index);
+  }
+
+  protected get listTableRows(): string[] {
+    return this.getRawListValues();
+  }
+
+  protected get canAddListDraft(): boolean {
+    return this.listItemDraft.trim().length > 0;
   }
 
   protected get jointFieldValues(): string[] {
@@ -404,6 +430,16 @@ export class ValidationRuleFormDialogComponent {
     return rules.map((rule) => this.buildDependencyRow(rule, columns));
   }
 
+  protected get canAddDependencyDraft(): boolean {
+    if (this.formModel.dataType !== 'Dependencia') {
+      return false;
+    }
+
+    return this.dependencyTableColumns.some(
+      (column) => (this.dependencyDraftRow[column] ?? '').trim().length > 0
+    );
+  }
+
   protected get complexListColumns(): string[] {
     if (this.formModel.dataType !== 'Lista compleja') {
       return [];
@@ -418,6 +454,14 @@ export class ValidationRuleFormDialogComponent {
     }
 
     return this.advancedTableRows;
+  }
+
+  protected get canAddComplexListDraft(): boolean {
+    if (this.formModel.dataType !== 'Lista compleja') {
+      return false;
+    }
+
+    return this.complexListColumns.some((column) => (this.complexListDraftRow[column] ?? '').trim().length > 0);
   }
 
   protected get dependencyTableEmptyMessage(): string {
@@ -485,6 +529,9 @@ export class ValidationRuleFormDialogComponent {
     this.advancedTableColumns = [...this.advancedTableColumns, draft];
     this.advancedTableRows = this.advancedTableRows.map((row) => ({ ...row, [draft]: row[draft] ?? '' }));
     this.advancedColumnDraft = '';
+    if (this.formModel.dataType === 'Lista compleja') {
+      this.syncComplexListDraftRow();
+    }
     this.updateAdvancedRuleConfigFromTable();
   }
 
@@ -504,6 +551,9 @@ export class ValidationRuleFormDialogComponent {
           return this.fillAdvancedRow(clone, this.advancedTableColumns);
         });
 
+    if (this.formModel.dataType === 'Lista compleja') {
+      this.syncComplexListDraftRow();
+    }
     this.updateAdvancedRuleConfigFromTable();
   }
 
@@ -520,6 +570,9 @@ export class ValidationRuleFormDialogComponent {
 
     this.advancedConfigError = null;
     this.advancedTableRows = [...this.advancedTableRows, row];
+    if (this.formModel.dataType === 'Lista compleja') {
+      this.syncComplexListDraftRow();
+    }
     this.updateAdvancedRuleConfigFromTable();
   }
 
@@ -530,6 +583,9 @@ export class ValidationRuleFormDialogComponent {
 
     this.advancedConfigError = null;
     this.advancedTableRows = this.advancedTableRows.filter((_, i) => i !== index);
+    if (this.formModel.dataType === 'Lista compleja') {
+      this.syncComplexListDraftRow();
+    }
     this.updateAdvancedRuleConfigFromTable();
   }
 
@@ -544,7 +600,137 @@ export class ValidationRuleFormDialogComponent {
 
     this.advancedConfigError = null;
     this.advancedTableRows = this.advancedTableRows.filter((_, i) => i !== index);
+    this.syncComplexListDraftRow();
     this.updateAdvancedRuleConfigFromTable();
+  }
+
+  protected addComplexListDraftRow(): void {
+    if (this.formModel.dataType !== 'Lista compleja') {
+      return;
+    }
+
+    if (this.advancedTableColumns.length === 0) {
+      this.advancedConfigError = 'Agrega al menos una columna antes de crear filas.';
+      return;
+    }
+
+    const row = this.advancedTableColumns.reduce<Record<string, string>>((acc, column) => {
+      acc[column] = (this.complexListDraftRow[column] ?? '').trim();
+      return acc;
+    }, {});
+
+    const hasValue = this.advancedTableColumns.some((column) => row[column].length > 0);
+    if (!hasValue) {
+      this.advancedConfigError = 'Completa al menos un valor para agregar la fila.';
+      return;
+    }
+
+    this.advancedConfigError = null;
+    this.advancedTableRows = [...this.advancedTableRows, row];
+    this.updateAdvancedRuleConfigFromTable();
+    this.syncComplexListDraftRow(false);
+  }
+
+  protected onComplexListDraftChange(): void {
+    this.advancedConfigError = null;
+  }
+
+  protected addDependencyDraftRow(): void {
+    if (this.formModel.dataType !== 'Dependencia') {
+      return;
+    }
+
+    const columns = this.dependencyTableColumns;
+    if (columns.length === 0) {
+      this.advancedConfigError = 'Define encabezados para poder agregar nuevas dependencias.';
+      return;
+    }
+
+    const record = columns.reduce<Record<string, string>>((acc, column) => {
+      const value = (this.dependencyDraftRow[column] ?? '').trim();
+      if (value.length > 0) {
+        acc[column] = value;
+      }
+      return acc;
+    }, {});
+
+    if (Object.keys(record).length === 0) {
+      this.advancedConfigError = 'Completa al menos un campo para agregar la dependencia.';
+      return;
+    }
+
+    const rules = this.getDependencyRules();
+    this.formModel.ruleConfig['reglas especifica'] = [...rules, record];
+    this.advancedConfigError = null;
+    this.syncDependencyDraftRow(false);
+  }
+
+  protected onDependencyDraftChange(): void {
+    this.advancedConfigError = null;
+  }
+
+  protected async importListFromExcel(event: Event): Promise<void> {
+    const file = this.extractFileFromEvent(event);
+    if (!file) {
+      return;
+    }
+
+    try {
+      this.advancedConfigError = null;
+      const rows = await this.readExcelRows(file);
+      const values = this.buildListValuesFromRows(rows);
+      this.formModel.ruleConfig['Lista'] = values;
+    } catch (error) {
+      console.error('[ValidationRuleFormDialog] Error al importar lista:', error);
+      this.advancedConfigError =
+        'No se pudo importar el archivo. Verifica que el formato sea válido y que contenga los encabezados correctos.';
+    } finally {
+      this.listItemDraft = '';
+      this.resetFileInput(event);
+    }
+  }
+
+  protected async importComplexListFromExcel(event: Event): Promise<void> {
+    const file = this.extractFileFromEvent(event);
+    if (!file) {
+      return;
+    }
+
+    try {
+      this.advancedConfigError = null;
+      const rows = await this.readExcelRows(file);
+      const entries = this.buildComplexListRowsFromExcel(rows);
+      this.advancedTableRows = entries.map((row) => this.fillAdvancedRow(row, this.advancedTableColumns));
+      this.updateAdvancedRuleConfigFromTable();
+      this.syncComplexListDraftRow(false);
+    } catch (error) {
+      console.error('[ValidationRuleFormDialog] Error al importar lista compleja:', error);
+      this.advancedConfigError =
+        'No se pudo importar la lista compleja. Asegúrate de que el archivo tenga las columnas configuradas.';
+    } finally {
+      this.resetFileInput(event);
+    }
+  }
+
+  protected async importDependencyFromExcel(event: Event): Promise<void> {
+    const file = this.extractFileFromEvent(event);
+    if (!file) {
+      return;
+    }
+
+    try {
+      this.advancedConfigError = null;
+      const rows = await this.readExcelRows(file);
+      const entries = this.buildDependencyRowsFromExcel(rows);
+      this.formModel.ruleConfig['reglas especifica'] = entries;
+      this.syncDependencyDraftRow(false);
+    } catch (error) {
+      console.error('[ValidationRuleFormDialog] Error al importar dependencias:', error);
+      this.advancedConfigError =
+        'No se pudo importar el archivo de dependencias. Revisa que el encabezado coincida con la configuración actual.';
+    } finally {
+      this.resetFileInput(event);
+    }
   }
 
   protected onAdvancedCellChange(): void {
@@ -719,6 +905,8 @@ export class ValidationRuleFormDialogComponent {
     if (dataType !== 'Lista') {
       this.syncListTableHeader();
     }
+    this.syncComplexListDraftRow();
+    this.syncDependencyDraftRow();
   }
 
   private generateSuggestionId(): string {
@@ -786,6 +974,7 @@ export class ValidationRuleFormDialogComponent {
     this.advancedConfigError = null;
 
     this.updateAdvancedRuleConfigFromTable();
+    this.syncComplexListDraftRow();
   }
 
   private async postAuthorized<T>(path: string, body: unknown, session: SessionState | null): Promise<T> {
@@ -899,6 +1088,7 @@ export class ValidationRuleFormDialogComponent {
       this.advancedTableRows = [];
       this.advancedColumnDraft = '';
       this.advancedConfigError = null;
+      this.syncComplexListDraftRow();
       return;
     }
 
@@ -919,6 +1109,7 @@ export class ValidationRuleFormDialogComponent {
     this.advancedConfigError = null;
 
     this.updateAdvancedRuleConfigFromTable();
+    this.syncComplexListDraftRow();
   }
 
   private toAdvancedTableRows(value: unknown): Array<Record<string, string>> {
@@ -1056,6 +1247,15 @@ export class ValidationRuleFormDialogComponent {
     this.formModel.ruleConfig[key] = entries;
   }
 
+  private getRawListValues(): string[] {
+    const values = this.formModel.ruleConfig['Lista'];
+    if (!Array.isArray(values)) {
+      return [];
+    }
+
+    return values.map((item) => this.stringifyExampleValue(item));
+  }
+
   private getDependencyRules(): Array<Record<string, unknown>> {
     const config = this.formModel.ruleConfig;
     if (!config || typeof config !== 'object') {
@@ -1099,6 +1299,167 @@ export class ValidationRuleFormDialogComponent {
         });
       }
     });
+  }
+
+  private syncComplexListDraftRow(preserveValues = true): void {
+    if (this.formModel.dataType !== 'Lista compleja') {
+      this.complexListDraftRow = {};
+      return;
+    }
+
+    const previous = preserveValues ? this.complexListDraftRow : {};
+    this.complexListDraftRow = this.complexListColumns.reduce<Record<string, string>>((acc, column) => {
+      acc[column] = previous[column] ?? '';
+      return acc;
+    }, {});
+  }
+
+  private syncDependencyDraftRow(preserveValues = true): void {
+    if (this.formModel.dataType !== 'Dependencia') {
+      this.dependencyDraftRow = {};
+      return;
+    }
+
+    const previous = preserveValues ? this.dependencyDraftRow : {};
+    const columns = this.dependencyTableColumns;
+    this.dependencyDraftRow = columns.reduce<Record<string, string>>((acc, column) => {
+      acc[column] = previous[column] ?? '';
+      return acc;
+    }, {});
+  }
+
+  private extractFileFromEvent(event: Event): File | null {
+    const input = event.target as HTMLInputElement | null;
+    if (!input || !input.files || input.files.length === 0) {
+      return null;
+    }
+
+    return input.files[0] ?? null;
+  }
+
+  private async readExcelRows(file: File): Promise<string[][]> {
+    const buffer = await file.arrayBuffer();
+    const workbook = read(buffer, { type: 'array' });
+    const sheetName = workbook.SheetNames[0];
+    if (!sheetName) {
+      throw new Error('El archivo no contiene hojas.');
+    }
+
+    const sheet = workbook.Sheets[sheetName];
+    const rawRows = utils.sheet_to_json<unknown[]>(sheet, {
+      header: 1,
+      raw: false,
+      defval: '',
+      blankrows: false
+    });
+
+    return (rawRows as unknown[]).map((row) => {
+      if (!Array.isArray(row)) {
+        return [this.stringifyExampleValue(row)];
+      }
+
+      return row.map((cell) => this.stringifyExampleValue(cell));
+    });
+  }
+
+  private buildListValuesFromRows(rows: string[][]): string[] {
+    if (rows.length === 0) {
+      return [];
+    }
+
+    const headers = (rows[0] ?? []).map((cell) => cell.trim());
+    const expected = this.listTableHeader.trim().toLowerCase();
+    let columnIndex = headers.findIndex((header) => header.toLowerCase() === expected);
+    if (columnIndex < 0) {
+      columnIndex = 0;
+    }
+
+    const values = rows
+      .slice(1)
+      .map((row) => row[columnIndex] ?? '')
+      .map((cell) => cell.trim())
+      .filter((cell) => cell.length > 0);
+
+    const unique: string[] = [];
+    values.forEach((value) => {
+      if (!unique.includes(value)) {
+        unique.push(value);
+      }
+    });
+
+    return unique;
+  }
+
+  private buildComplexListRowsFromExcel(rows: string[][]): Array<Record<string, string>> {
+    const columns = this.advancedTableColumns;
+    if (columns.length === 0) {
+      return [];
+    }
+
+    if (rows.length === 0) {
+      return [];
+    }
+
+    const headers = (rows[0] ?? []).map((cell) => cell.trim().toLowerCase());
+    const indexes = columns.map((column) => headers.findIndex((header) => header === column.trim().toLowerCase()));
+
+    if (indexes.some((index) => index === -1)) {
+      throw new Error('Las columnas del archivo no coinciden con la configuración actual.');
+    }
+
+    return rows
+      .slice(1)
+      .map((row) => {
+        const record: Record<string, string> = {};
+        columns.forEach((column, columnIndex) => {
+          const sourceIndex = indexes[columnIndex];
+          const value = sourceIndex >= 0 ? row[sourceIndex] ?? '' : '';
+          record[column] = (value ?? '').trim();
+        });
+        return record;
+      })
+      .filter((record) => columns.some((column) => (record[column] ?? '').length > 0));
+  }
+
+  private buildDependencyRowsFromExcel(rows: string[][]): Array<Record<string, string>> {
+    const columns = this.dependencyTableColumns;
+    if (columns.length === 0) {
+      throw new Error('No hay encabezados configurados para las dependencias.');
+    }
+
+    if (rows.length === 0) {
+      return [];
+    }
+
+    const headers = (rows[0] ?? []).map((cell) => cell.trim().toLowerCase());
+    const indexes = columns.map((column) => headers.findIndex((header) => header === column.trim().toLowerCase()));
+
+    if (indexes.some((index) => index === -1)) {
+      throw new Error('El archivo no contiene todos los encabezados requeridos.');
+    }
+
+    return rows
+      .slice(1)
+      .map((row) => {
+        const record: Record<string, string> = {};
+        columns.forEach((column, columnIndex) => {
+          const sourceIndex = indexes[columnIndex];
+          const value = sourceIndex >= 0 ? row[sourceIndex] ?? '' : '';
+          const text = (value ?? '').trim();
+          if (text.length > 0) {
+            record[column] = text;
+          }
+        });
+        return record;
+      })
+      .filter((record) => Object.keys(record).length > 0);
+  }
+
+  private resetFileInput(event: Event): void {
+    const input = event.target as HTMLInputElement | null;
+    if (input) {
+      input.value = '';
+    }
   }
 
   private buildDependencyRow(

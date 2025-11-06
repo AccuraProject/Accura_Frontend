@@ -246,29 +246,19 @@
               </div>
             </div>
 
-            <div *ngSwitchCase="'Lista'" class="modal__stack">
-              <div class="form-field tag-input">
-                <input
-                  type="text"
-                  [(ngModel)]="listItemDraft"
-                  name="listDraft"
-                  placeholder="Agregar valor permitido"
-                  (keyup.enter)="addListValue()"
-                />
-                <button
-                  type="button"
-                  class="modal__action-button"
-                  (click)="addListValue()"
-                  [disabled]="!listItemDraft.trim()"
-                >
-                  Agregar
-                </button>
+            <div *ngSwitchCase="'Lista'" class="modal__stack modal__stack--table">
+              <p class="modal__helper">Incluye los valores permitidos que se podrán seleccionar.</p>
+
+              <div class="modal__table-toolbar modal__table-toolbar--compact">
+                <label class="modal__import-button">
+                  <input type="file" accept=".xlsx,.xls" (change)="importListFromExcel($event)" />
+                  <span class="material-symbols-rounded" aria-hidden="true">upload_file</span>
+                  <span>Importar desde Excel</span>
+                </label>
               </div>
-              <p class="modal__helper" *ngIf="listValues.length === 0">
-                Incluye al menos un valor para la lista.
-              </p>
-              <div class="modal__table-wrapper" *ngIf="listValues.length > 0">
-                <table class="modal__table">
+
+              <div class="modal__table-wrapper modal__table-wrapper--scrollable">
+                <table class="modal__table modal__table--interactive">
                   <thead>
                     <tr>
                       <th>{{ listTableHeader }}</th>
@@ -289,14 +279,53 @@
                         </button>
                       </td>
                     </tr>
+                    <tr class="modal__table-row--draft">
+                      <td>
+                        <input
+                          type="text"
+                          [(ngModel)]="listItemDraft"
+                          name="listDraft"
+                          placeholder="Agregar valor permitido"
+                          (keyup.enter)="addListValue()"
+                        />
+                      </td>
+                      <td class="modal__table-actions-cell">
+                        <button
+                          type="button"
+                          class="modal__table-add-button"
+                          (click)="addListValue()"
+                          [disabled]="!canAddListDraft"
+                        >
+                          Agregar fila
+                        </button>
+                      </td>
+                    </tr>
                   </tbody>
                 </table>
               </div>
+
+              <p class="modal__helper" *ngIf="listValues.length === 0">
+                Incluye al menos un valor para la lista.
+              </p>
+              <p class="modal__helper modal__helper--error" *ngIf="advancedConfigError">
+                {{ advancedConfigError }}
+              </p>
             </div>
 
             <ng-container *ngSwitchCase="'Lista compleja'">
               <div class="modal__stack modal__stack--table">
                 <p class="modal__helper">{{ advancedTableHelper }}</p>
+                <div
+                  class="modal__table-toolbar modal__table-toolbar--compact"
+                  *ngIf="complexListColumns.length > 0"
+                >
+                  <label class="modal__import-button">
+                    <input type="file" accept=".xlsx,.xls" (change)="importComplexListFromExcel($event)" />
+                    <span class="material-symbols-rounded" aria-hidden="true">upload_file</span>
+                    <span>Importar desde Excel</span>
+                  </label>
+                </div>
+
                 <p
                   class="modal__helper"
                   *ngIf="complexListColumns.length === 0 || complexListRows.length === 0"
@@ -305,10 +334,10 @@
                 </p>
 
                 <div
-                  class="modal__table-wrapper"
-                  *ngIf="complexListColumns.length > 0 && complexListRows.length > 0"
+                  class="modal__table-wrapper modal__table-wrapper--scrollable"
+                  *ngIf="complexListColumns.length > 0"
                 >
-                  <table class="modal__table">
+                  <table class="modal__table modal__table--interactive">
                     <thead>
                       <tr>
                         <th *ngFor="let column of complexListColumns; trackBy: trackByIndex">
@@ -335,9 +364,34 @@
                           </button>
                         </td>
                       </tr>
+                      <tr class="modal__table-row--draft">
+                        <td *ngFor="let column of complexListColumns; trackBy: trackByIndex">
+                          <input
+                            type="text"
+                            [(ngModel)]="complexListDraftRow[column]"
+                            (ngModelChange)="onComplexListDraftChange()"
+                            [attr.name]="'complexDraft-' + column"
+                            placeholder="Valor para {{ column }}"
+                          />
+                        </td>
+                        <td class="modal__table-actions-cell">
+                          <button
+                            type="button"
+                            class="modal__table-add-button"
+                            (click)="addComplexListDraftRow()"
+                            [disabled]="!canAddComplexListDraft"
+                          >
+                            Agregar fila
+                          </button>
+                        </td>
+                      </tr>
                     </tbody>
                   </table>
                 </div>
+
+                <p class="modal__helper modal__helper--error" *ngIf="advancedConfigError">
+                  {{ advancedConfigError }}
+                </p>
               </div>
             </ng-container>
 
@@ -419,16 +473,26 @@
             </div>
 
             <ng-container *ngSwitchCase="'Dependencia'">
-              <div class="modal__stack">
+              <div class="modal__stack modal__stack--table">
                 <p class="modal__helper">{{ advancedTableHelper }}</p>
+                <div
+                  class="modal__table-toolbar modal__table-toolbar--compact"
+                  *ngIf="dependencyTableColumns.length > 0"
+                >
+                  <label class="modal__import-button">
+                    <input type="file" accept=".xlsx,.xls" (change)="importDependencyFromExcel($event)" />
+                    <span class="material-symbols-rounded" aria-hidden="true">upload_file</span>
+                    <span>Importar desde Excel</span>
+                  </label>
+                </div>
                 <p class="modal__helper" *ngIf="dependencyTableColumns.length === 0 || dependencyTableRows.length === 0">
                   {{ dependencyTableEmptyMessage }}
                 </p>
                 <div
-                  class="modal__table-wrapper"
-                  *ngIf="dependencyTableColumns.length > 0 && dependencyTableRows.length > 0"
+                  class="modal__table-wrapper modal__table-wrapper--scrollable"
+                  *ngIf="dependencyTableColumns.length > 0"
                 >
-                  <table class="modal__table">
+                  <table class="modal__table modal__table--interactive">
                     <thead>
                       <tr>
                         <th *ngFor="let column of dependencyTableColumns; trackBy: trackByIndex">{{ column }}</th>
@@ -451,9 +515,33 @@
                           </button>
                         </td>
                       </tr>
+                      <tr class="modal__table-row--draft">
+                        <td *ngFor="let column of dependencyTableColumns; trackBy: trackByIndex">
+                          <input
+                            type="text"
+                            [(ngModel)]="dependencyDraftRow[column]"
+                            (ngModelChange)="onDependencyDraftChange()"
+                            [attr.name]="'dependencyDraft-' + column"
+                            placeholder="Valor para {{ column }}"
+                          />
+                        </td>
+                        <td class="modal__table-actions-cell">
+                          <button
+                            type="button"
+                            class="modal__table-add-button"
+                            (click)="addDependencyDraftRow()"
+                            [disabled]="!canAddDependencyDraft"
+                          >
+                            Agregar fila
+                          </button>
+                        </td>
+                      </tr>
                     </tbody>
                   </table>
                 </div>
+                <p class="modal__helper modal__helper--error" *ngIf="advancedConfigError">
+                  {{ advancedConfigError }}
+                </p>
               </div>
             </ng-container>
 
