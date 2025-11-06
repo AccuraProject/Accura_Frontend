@@ -419,7 +419,25 @@ export class ValidationRulesComponent implements OnInit {
     const additionalHeaders = result.secondaryHeaders
       .map((item) => item.trim())
       .filter((item, index, array) => item.length > 0 && array.indexOf(item) === index);
-    const headers = [...additionalHeaders];
+    const headers: string[] = [];
+    const appendHeader = (value: string): void => {
+      const text = value.trim();
+      if (!text) {
+        return;
+      }
+
+      const exists = headers.some((item) => item.toLowerCase() === text.toLowerCase());
+      if (!exists) {
+        headers.push(text);
+      }
+    };
+
+    appendHeader(result.primaryHeader ?? '');
+    additionalHeaders.forEach((item) => appendHeader(item));
+
+    if (headers.length === 0) {
+      headers.push('Plantilla Global');
+    }
 
     const example = result.exampleEntries.reduce<RuleExample>((acc, entry) => {
       const key = entry.key.trim();
@@ -639,6 +657,7 @@ export class ValidationRulesComponent implements OnInit {
       mandatory: rule.mandatory,
       status: rule.status,
       description: rule.description,
+      primaryHeader: rule.header[0] ?? 'Plantilla Global',
       secondaryHeaders: rule.header.slice(1),
       exampleEntries: this.buildDialogExamples(rule.payload),
       ruleConfig: JSON.parse(JSON.stringify(rule.ruleConfig)) as Record<string, unknown>

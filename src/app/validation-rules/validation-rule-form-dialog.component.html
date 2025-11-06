@@ -295,7 +295,7 @@
             </div>
 
             <ng-container *ngSwitchCase="'Lista compleja'">
-              <ng-container *ngTemplateOutlet="advancedConfigTable"></ng-container>
+              <ng-container *ngTemplateOutlet="complexListTable"></ng-container>
             </ng-container>
 
             <div *ngSwitchCase="'Telefono'" class="modal__grid">
@@ -459,6 +459,61 @@
               Configura los parámetros necesarios para este tipo de dato.
             </div>
           </ng-container>
+
+          <ng-template #complexListTable>
+            <div class="modal__stack modal__stack--table">
+              <p class="modal__helper">{{ advancedTableHelper }}</p>
+
+              <p class="modal__helper" *ngIf="complexListColumns.length === 0">
+                No se encontraron columnas para la lista compleja.
+              </p>
+
+              <div class="modal__table-wrapper" *ngIf="complexListColumns.length > 0">
+                <table class="modal__table">
+                  <thead>
+                    <tr>
+                      <th *ngFor="let column of complexListColumns; trackBy: trackByIndex">{{ column }}</th>
+                      <th class="modal__table-actions-cell">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr
+                      *ngFor="let row of complexListRows; let rowIndex = index; trackBy: trackByIndex"
+                    >
+                      <td *ngFor="let column of complexListColumns; trackBy: trackByIndex">
+                        {{ complexListCellValue(row, column) }}
+                      </td>
+                      <td class="modal__table-actions-cell">
+                        <button
+                          type="button"
+                          class="modal__icon-button"
+                          (click)="removeAdvancedRow(rowIndex)"
+                          aria-label="Eliminar fila"
+                        >
+                          <span class="material-symbols-rounded" aria-hidden="true">delete</span>
+                        </button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <p class="modal__helper" *ngIf="complexListColumns.length > 0 && complexListRows.length === 0">
+                No hay registros disponibles.
+              </p>
+
+              <p
+                class="modal__helper"
+                *ngIf="complexListColumns.length > 0 && !hasAdvancedTableValues"
+              >
+                Debes contar con al menos un registro con datos para guardar la tabla.
+              </p>
+
+              <p class="modal__helper modal__helper--error" *ngIf="advancedConfigError">
+                {{ advancedConfigError }}
+              </p>
+            </div>
+          </ng-template>
 
           <ng-template #advancedConfigTable>
             <div class="modal__stack modal__stack--table">

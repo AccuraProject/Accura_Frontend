@@ -24,6 +24,7 @@ export interface ValidationRuleFormDialogResult {
   mandatory: boolean;
   status: 'Activa' | 'Inactiva';
   description: string;
+  primaryHeader: string;
   secondaryHeaders: string[];
   exampleEntries: Array<{ key: string; value: string }>;
   ruleConfig: Record<string, unknown>;
@@ -124,6 +125,9 @@ export class ValidationRuleFormDialogComponent {
       return;
     }
 
+    const primaryHeader = this.formModel.primaryHeader?.trim() ?? '';
+    const sanitizedPrimaryHeader = primaryHeader.length > 0 ? primaryHeader : 'Plantilla Global';
+
     const secondaryHeaders = this.formModel.secondaryHeaders
       .map((item) => item.trim())
       .filter((item, index, array) => item.length > 0 && array.indexOf(item) === index);
@@ -134,11 +138,13 @@ export class ValidationRuleFormDialogComponent {
     }));
 
     this.formModel.exampleEntries = exampleEntries.map((entry) => ({ ...entry }));
+    this.formModel.primaryHeader = sanitizedPrimaryHeader;
 
     const result: ValidationRuleFormDialogResult = {
       ...this.formModel,
       name: this.formModel.name.trim(),
       description: this.formModel.description.trim(),
+      primaryHeader: sanitizedPrimaryHeader,
       secondaryHeaders,
       exampleEntries,
       ruleConfig: JSON.parse(JSON.stringify(this.formModel.ruleConfig)) as Record<string, unknown>
@@ -317,7 +323,10 @@ export class ValidationRuleFormDialogComponent {
   }
 
   protected get ruleConfigSummary(): string[] {
-    const headers = [...this.formModel.secondaryHeaders]
+    const headers = [
+      this.formModel.primaryHeader,
+      ...this.formModel.secondaryHeaders
+    ]
       .map((item) => item?.toString().trim())
       .filter((item): item is string => Boolean(item))
       .filter((item, index, array) => array.indexOf(item) === index);
@@ -349,6 +358,30 @@ export class ValidationRuleFormDialogComponent {
     return this.formModel.dataType === 'Dependencia'
       ? 'Define las combinaciones válidas entre los campos dependientes. Cada fila representa una relación permitida.'
       : 'Organiza los elementos de la lista especificando sus atributos en columnas para facilitar su comprensión.';
+  }
+
+  protected get complexListColumns(): string[] {
+    return this.formModel.dataType === 'Lista compleja' ? this.advancedTableColumns : [];
+  }
+
+  protected get complexListRows(): Array<Record<string, string>> {
+    return this.formModel.dataType === 'Lista compleja' ? this.advancedTableRows : [];
+  }
+
+  protected complexListCellValue(row: Record<string, string>, column: string): string {
+    const value = row[column];
+
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      return trimmed.length > 0 ? trimmed : '—';
+    }
+
+    if (value === null || value === undefined) {
+      return '—';
+    }
+
+    const text = String(value).trim();
+    return text.length > 0 ? text : '—';
   }
 
   protected get advancedTableEmptyMessage(): string {
@@ -569,6 +602,7 @@ export class ValidationRuleFormDialogComponent {
     this.formModel.description = typeof payload['Descripción'] === 'string'
       ? payload['Descripción']
       : this.formModel.description;
+    this.formModel.primaryHeader = primaryHeader;
     this.formModel.secondaryHeaders = secondaryHeaders;
     this.syncListTableHeader(dataType === 'Lista' ? primaryHeader : null);
 
@@ -659,8 +693,7 @@ export class ValidationRuleFormDialogComponent {
       return;
     }
 
-    this.advancedTableColumns = [...data.columns];
-    this.advancedTableRows = data.rows.map((row) => this.fillAdvancedRow({ ...row }, data.columns));
+    this.setAdvancedTableData([...data.columns], data.rows.map((row) => ({ ...row })));
     this.advancedColumnDraft = '';
     this.advancedConfigError = null;
 
@@ -724,6 +757,7 @@ export class ValidationRuleFormDialogComponent {
       mandatory: false,
       status: 'Activa',
       description: 'Describe la regla para que otros usuarios entiendan su propósito.',
+      primaryHeader: 'Plantilla Global',
       secondaryHeaders: [],
       exampleEntries: this.createDefaultExamples(),
       ruleConfig: this.createDefaultRuleConfig('Texto')
@@ -733,6 +767,7 @@ export class ValidationRuleFormDialogComponent {
   private cloneRule(rule: ValidationRuleFormDialogResult): ValidationRuleFormDialogResult {
     return {
       ...rule,
+      primaryHeader: typeof rule.primaryHeader === 'string' ? rule.primaryHeader : 'Plantilla Global',
       secondaryHeaders: [...(rule.secondaryHeaders ?? [])],
       exampleEntries: this.normalizeExampleEntries(rule.exampleEntries ?? []),
       ruleConfig: JSON.parse(JSON.stringify(rule.ruleConfig ?? {})) as Record<string, unknown>
@@ -740,6 +775,10 @@ export class ValidationRuleFormDialogComponent {
   }
 
   private ensureCollections(): void {
+    const primaryHeader =
+      typeof this.formModel.primaryHeader === 'string' ? this.formModel.primaryHeader.trim() : '';
+    this.formModel.primaryHeader = primaryHeader.length > 0 ? primaryHeader : 'Plantilla Global';
+
     if (!Array.isArray(this.formModel.secondaryHeaders)) {
       this.formModel.secondaryHeaders = [];
     }
@@ -753,8 +792,11 @@ export class ValidationRuleFormDialogComponent {
       return;
     }
 
-    const text = typeof source === 'string' ? source.trim() : '';
-    this.listTableHeader = text.length > 0 ? text : this.defaultListTableHeader;
+    const explicit = typeof source === 'string' ? source.trim() : '';
+    const fallback = this.formModel.primaryHeader?.trim() ?? '';
+    const label = explicit.length > 0 ? explicit : fallback;
+
+    this.listTableHeader = label.length > 0 ? label : this.defaultListTableHeader;
   }
 
   private getAdvancedConfigKey(dataType: string): 'Lista compleja' | 'reglas especifica' | null {
@@ -783,8 +825,7 @@ export class ValidationRuleFormDialogComponent {
     const rows = this.toAdvancedTableRows(source);
     const columns = this.extractAdvancedColumns(rows);
 
-    this.advancedTableColumns = columns;
-    this.advancedTableRows = rows.map((row) => this.fillAdvancedRow(row, columns));
+    this.setAdvancedTableData(columns, rows);
     this.advancedColumnDraft = '';
     this.advancedConfigError = null;
 
@@ -843,8 +884,50 @@ export class ValidationRuleFormDialogComponent {
     return ordered.length > 0 ? ordered : preferred;
   }
 
+  private getModelHeaderColumns(): string[] {
+    const headers = [
+      typeof this.formModel.primaryHeader === 'string' ? this.formModel.primaryHeader.trim() : '',
+      ...this.formModel.secondaryHeaders
+    ]
+      .map((item) => (typeof item === 'string' ? item.trim() : ''))
+      .filter((item) => item.length > 0);
+
+    const unique: string[] = [];
+    headers.forEach((header) => {
+      const exists = unique.some((item) => item.toLowerCase() === header.toLowerCase());
+      if (!exists) {
+        unique.push(header);
+      }
+    });
+
+    return unique;
+  }
+
+  private setAdvancedTableData(
+    columns: string[],
+    rows: Array<Record<string, string>>
+  ): void {
+    if (this.formModel.dataType === 'Lista compleja') {
+      const headerColumns = this.getModelHeaderColumns();
+      const filteredColumns =
+        headerColumns.length === 1 && headerColumns[0].toLowerCase() === 'plantilla global'
+          ? []
+          : headerColumns;
+      const normalizedColumns = filteredColumns.length > 0 ? filteredColumns : columns;
+      this.advancedTableColumns = normalizedColumns;
+      this.advancedTableRows = rows.map((row) => this.fillAdvancedRow({ ...row }, normalizedColumns));
+      return;
+    }
+
+    this.advancedTableColumns = columns;
+    this.advancedTableRows = rows.map((row) => this.fillAdvancedRow({ ...row }, columns));
+  }
+
   private getPreferredAdvancedColumns(): string[] {
-    const headers = [...this.formModel.secondaryHeaders]
+    const headers = [
+      typeof this.formModel.primaryHeader === 'string' ? this.formModel.primaryHeader.trim() : '',
+      ...this.formModel.secondaryHeaders
+    ]
       .map((item) => (typeof item === 'string' ? item.trim() : ''))
       .filter((item) => item.length > 0);
 
