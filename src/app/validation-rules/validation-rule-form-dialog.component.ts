@@ -170,7 +170,7 @@ export class ValidationRuleFormDialogComponent {
       case 'Lista':
         return this.listValues.length > 0;
       case 'Lista compleja':
-        return this.advancedTableColumns.length > 0 && this.hasAdvancedTableValues;
+        return this.complexListColumns.length > 0 && this.hasAdvancedTableValues;
       case 'Dependencia':
         return this.dependencyTableColumns.length > 0 && this.hasDependencyValues;
       case 'Validación conjunta':
@@ -208,6 +208,9 @@ export class ValidationRuleFormDialogComponent {
 
     if (!this.formModel.secondaryHeaders.includes(value)) {
       this.formModel.secondaryHeaders.push(value);
+      if (this.formModel.dataType === 'Lista compleja') {
+        this.syncAdvancedTableFromRule();
+      }
     }
 
     this.secondaryHeaderDraft = '';
@@ -215,6 +218,9 @@ export class ValidationRuleFormDialogComponent {
 
   protected removeSecondaryHeader(index: number): void {
     this.formModel.secondaryHeaders.splice(index, 1);
+    if (this.formModel.dataType === 'Lista compleja') {
+      this.syncAdvancedTableFromRule();
+    }
   }
 
   protected addListValue(): void {
@@ -398,6 +404,22 @@ export class ValidationRuleFormDialogComponent {
     return rules.map((rule) => this.buildDependencyRow(rule, columns));
   }
 
+  protected get complexListColumns(): string[] {
+    if (this.formModel.dataType !== 'Lista compleja') {
+      return [];
+    }
+
+    return this.advancedTableColumns;
+  }
+
+  protected get complexListRows(): Array<Record<string, string>> {
+    if (this.formModel.dataType !== 'Lista compleja') {
+      return [];
+    }
+
+    return this.advancedTableRows;
+  }
+
   protected get dependencyTableEmptyMessage(): string {
     if (this.dependencyTableColumns.length === 0) {
       return 'No se encontraron encabezados para las reglas de dependencia.';
@@ -418,15 +440,27 @@ export class ValidationRuleFormDialogComponent {
   }
 
   protected get advancedTableHelper(): string {
-    return this.formModel.dataType === 'Dependencia'
-      ? 'Define las combinaciones válidas entre los campos dependientes. Cada fila representa una relación permitida.'
-      : 'Organiza los elementos de la lista especificando sus atributos en columnas para facilitar su comprensión.';
+    if (this.formModel.dataType === 'Dependencia') {
+      return 'Define las combinaciones válidas entre los campos dependientes. Cada fila representa una relación permitida.';
+    }
+
+    if (this.formModel.dataType === 'Lista compleja') {
+      return 'Revisa los valores permitidos que componen la lista compleja y elimina los que ya no apliquen.';
+    }
+
+    return 'Organiza los elementos de la lista especificando sus atributos en columnas para facilitar su comprensión.';
   }
 
   protected get advancedTableEmptyMessage(): string {
-    return this.formModel.dataType === 'Dependencia'
-      ? 'La tabla de dependencias se genera con los encabezados que define la regla recibida.'
-      : 'Agrega columnas para describir cada atributo de la lista (por ejemplo: Tipo Documento, Código, Descripción).';
+    if (this.formModel.dataType === 'Dependencia') {
+      return 'La tabla de dependencias se genera con los encabezados que define la regla recibida.';
+    }
+
+    if (this.formModel.dataType === 'Lista compleja') {
+      return 'No hay elementos configurados para la lista compleja.';
+    }
+
+    return 'Agrega columnas para describir cada atributo de la lista (por ejemplo: Tipo Documento, Código, Descripción).';
   }
 
   protected get advancedTableColumnPlaceholder(): string {
@@ -490,6 +524,20 @@ export class ValidationRuleFormDialogComponent {
   }
 
   protected removeAdvancedRow(index: number): void {
+    if (index < 0 || index >= this.advancedTableRows.length) {
+      return;
+    }
+
+    this.advancedConfigError = null;
+    this.advancedTableRows = this.advancedTableRows.filter((_, i) => i !== index);
+    this.updateAdvancedRuleConfigFromTable();
+  }
+
+  protected removeComplexListRow(index: number): void {
+    if (this.formModel.dataType !== 'Lista compleja') {
+      return;
+    }
+
     if (index < 0 || index >= this.advancedTableRows.length) {
       return;
     }
@@ -856,7 +904,14 @@ export class ValidationRuleFormDialogComponent {
 
     const source = this.formModel.ruleConfig[key];
     const rows = this.toAdvancedTableRows(source);
-    const columns = this.extractAdvancedColumns(rows);
+    let columns = this.extractAdvancedColumns(rows);
+
+    if (this.formModel.dataType === 'Lista compleja') {
+      const headerColumns = this.getHeaderColumnsFromForm();
+      if (headerColumns.length > 0) {
+        columns = headerColumns;
+      }
+    }
 
     this.advancedTableColumns = columns;
     this.advancedTableRows = rows.map((row) => this.fillAdvancedRow(row, columns));
@@ -969,6 +1024,14 @@ export class ValidationRuleFormDialogComponent {
       acc[column] = row[column] ?? '';
       return acc;
     }, {});
+  }
+
+  private getHeaderColumnsFromForm(): string[] {
+    const values = [this.formModel.primaryHeader, ...(this.formModel.secondaryHeaders ?? [])];
+
+    return values
+      .map((item) => (typeof item === 'string' ? item.trim() : ''))
+      .filter((item, index, array) => item.length > 0 && array.indexOf(item) === index);
   }
 
   private updateAdvancedRuleConfigFromTable(): void {

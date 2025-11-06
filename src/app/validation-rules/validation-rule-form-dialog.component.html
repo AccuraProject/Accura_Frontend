@@ -295,7 +295,50 @@
             </div>
 
             <ng-container *ngSwitchCase="'Lista compleja'">
-              <ng-container *ngTemplateOutlet="advancedConfigTable"></ng-container>
+              <div class="modal__stack modal__stack--table">
+                <p class="modal__helper">{{ advancedTableHelper }}</p>
+                <p
+                  class="modal__helper"
+                  *ngIf="complexListColumns.length === 0 || complexListRows.length === 0"
+                >
+                  {{ advancedTableEmptyMessage }}
+                </p>
+
+                <div
+                  class="modal__table-wrapper"
+                  *ngIf="complexListColumns.length > 0 && complexListRows.length > 0"
+                >
+                  <table class="modal__table">
+                    <thead>
+                      <tr>
+                        <th *ngFor="let column of complexListColumns; trackBy: trackByIndex">
+                          {{ column }}
+                        </th>
+                        <th class="modal__table-actions-cell">Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr
+                        *ngFor="let row of complexListRows; let rowIndex = index; trackBy: trackByIndex"
+                      >
+                        <td *ngFor="let column of complexListColumns; trackBy: trackByIndex">
+                          {{ row[column] || '—' }}
+                        </td>
+                        <td class="modal__table-actions-cell">
+                          <button
+                            type="button"
+                            class="modal__icon-button"
+                            (click)="removeComplexListRow(rowIndex)"
+                            aria-label="Eliminar fila"
+                          >
+                            <span class="material-symbols-rounded" aria-hidden="true">delete</span>
+                          </button>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </ng-container>
 
             <div *ngSwitchCase="'Telefono'" class="modal__grid">
