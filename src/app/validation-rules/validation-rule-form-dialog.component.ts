@@ -71,6 +71,7 @@ export class ValidationRuleFormDialogComponent {
   ];
   protected readonly decimalOptions: number[] = [0, 1, 2, 3, 4, 5, 6];
 
+  private readonly defaultListTableHeader = 'Valores permitidos';
   protected secondaryHeaderDraft = '';
   protected listItemDraft = '';
   protected jointFieldDraft = '';
@@ -81,6 +82,7 @@ export class ValidationRuleFormDialogComponent {
   protected advancedColumnDraft = '';
   protected showRuleConfigJson = true;
   protected manualFormEnabled: boolean;
+  protected listTableHeader = this.defaultListTableHeader;
 
   protected aiPrompt = '';
   protected aiIsLoading = false;
@@ -110,6 +112,7 @@ export class ValidationRuleFormDialogComponent {
     this.manualFormEnabled = this.isEditMode;
     this.ensureCollections();
     this.syncAdvancedTableFromRule();
+    this.syncListTableHeader();
   }
 
   protected close(): void {
@@ -187,6 +190,7 @@ export class ValidationRuleFormDialogComponent {
     this.duplicateFieldDraft = '';
     this.advancedColumnDraft = '';
     this.syncAdvancedTableFromRule();
+    this.syncListTableHeader();
   }
 
   protected addSecondaryHeader(): void {
@@ -566,6 +570,7 @@ export class ValidationRuleFormDialogComponent {
       ? payload['Descripción']
       : this.formModel.description;
     this.formModel.secondaryHeaders = secondaryHeaders;
+    this.syncListTableHeader(dataType === 'Lista' ? primaryHeader : null);
 
     const configSource = payload['Regla'] ?? generateDefaultRuleConfig(dataType);
     this.formModel.ruleConfig = JSON.parse(JSON.stringify(configSource)) as Record<string, unknown>;
@@ -589,6 +594,9 @@ export class ValidationRuleFormDialogComponent {
       this.applyAdvancedTableSuggestion(tableSuggestion);
     } else {
       this.syncAdvancedTableFromRule();
+    }
+    if (dataType !== 'Lista') {
+      this.syncListTableHeader();
     }
   }
 
@@ -737,6 +745,16 @@ export class ValidationRuleFormDialogComponent {
     }
 
     this.ensureExampleEntries();
+  }
+
+  private syncListTableHeader(source?: string | null): void {
+    if (this.formModel.dataType !== 'Lista') {
+      this.listTableHeader = this.defaultListTableHeader;
+      return;
+    }
+
+    const text = typeof source === 'string' ? source.trim() : '';
+    this.listTableHeader = text.length > 0 ? text : this.defaultListTableHeader;
   }
 
   private getAdvancedConfigKey(dataType: string): 'Lista compleja' | 'reglas especifica' | null {

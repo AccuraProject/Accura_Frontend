@@ -267,14 +267,31 @@
               <p class="modal__helper" *ngIf="listValues.length === 0">
                 Incluye al menos un valor para la lista.
               </p>
-              <ul *ngIf="listValues.length > 0" class="tag-list">
-                <li *ngFor="let value of listValues; let i = index; trackBy: trackByIndex">
-                  <span>{{ value }}</span>
-                  <button type="button" (click)="removeListValue(i)" aria-label="Eliminar valor">
-                    <span class="material-symbols-rounded" aria-hidden="true">close</span>
-                  </button>
-                </li>
-              </ul>
+              <div class="modal__table-wrapper" *ngIf="listValues.length > 0">
+                <table class="modal__table">
+                  <thead>
+                    <tr>
+                      <th>{{ listTableHeader }}</th>
+                      <th class="modal__table-actions-cell">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let value of listValues; let i = index; trackBy: trackByIndex">
+                      <td>{{ value }}</td>
+                      <td class="modal__table-actions-cell">
+                        <button
+                          type="button"
+                          class="modal__icon-button"
+                          (click)="removeListValue(i)"
+                          aria-label="Eliminar valor"
+                        >
+                          <span class="material-symbols-rounded" aria-hidden="true">delete</span>
+                        </button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
 
             <ng-container *ngSwitchCase="'Lista compleja'">
