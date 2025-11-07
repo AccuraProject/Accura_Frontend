@@ -411,6 +411,18 @@ mat-dialog-content {
   display: none;
 }
 
+.modal__template-button {
+  background: rgba(37, 99, 235, 0.1);
+  border-color: rgba(37, 99, 235, 0.32);
+  color: #1d4ed8;
+}
+
+.modal__template-button:hover {
+  background: rgba(37, 99, 235, 0.18);
+  border-color: rgba(37, 99, 235, 0.48);
+  color: #1e3a8a;
+}
+
 .modal__action-button--primary {
   background: linear-gradient(135deg, #4f46e5, #6366f1);
   color: #fff;

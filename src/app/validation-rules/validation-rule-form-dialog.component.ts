@@ -5,7 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { Store } from '@ngrx/store';
 import { firstValueFrom } from 'rxjs';
-import { read, utils } from 'xlsx';
+import { read, utils, writeFileXLSX } from 'xlsx';
 
 import { environment } from '../../environments/environment';
 import { selectSessionState, SessionState } from '../core/store/session/session.reducer';
@@ -742,6 +742,24 @@ export class ValidationRuleFormDialogComponent {
     } finally {
       this.resetFileInput(event);
     }
+  }
+
+  protected downloadListTemplate(): void {
+    const header =
+      typeof this.listTableHeader === 'string' && this.listTableHeader.trim().length > 0
+        ? this.listTableHeader
+        : this.defaultListTableHeader;
+    this.downloadExcelTemplate('plantilla-lista.xlsx', [header]);
+  }
+
+  protected downloadComplexListTemplate(): void {
+    const columns = this.complexListColumns;
+    this.downloadExcelTemplate('plantilla-lista-compleja.xlsx', columns);
+  }
+
+  protected downloadDependencyTemplate(): void {
+    const columns = this.dependencyTableColumns;
+    this.downloadExcelTemplate('plantilla-dependencia.xlsx', columns);
   }
 
   protected onAdvancedCellChange(): void {
@@ -1484,6 +1502,21 @@ export class ValidationRuleFormDialogComponent {
         return record;
       })
       .filter((record) => Object.keys(record).length > 0);
+  }
+
+  private downloadExcelTemplate(fileName: string, headers: string[]): void {
+    const sanitized = headers
+      .map((header) => (typeof header === 'string' ? header.trim() : ''))
+      .filter((header, index, array) => header.length > 0 && array.indexOf(header) === index);
+
+    if (sanitized.length === 0) {
+      return;
+    }
+
+    const workbook = utils.book_new();
+    const sheet = utils.aoa_to_sheet([sanitized]);
+    utils.book_append_sheet(workbook, sheet, 'Plantilla');
+    writeFileXLSX(workbook, fileName);
   }
 
   private resetFileInput(event: Event): void {

@@ -250,6 +250,14 @@
               <p class="modal__helper">Incluye los valores permitidos que se podrán seleccionar.</p>
 
               <div class="modal__table-toolbar modal__table-toolbar--compact">
+                <button
+                  type="button"
+                  class="modal__import-button modal__template-button"
+                  (click)="downloadListTemplate()"
+                >
+                  <span class="material-symbols-rounded" aria-hidden="true">download</span>
+                  <span>Descargar plantilla</span>
+                </button>
                 <label class="modal__import-button">
                   <input type="file" accept=".xlsx,.xls" (change)="importListFromExcel($event)" />
                   <span class="material-symbols-rounded" aria-hidden="true">upload_file</span>
@@ -319,6 +327,14 @@
                   class="modal__table-toolbar modal__table-toolbar--compact"
                   *ngIf="complexListColumns.length > 0"
                 >
+                  <button
+                    type="button"
+                    class="modal__import-button modal__template-button"
+                    (click)="downloadComplexListTemplate()"
+                  >
+                    <span class="material-symbols-rounded" aria-hidden="true">download</span>
+                    <span>Descargar plantilla</span>
+                  </button>
                   <label class="modal__import-button">
                     <input type="file" accept=".xlsx,.xls" (change)="importComplexListFromExcel($event)" />
                     <span class="material-symbols-rounded" aria-hidden="true">upload_file</span>
@@ -480,6 +496,14 @@
                   class="modal__table-toolbar modal__table-toolbar--compact"
                   *ngIf="dependencyTableColumns.length > 0"
                 >
+                  <button
+                    type="button"
+                    class="modal__import-button modal__template-button"
+                    (click)="downloadDependencyTemplate()"
+                  >
+                    <span class="material-symbols-rounded" aria-hidden="true">download</span>
+                    <span>Descargar plantilla</span>
+                  </button>
                   <label class="modal__import-button">
                     <input type="file" accept=".xlsx,.xls" (change)="importDependencyFromExcel($event)" />
                     <span class="material-symbols-rounded" aria-hidden="true">upload_file</span>
