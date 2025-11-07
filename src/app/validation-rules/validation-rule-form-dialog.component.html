@@ -369,6 +369,7 @@
                           <input
                             type="text"
                             [(ngModel)]="complexListDraftRow[column]"
+                            [ngModelOptions]="{ standalone: true }"
                             (ngModelChange)="onComplexListDraftChange()"
                             [attr.name]="'complexDraft-' + column"
                             placeholder="Valor para {{ column }}"
@@ -520,6 +521,7 @@
                           <input
                             type="text"
                             [(ngModel)]="dependencyDraftRow[column]"
+                            [ngModelOptions]="{ standalone: true }"
                             (ngModelChange)="onDependencyDraftChange()"
                             [attr.name]="'dependencyDraft-' + column"
                             placeholder="Valor para {{ column }}"
