@@ -175,7 +175,7 @@ export class ValidationRulesComponent implements OnInit {
       return null;
     }
 
-    const status = this.toStatus(record['status']);
+    const status = this.toStatus(record['is_active'], record['status']);
     const source = this.toSource(record['source']);
     const id = this.sanitizeString(record['id']) ?? this.generateId();
 
@@ -233,9 +233,27 @@ export class ValidationRulesComponent implements OnInit {
     };
   }
 
-  private toStatus(value: unknown): ValidationRule['status'] {
-    const text = this.sanitizeString(value)?.toLowerCase();
-    return text === 'inactiva' || text === 'borrador' ? 'Inactiva' : 'Activa';
+  private toStatus(isActiveValue: unknown, fallbackValue?: unknown): ValidationRule['status'] {
+    if (typeof isActiveValue === 'boolean') {
+      return isActiveValue ? 'Activa' : 'Inactiva';
+    }
+
+    const isActiveText = this.sanitizeString(isActiveValue)?.toLowerCase();
+    if (isActiveText) {
+      const truthyValues = ['true', '1', 'si', 'sí', 'yes', 'activo', 'activa'];
+      const falsyValues = ['false', '0', 'no', 'inactivo', 'inactiva'];
+
+      if (truthyValues.includes(isActiveText)) {
+        return 'Activa';
+      }
+
+      if (falsyValues.includes(isActiveText)) {
+        return 'Inactiva';
+      }
+    }
+
+    const fallbackText = this.sanitizeString(fallbackValue)?.toLowerCase();
+    return fallbackText === 'inactiva' || fallbackText === 'borrador' ? 'Inactiva' : 'Activa';
   }
 
   private toSource(value: unknown): 'manual' | 'ia' {
@@ -337,7 +355,7 @@ export class ValidationRulesComponent implements OnInit {
     const payloadClone = JSON.parse(JSON.stringify(option.payload)) as RulePayload;
     const rule = this.buildRuleFromPayload(payloadClone, 'Inactiva', 'ia');
     this.rules = [rule, ...this.rules];
-    this.persistRule(payloadClone, false);
+    this.persistRule(payloadClone, false).catch(() => undefined);
   }
 
   protected describeRuleConfig(payload: RulePayload): string[] {
@@ -353,7 +371,10 @@ export class ValidationRulesComponent implements OnInit {
     console.log('[ValidationRules] Payload listo para enviar (manual):', payload);
     const entry = this.buildRuleFromPayload(payload, result.status, 'manual');
     this.rules = [entry, ...this.rules];
-    this.persistRule(payload, result.status === 'Activa');
+
+    this.persistRule(payload, result.status === 'Activa')
+      .then(() => this.loadRules())
+      .catch(() => undefined);
   }
 
   private updateRule(ruleId: string, result: ValidationRuleFormDialogSubmitResult): void {
@@ -367,7 +388,7 @@ export class ValidationRulesComponent implements OnInit {
       return this.buildRuleFromPayload(payloadClone, result.status, rule.source, rule.id);
     });
 
-    this.persistRule(payloadClone, result.status === 'Activa', ruleId);
+    this.persistRule(payloadClone, result.status === 'Activa', ruleId).catch(() => undefined);
   }
 
   private removeRule(ruleId: string): void {
@@ -410,13 +431,19 @@ export class ValidationRulesComponent implements OnInit {
 
 
 
-  private persistRule(payload: RulePayload, isActive: boolean, ruleId?: string): void {
+  private async persistRule(payload: RulePayload, isActive: boolean, ruleId?: string): Promise<void> {
     this.ruleSyncError = null;
-    const request = ruleId
-      ? this.validationRulesService.updateRule(ruleId, payload, isActive)
-      : this.validationRulesService.saveRule(payload, isActive);
 
-    void request.catch((error) => this.handleRuleSyncError(error));
+    try {
+      if (ruleId) {
+        await this.validationRulesService.updateRule(ruleId, payload, isActive);
+      } else {
+        await this.validationRulesService.saveRule(payload, isActive);
+      }
+    } catch (error) {
+      this.handleRuleSyncError(error);
+      throw error;
+    }
   }
 
   private handleRuleSyncError(error: unknown): void {
