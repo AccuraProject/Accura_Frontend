@@ -357,13 +357,17 @@ export class ValidationRulesComponent implements OnInit {
   }
 
   private updateRule(ruleId: string, result: ValidationRuleFormDialogSubmitResult): void {
+    const payloadClone = JSON.parse(JSON.stringify(result.payload)) as RulePayload;
+
     this.rules = this.rules.map((rule) => {
       if (rule.id !== ruleId) {
         return rule;
       }
 
-      return this.buildRuleFromPayload(result.payload, result.status, rule.source, rule.id);
+      return this.buildRuleFromPayload(payloadClone, result.status, rule.source, rule.id);
     });
+
+    this.persistRule(payloadClone, result.status === 'Activa', ruleId);
   }
 
   private removeRule(ruleId: string): void {
@@ -406,11 +410,13 @@ export class ValidationRulesComponent implements OnInit {
 
 
 
-  private persistRule(payload: RulePayload, isActive: boolean): void {
+  private persistRule(payload: RulePayload, isActive: boolean, ruleId?: string): void {
     this.ruleSyncError = null;
-    void this.validationRulesService.saveRule(payload, isActive).catch((error) =>
-      this.handleRuleSyncError(error)
-    );
+    const request = ruleId
+      ? this.validationRulesService.updateRule(ruleId, payload, isActive)
+      : this.validationRulesService.saveRule(payload, isActive);
+
+    void request.catch((error) => this.handleRuleSyncError(error));
   }
 
   private handleRuleSyncError(error: unknown): void {

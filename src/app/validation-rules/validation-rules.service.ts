@@ -24,6 +24,13 @@ export class ValidationRulesService {
     await firstValueFrom(this.http.post<void>(`${this.baseUrl}/rules/`, body, { headers }));
   }
 
+  async updateRule(ruleId: string, rule: RulePayload, isActive: boolean): Promise<void> {
+    const headers = await this.buildAuthHeaders();
+    const body = { rule, is_active: isActive };
+    const encodedId = encodeURIComponent(ruleId);
+    await firstValueFrom(this.http.put<void>(`${this.baseUrl}/rules/${encodedId}`, body, { headers }));
+  }
+
   private async buildAuthHeaders(): Promise<HttpHeaders> {
     const session = await firstValueFrom(this.store.select(selectSessionState));
 
