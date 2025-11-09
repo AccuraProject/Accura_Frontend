@@ -21,7 +21,8 @@ import {
   describeRuleConfig as describeRuleConfigUtil,
   extractAiPayloads,
   getExampleEntries as getExampleEntriesUtil,
-  normalizeAiPayload
+  normalizeAiPayload,
+  DEFAULT_RULE_ERROR_MESSAGE
 } from './validation-rule-ai.utils';
 import { ValidationRulesService } from './validation-rules.service';
 
@@ -189,10 +190,10 @@ export class ValidationRulesComponent implements OnInit {
     const record = value as Record<string, unknown>;
     const name = this.sanitizeString(record['Nombre de la regla']);
     const dataType = this.sanitizeString(record['Tipo de dato']);
-    const errorMessage = this.sanitizeString(record['Mensaje de error']);
+    const errorMessage = this.sanitizeString(record['Mensaje de error']) ?? DEFAULT_RULE_ERROR_MESSAGE;
     const description = this.sanitizeString(record['Descripción']) ?? '';
 
-    if (!name || !dataType || !errorMessage) {
+    if (!name || !dataType) {
       return null;
     }
 
@@ -225,6 +226,7 @@ export class ValidationRulesComponent implements OnInit {
       'Tipo de dato': dataType,
       'Campo obligatorio': mandatory,
       Header: header,
+      'Mensaje de error': errorMessage,
       'Descripción': description,
       'Ejemplo': example,
       'Regla': ruleConfig

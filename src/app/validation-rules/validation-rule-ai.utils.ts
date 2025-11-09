@@ -1,10 +1,14 @@
 export type RuleExample = Record<string, unknown>;
 
+export const DEFAULT_RULE_ERROR_MESSAGE =
+  'La validación no proporcionó un mensaje de error específico.';
+
 export interface RulePayload {
   'Nombre de la regla': string;
   'Tipo de dato': string;
   'Campo obligatorio': boolean;
   Header: string[];
+  'Mensaje de error': string;
   'Descripción': string;
   'Ejemplo': RuleExample;
   'Regla': Record<string, unknown>;
@@ -409,8 +413,7 @@ export function normalizeAiPayload(payload: unknown): RulePayload | null {
   const dataType = sanitizeString(record['Tipo de dato']) ?? 'Texto';
   const mandatory = toBoolean(record['Campo obligatorio']);
   const header = sanitizeHeader('Header' in record ? record['Header'] : record['header']);
-  const errorMessage =
-    sanitizeString(record['Mensaje de error']) ?? 'La validación no proporcionó un mensaje de error específico.';
+  const errorMessage = sanitizeString(record['Mensaje de error']) ?? DEFAULT_RULE_ERROR_MESSAGE;
   const description = sanitizeString(record['Descripción']) ?? 'Descripción generada automáticamente.';
   const example = sanitizeExample(record['Ejemplo']);
   const ruleConfig = sanitizeRuleConfig(record['Regla'], dataType);
@@ -420,6 +423,7 @@ export function normalizeAiPayload(payload: unknown): RulePayload | null {
     'Tipo de dato': dataType,
     'Campo obligatorio': mandatory,
     Header: header.length > 0 ? header : ['Plantilla Global'],
+    'Mensaje de error': errorMessage,
     'Descripción': description,
     'Ejemplo': example,
     'Regla': ruleConfig

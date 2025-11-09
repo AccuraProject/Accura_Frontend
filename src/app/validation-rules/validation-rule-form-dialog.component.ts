@@ -17,7 +17,8 @@ import {
   extractAiPayloads,
   generateDefaultRuleConfig,
   getExampleEntries as getExampleEntriesUtil,
-  normalizeAiPayload
+  normalizeAiPayload,
+  DEFAULT_RULE_ERROR_MESSAGE
 } from './validation-rule-ai.utils';
 
 export interface ValidationRuleFormDialogResult {
@@ -104,6 +105,7 @@ export class ValidationRuleFormDialogComponent {
 
   private readonly baseUrl = environment.apiBaseUrl.replace(/\/$/, '');
   private readonly aiRuleSchema = VALIDATION_RULE_AI_SCHEMA;
+  private readonly defaultErrorMessage = DEFAULT_RULE_ERROR_MESSAGE;
 
   constructor(
     private readonly dialogRef: MatDialogRef<
@@ -409,6 +411,7 @@ export class ValidationRuleFormDialogComponent {
       'Tipo de dato': this.formModel.dataType,
       'Campo obligatorio': this.formModel.mandatory,
       Header: headers,
+      'Mensaje de error': this.referenceErrorMessage,
       'Descripción': this.formModel.description,
       'Ejemplo': {},
       'Regla': this.formModel.ruleConfig ?? {}
@@ -1045,6 +1048,7 @@ export class ValidationRuleFormDialogComponent {
     base['Campo obligatorio'] = this.formModel.mandatory;
     base['Descripción'] = this.formModel.description.trim();
     base.Header = headers;
+    base['Mensaje de error'] = this.referenceErrorMessage;
     base['Ejemplo'] = example;
     base['Regla'] = config;
 
@@ -1053,6 +1057,13 @@ export class ValidationRuleFormDialogComponent {
 
   private clonePayload(payload: RulePayload): RulePayload {
     return JSON.parse(JSON.stringify(payload)) as RulePayload;
+  }
+
+  private get referenceErrorMessage(): string {
+    const message = this.referencePayload?.['Mensaje de error'];
+    return typeof message === 'string' && message.trim().length > 0
+      ? message
+      : this.defaultErrorMessage;
   }
 
   private createBaselinePayload(): RulePayload {
@@ -1072,6 +1083,7 @@ export class ValidationRuleFormDialogComponent {
       'Tipo de dato': this.formModel.dataType,
       'Campo obligatorio': this.formModel.mandatory,
       Header: headers,
+      'Mensaje de error': this.referenceErrorMessage,
       'Descripción': this.formModel.description.trim(),
       'Ejemplo': example,
       'Regla': this.normalizeManualRuleConfig(
