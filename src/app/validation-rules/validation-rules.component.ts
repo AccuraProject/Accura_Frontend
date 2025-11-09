@@ -8,11 +8,11 @@ import {
   ValidationRuleFormDialogComponent,
   ValidationRuleFormDialogData,
   ValidationRuleFormDialogResult,
-  ValidationRuleFormDialogSubmitResult
+  ValidationRuleFormDialogSubmitResult,
 } from './validation-rule-form-dialog.component';
 import {
   ValidationRuleDeleteDialogComponent,
-  ValidationRuleDeleteDialogData
+  ValidationRuleDeleteDialogData,
 } from './validation-rule-delete-dialog.component';
 import {
   VALIDATION_RULE_AI_SCHEMA,
@@ -22,7 +22,7 @@ import {
   extractAiPayloads,
   getExampleEntries as getExampleEntriesUtil,
   normalizeAiPayload,
-  DEFAULT_RULE_ERROR_MESSAGE
+  DEFAULT_RULE_ERROR_MESSAGE,
 } from './validation-rule-ai.utils';
 import { ValidationRulesService } from './validation-rules.service';
 
@@ -50,7 +50,7 @@ interface ValidationRule {
   standalone: true,
   imports: [CommonModule, FormsModule, MatDialogModule],
   templateUrl: './validation-rules.component.html',
-  styleUrl: './validation-rules.component.scss'
+  styleUrl: './validation-rules.component.scss',
 })
 export class ValidationRulesComponent implements OnInit {
   protected searchTerm = '';
@@ -175,7 +175,7 @@ export class ValidationRulesComponent implements OnInit {
       return null;
     }
 
-    const status = this.toStatus(record['status']);
+    const status = this.toStatus(record['is_active'], record['status']);
     const source = this.toSource(record['source']);
     const id = this.sanitizeString(record['id']) ?? this.generateId();
 
@@ -190,7 +190,8 @@ export class ValidationRulesComponent implements OnInit {
     const record = value as Record<string, unknown>;
     const name = this.sanitizeString(record['Nombre de la regla']);
     const dataType = this.sanitizeString(record['Tipo de dato']);
-    const errorMessage = this.sanitizeString(record['Mensaje de error']) ?? DEFAULT_RULE_ERROR_MESSAGE;
+    const errorMessage =
+      this.sanitizeString(record['Mensaje de error']) ?? DEFAULT_RULE_ERROR_MESSAGE;
     const description = this.sanitizeString(record['Descripción']) ?? '';
 
     if (!name || !dataType) {
@@ -209,7 +210,9 @@ export class ValidationRulesComponent implements OnInit {
     }
 
     const example =
-      record['Ejemplo'] && typeof record['Ejemplo'] === 'object' && !Array.isArray(record['Ejemplo'])
+      record['Ejemplo'] &&
+      typeof record['Ejemplo'] === 'object' &&
+      !Array.isArray(record['Ejemplo'])
         ? (record['Ejemplo'] as RuleExample)
         : {};
 
@@ -219,7 +222,8 @@ export class ValidationRulesComponent implements OnInit {
         : {};
 
     const mandatorySource = record['Campo obligatorio'];
-    const mandatory = typeof mandatorySource === 'boolean' ? mandatorySource : this.toBoolean(mandatorySource);
+    const mandatory =
+      typeof mandatorySource === 'boolean' ? mandatorySource : this.toBoolean(mandatorySource);
 
     return {
       'Nombre de la regla': name,
@@ -227,15 +231,33 @@ export class ValidationRulesComponent implements OnInit {
       'Campo obligatorio': mandatory,
       Header: header,
       'Mensaje de error': errorMessage,
-      'Descripción': description,
-      'Ejemplo': example,
-      'Regla': ruleConfig
+      Descripción: description,
+      Ejemplo: example,
+      Regla: ruleConfig,
     };
   }
 
-  private toStatus(value: unknown): ValidationRule['status'] {
-    const text = this.sanitizeString(value)?.toLowerCase();
-    return text === 'inactiva' || text === 'borrador' ? 'Inactiva' : 'Activa';
+  private toStatus(isActiveValue: unknown, fallbackValue?: unknown): ValidationRule['status'] {
+    if (typeof isActiveValue === 'boolean') {
+      return isActiveValue ? 'Activa' : 'Inactiva';
+    }
+
+    const isActiveText = this.sanitizeString(isActiveValue)?.toLowerCase();
+    if (isActiveText) {
+      const truthyValues = ['true', '1', 'si', 'sí', 'yes', 'activo', 'activa'];
+      const falsyValues = ['false', '0', 'no', 'inactivo', 'inactiva'];
+
+      if (truthyValues.includes(isActiveText)) {
+        return 'Activa';
+      }
+
+      if (falsyValues.includes(isActiveText)) {
+        return 'Inactiva';
+      }
+    }
+
+    const fallbackText = this.sanitizeString(fallbackValue)?.toLowerCase();
+    return fallbackText === 'inactiva' || fallbackText === 'borrador' ? 'Inactiva' : 'Activa';
   }
 
   private toSource(value: unknown): 'manual' | 'ia' {
@@ -255,17 +277,19 @@ export class ValidationRulesComponent implements OnInit {
       maxHeight: '95vh',
       panelClass: 'validation-rule-dialog',
       data: {
-        mode: 'create'
-      }
+        mode: 'create',
+      },
     });
 
-    dialogRef.afterClosed().subscribe((result: ValidationRuleFormDialogSubmitResult | undefined) => {
-      if (!result) {
-        return;
-      }
+    dialogRef
+      .afterClosed()
+      .subscribe((result: ValidationRuleFormDialogSubmitResult | undefined) => {
+        if (!result) {
+          return;
+        }
 
-      this.addRule(result);
-    });
+        this.addRule(result);
+      });
   }
 
   protected openEditDialog(rule: ValidationRule): void {
@@ -282,17 +306,19 @@ export class ValidationRulesComponent implements OnInit {
       data: {
         mode: 'edit',
         rule: this.toDialogResult(rule),
-        payload: rule.payload
-      }
+        payload: rule.payload,
+      },
     });
 
-    dialogRef.afterClosed().subscribe((result: ValidationRuleFormDialogSubmitResult | undefined) => {
-      if (!result) {
-        return;
-      }
+    dialogRef
+      .afterClosed()
+      .subscribe((result: ValidationRuleFormDialogSubmitResult | undefined) => {
+        if (!result) {
+          return;
+        }
 
-      this.updateRule(rule.id, result);
-    });
+        this.updateRule(rule.id, result);
+      });
   }
 
   protected openDeleteDialog(rule: ValidationRule): void {
@@ -303,8 +329,8 @@ export class ValidationRulesComponent implements OnInit {
     >(ValidationRuleDeleteDialogComponent, {
       disableClose: true,
       data: {
-        name: rule.name
-      }
+        name: rule.name,
+      },
     });
 
     dialogRef.afterClosed().subscribe((shouldDelete: boolean | undefined) => {
@@ -337,7 +363,7 @@ export class ValidationRulesComponent implements OnInit {
     const payloadClone = JSON.parse(JSON.stringify(option.payload)) as RulePayload;
     const rule = this.buildRuleFromPayload(payloadClone, 'Inactiva', 'ia');
     this.rules = [rule, ...this.rules];
-    this.persistRule(payloadClone, false);
+    this.persistRule(payloadClone, false).catch(() => undefined);
   }
 
   protected describeRuleConfig(payload: RulePayload): string[] {
@@ -353,7 +379,9 @@ export class ValidationRulesComponent implements OnInit {
     console.log('[ValidationRules] Payload listo para enviar (manual):', payload);
     const entry = this.buildRuleFromPayload(payload, result.status, 'manual');
     this.rules = [entry, ...this.rules];
-    this.persistRule(payload, result.status === 'Activa');
+    this.persistRule(payload, result.status === 'Activa')
+      .then(() => this.loadRules())
+      .catch(() => undefined);
   }
 
   private updateRule(ruleId: string, result: ValidationRuleFormDialogSubmitResult): void {
@@ -367,7 +395,7 @@ export class ValidationRulesComponent implements OnInit {
       return this.buildRuleFromPayload(payloadClone, result.status, rule.source, rule.id);
     });
 
-    this.persistRule(payloadClone, result.status === 'Activa', ruleId);
+    this.persistRule(payloadClone, result.status === 'Activa', ruleId).catch(() => undefined);
   }
 
   private removeRule(ruleId: string): void {
@@ -393,13 +421,17 @@ export class ValidationRulesComponent implements OnInit {
     currentId?: string
   ): ValidationRule {
     const clone = JSON.parse(JSON.stringify(payload)) as RulePayload;
-    const header = Array.isArray(clone.Header) ? clone.Header.filter((item) => typeof item === 'string') : [];
-    const example = clone['Ejemplo'] && typeof clone['Ejemplo'] === 'object' && !Array.isArray(clone['Ejemplo'])
-      ? (clone['Ejemplo'] as RuleExample)
-      : {};
-    const ruleConfig = clone['Regla'] && typeof clone['Regla'] === 'object' && !Array.isArray(clone['Regla'])
-      ? (clone['Regla'] as Record<string, unknown>)
-      : {};
+    const header = Array.isArray(clone.Header)
+      ? clone.Header.filter((item) => typeof item === 'string')
+      : [];
+    const example =
+      clone['Ejemplo'] && typeof clone['Ejemplo'] === 'object' && !Array.isArray(clone['Ejemplo'])
+        ? (clone['Ejemplo'] as RuleExample)
+        : {};
+    const ruleConfig =
+      clone['Regla'] && typeof clone['Regla'] === 'object' && !Array.isArray(clone['Regla'])
+        ? (clone['Regla'] as Record<string, unknown>)
+        : {};
 
     return {
       id: currentId ?? this.generateId(),
@@ -412,30 +444,37 @@ export class ValidationRulesComponent implements OnInit {
       example,
       ruleConfig,
       source,
-      payload: clone
+      payload: clone,
     };
   }
 
-
-
-  private persistRule(payload: RulePayload, isActive: boolean, ruleId?: string): void {
+  private async persistRule(
+    payload: RulePayload,
+    isActive: boolean,
+    ruleId?: string
+  ): Promise<void> {
     this.ruleSyncError = null;
     const request = ruleId
       ? this.validationRulesService.updateRule(ruleId, payload, isActive)
       : this.validationRulesService.saveRule(payload, isActive);
 
     void request.catch((error) => this.handleRuleSyncError(error));
+    try {
+      if (ruleId) {
+        await this.validationRulesService.updateRule(ruleId, payload, isActive);
+      } else {
+        await this.validationRulesService.saveRule(payload, isActive);
+      }
+    } catch (error) {
+      this.handleRuleSyncError(error);
+      throw error;
+    }
   }
 
   private handleRuleSyncError(error: unknown): void {
     console.error('[ValidationRules] Error al sincronizar la regla:', error);
     this.ruleSyncError = this.getErrorMessage(error);
   }
-
-
-
-
-
 
   private sanitizeString(value: unknown): string | null {
     if (typeof value === 'string') {
@@ -476,14 +515,14 @@ export class ValidationRulesComponent implements OnInit {
       primaryHeader: rule.header[0] ?? 'Plantilla Global',
       secondaryHeaders: rule.header.slice(1),
       exampleEntries: this.buildDialogExamples(rule.payload),
-      ruleConfig: JSON.parse(JSON.stringify(rule.ruleConfig)) as Record<string, unknown>
+      ruleConfig: JSON.parse(JSON.stringify(rule.ruleConfig)) as Record<string, unknown>,
     };
   }
 
   private buildDialogExamples(payload: RulePayload): Array<{ key: string; value: string }> {
     const defaults: Array<{ key: string; value: string }> = [
       { key: 'Ejemplo válido', value: '' },
-      { key: 'Ejemplo inválido', value: '' }
+      { key: 'Ejemplo inválido', value: '' },
     ];
 
     const entries = this.getExampleEntries(payload)
@@ -504,12 +543,12 @@ export class ValidationRulesComponent implements OnInit {
     return [
       {
         key: defaults[0].key,
-        value: validEntry?.value ?? entries[0]?.value ?? ''
+        value: validEntry?.value ?? entries[0]?.value ?? '',
       },
       {
         key: defaults[1].key,
-        value: invalidEntry?.value ?? fallback[0]?.value ?? entries[1]?.value ?? ''
-      }
+        value: invalidEntry?.value ?? fallback[0]?.value ?? entries[1]?.value ?? '',
+      },
     ];
   }
 
