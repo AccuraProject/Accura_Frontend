@@ -371,7 +371,15 @@ export class ValidationRulesComponent implements OnInit {
   }
 
   private removeRule(ruleId: string): void {
+    const previousRules = [...this.rules];
     this.rules = this.rules.filter((rule) => rule.id !== ruleId);
+
+    this.ruleSyncError = null;
+
+    void this.validationRulesService.deleteRule(ruleId).catch((error) => {
+      this.rules = previousRules;
+      this.handleRuleSyncError(error);
+    });
   }
 
   private generateId(): string {

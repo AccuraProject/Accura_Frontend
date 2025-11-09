@@ -31,6 +31,12 @@ export class ValidationRulesService {
     await firstValueFrom(this.http.put<void>(`${this.baseUrl}/rules/${encodedId}`, body, { headers }));
   }
 
+  async deleteRule(ruleId: string): Promise<void> {
+    const headers = await this.buildAuthHeaders();
+    const encodedId = encodeURIComponent(ruleId);
+    await firstValueFrom(this.http.delete<void>(`${this.baseUrl}/rules/${encodedId}`, { headers }));
+  }
+
   private async buildAuthHeaders(): Promise<HttpHeaders> {
     const session = await firstValueFrom(this.store.select(selectSessionState));
 
