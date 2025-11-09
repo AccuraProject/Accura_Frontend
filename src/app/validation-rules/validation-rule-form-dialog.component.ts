@@ -12,6 +12,7 @@ import { selectSessionState, SessionState } from '../core/store/session/session.
 import {
   VALIDATION_RULE_AI_SCHEMA,
   RulePayload,
+  RuleExample,
   describeRuleConfig as describeRuleConfigUtil,
   extractAiPayloads,
   generateDefaultRuleConfig,
@@ -31,9 +32,14 @@ export interface ValidationRuleFormDialogResult {
   ruleConfig: Record<string, unknown>;
 }
 
+export interface ValidationRuleFormDialogSubmitResult extends ValidationRuleFormDialogResult {
+  payload: RulePayload;
+}
+
 export interface ValidationRuleFormDialogData {
   mode: 'create' | 'edit';
   rule?: ValidationRuleFormDialogResult;
+  payload?: RulePayload;
 }
 
 interface AiSuggestion {
@@ -88,6 +94,8 @@ export class ValidationRuleFormDialogComponent {
   protected manualFormEnabled: boolean;
   protected listTableHeader = this.defaultListTableHeader;
 
+  private referencePayload: RulePayload | null;
+
   protected aiPrompt = '';
   protected aiIsLoading = false;
   protected aiError: string | null = null;
@@ -114,6 +122,7 @@ export class ValidationRuleFormDialogComponent {
     this.actionLabel = this.isEditMode ? 'Guardar Cambios' : 'Guardar Regla';
     this.formModel = data.rule ? this.cloneRule(data.rule) : this.createEmptyForm();
     this.manualFormEnabled = this.isEditMode;
+    this.referencePayload = data.payload ? this.clonePayload(data.payload) : null;
     this.ensureCollections();
     this.syncAdvancedTableFromRule();
     this.syncListTableHeader();
@@ -145,14 +154,22 @@ export class ValidationRuleFormDialogComponent {
     this.formModel.exampleEntries = exampleEntries.map((entry) => ({ ...entry }));
     this.formModel.primaryHeader = sanitizedPrimaryHeader;
 
-    const result: ValidationRuleFormDialogResult = {
+    const submissionPayload = this.buildSubmissionPayload(
+      sanitizedPrimaryHeader,
+      secondaryHeaders,
+      exampleEntries
+    );
+    this.referencePayload = this.clonePayload(submissionPayload);
+
+    const result: ValidationRuleFormDialogSubmitResult = {
       ...this.formModel,
       name: this.formModel.name.trim(),
       description: this.formModel.description.trim(),
       primaryHeader: sanitizedPrimaryHeader,
       secondaryHeaders,
       exampleEntries,
-      ruleConfig: JSON.parse(JSON.stringify(this.formModel.ruleConfig)) as Record<string, unknown>
+      ruleConfig: JSON.parse(JSON.stringify(this.formModel.ruleConfig)) as Record<string, unknown>,
+      payload: submissionPayload
     };
 
     this.dialogRef.close(result);
@@ -885,6 +902,7 @@ export class ValidationRuleFormDialogComponent {
 
   private applyAiPayload(payload: RulePayload): void {
     this.manualFormEnabled = true;
+    this.referencePayload = this.clonePayload(payload);
 
     const headers = Array.isArray(payload.Header)
       ? (payload.Header as unknown[])
@@ -1007,6 +1025,196 @@ export class ValidationRuleFormDialogComponent {
 
     this.updateAdvancedRuleConfigFromTable();
     this.syncComplexListDraftRow();
+  }
+
+  private buildSubmissionPayload(
+    primaryHeader: string,
+    secondaryHeaders: string[],
+    exampleEntries: Array<{ key: string; value: string }>
+  ): RulePayload {
+    const base = this.referencePayload ? this.clonePayload(this.referencePayload) : this.createBaselinePayload();
+    const headers = [primaryHeader, ...secondaryHeaders];
+    const example = this.buildExampleFromEntries(exampleEntries);
+    const config = this.normalizeManualRuleConfig(
+      JSON.parse(JSON.stringify(this.formModel.ruleConfig)) as Record<string, unknown>,
+      this.formModel.dataType
+    );
+
+    base['Nombre de la regla'] = this.formModel.name.trim();
+    base['Tipo de dato'] = this.formModel.dataType;
+    base['Campo obligatorio'] = this.formModel.mandatory;
+    base['Descripción'] = this.formModel.description.trim();
+    base.Header = headers;
+    base['Ejemplo'] = example;
+    base['Regla'] = config;
+
+    return base;
+  }
+
+  private clonePayload(payload: RulePayload): RulePayload {
+    return JSON.parse(JSON.stringify(payload)) as RulePayload;
+  }
+
+  private createBaselinePayload(): RulePayload {
+    const headers = [
+      this.formModel.primaryHeader.trim().length > 0 ? this.formModel.primaryHeader.trim() : 'Plantilla Global',
+      ...this.formModel.secondaryHeaders
+    ]
+      .map((item) => item.trim())
+      .filter((item, index, array) => item.length > 0 && array.indexOf(item) === index);
+
+    const example = this.buildExampleFromEntries(
+      this.formModel.exampleEntries.map((entry) => ({ key: entry.key.trim(), value: entry.value.trim() }))
+    );
+
+    return {
+      'Nombre de la regla': this.formModel.name.trim(),
+      'Tipo de dato': this.formModel.dataType,
+      'Campo obligatorio': this.formModel.mandatory,
+      Header: headers,
+      'Descripción': this.formModel.description.trim(),
+      'Ejemplo': example,
+      'Regla': this.normalizeManualRuleConfig(
+        JSON.parse(JSON.stringify(this.formModel.ruleConfig)) as Record<string, unknown>,
+        this.formModel.dataType
+      )
+    };
+  }
+
+  private buildExampleFromEntries(entries: Array<{ key: string; value: string }>): RuleExample {
+    return entries.reduce<RuleExample>((acc, entry) => {
+      const key = entry.key.trim();
+      if (!key) {
+        return acc;
+      }
+
+      acc[key] = entry.value.trim();
+      return acc;
+    }, {});
+  }
+
+  private normalizeManualRuleConfig(
+    config: Record<string, unknown>,
+    dataType: string
+  ): Record<string, unknown> {
+    const clone = config && typeof config === 'object'
+      ? JSON.parse(JSON.stringify(config))
+      : generateDefaultRuleConfig(dataType);
+
+    const record = clone as Record<string, unknown>;
+
+    switch (dataType) {
+      case 'Texto':
+        record['Longitud minima'] = this.toNumber(record['Longitud minima'], 0);
+        record['Longitud maxima'] = this.toNumber(record['Longitud maxima'], 0);
+        break;
+      case 'Número':
+        record['Valor mínimo'] = this.toNumber(record['Valor mínimo'], null);
+        record['Valor máximo'] = this.toNumber(record['Valor máximo'], null);
+        record['Número de decimales'] = this.toNumber(record['Número de decimales'], 0);
+        break;
+      case 'Documento':
+        record['Longitud minima'] = this.toNumber(record['Longitud minima'], 1);
+        record['Longitud maxima'] = this.toNumber(record['Longitud maxima'], 1);
+        break;
+      case 'Lista': {
+        const values = Array.isArray(record['Lista'])
+          ? (record['Lista'] as unknown[])
+              .map((item) => (typeof item === 'string' ? item.trim() : ''))
+              .filter((item, index, array) => item.length > 0 && array.indexOf(item) === index)
+          : [];
+        record['Lista'] = values;
+        break;
+      }
+      case 'Lista compleja':
+        record['Lista compleja'] = Array.isArray(record['Lista compleja'])
+          ? (record['Lista compleja'] as unknown[])
+          : [];
+        break;
+      case 'Telefono':
+        record['Longitud minima'] = this.toNumber(record['Longitud minima'], 1);
+        record['Código de país'] = this.sanitizeString(record['Código de país']) ?? '+00';
+        break;
+      case 'Correo':
+        record['Formato'] = this.sanitizeString(record['Formato']) ?? 'usuario@dominio.com';
+        record['Longitud máxima'] = this.toNumber(record['Longitud máxima'], 1);
+        break;
+      case 'Fecha':
+        record['Formato'] = this.sanitizeString(record['Formato']) ?? 'yyyy-MM-dd';
+        record['Fecha mínima'] = this.sanitizeString(record['Fecha mínima']) ?? '1900-01-01';
+        record['Fecha máxima'] = this.sanitizeString(record['Fecha máxima']) ?? '2100-12-31';
+        break;
+      case 'Dependencia':
+        record['reglas especifica'] = Array.isArray(record['reglas especifica'])
+          ? (record['reglas especifica'] as unknown[]).filter((item) => item && typeof item === 'object')
+          : [];
+        break;
+      case 'Validación conjunta': {
+        const values = Array.isArray(record['Nombre de campos'])
+          ? (record['Nombre de campos'] as unknown[])
+              .map((item) => (typeof item === 'string' ? item.trim() : ''))
+              .filter((item, index, array) => item.length > 0 && array.indexOf(item) === index)
+          : [];
+        record['Nombre de campos'] = values;
+        break;
+      }
+      case 'Duplicados': {
+        const values = Array.isArray(record['Campos'])
+          ? (record['Campos'] as unknown[])
+              .map((item) => (typeof item === 'string' ? item.trim() : ''))
+              .filter((item, index, array) => item.length > 0 && array.indexOf(item) === index)
+          : [];
+        record['Campos'] = values;
+        record['Ignorar vacios'] = this.toBoolean(record['Ignorar vacios']);
+        break;
+      }
+      default:
+        break;
+    }
+
+    return record;
+  }
+
+  private toBoolean(value: unknown): boolean {
+    if (typeof value === 'boolean') {
+      return value;
+    }
+
+    if (typeof value === 'string') {
+      const normalized = value.trim().toLowerCase();
+      return ['true', '1', 'si', 'sí', 'yes'].includes(normalized);
+    }
+
+    if (typeof value === 'number') {
+      return value !== 0;
+    }
+
+    return false;
+  }
+
+  private toNumber(value: unknown, defaultValue: number | null): number | null {
+    if (value === null || value === undefined || value === '') {
+      return defaultValue;
+    }
+
+    const numeric = Number(value);
+    if (Number.isNaN(numeric)) {
+      return defaultValue;
+    }
+
+    return numeric;
+  }
+
+  private sanitizeString(value: unknown): string | null {
+    if (typeof value === 'string') {
+      return value.trim();
+    }
+
+    if (typeof value === 'number' || typeof value === 'boolean') {
+      return String(value);
+    }
+
+    return null;
   }
 
   private async postAuthorized<T>(path: string, body: unknown, session: SessionState | null): Promise<T> {

@@ -1,32 +1,29 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
-import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
+import { HttpErrorResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import { Store } from '@ngrx/store';
-import { firstValueFrom } from 'rxjs';
 
 import {
   ValidationRuleFormDialogComponent,
   ValidationRuleFormDialogData,
-  ValidationRuleFormDialogResult
+  ValidationRuleFormDialogResult,
+  ValidationRuleFormDialogSubmitResult
 } from './validation-rule-form-dialog.component';
 import {
   ValidationRuleDeleteDialogComponent,
   ValidationRuleDeleteDialogData
 } from './validation-rule-delete-dialog.component';
-import { environment } from '../../environments/environment';
-import { selectSessionState, SessionState } from '../core/store/session/session.reducer';
 import {
   VALIDATION_RULE_AI_SCHEMA,
   RulePayload,
   RuleExample,
   describeRuleConfig as describeRuleConfigUtil,
   extractAiPayloads,
-  generateDefaultRuleConfig as generateDefaultRuleConfigUtil,
   getExampleEntries as getExampleEntriesUtil,
   normalizeAiPayload
 } from './validation-rule-ai.utils';
+import { ValidationRulesService } from './validation-rules.service';
 
 interface AiRuleOption {
   id: string;
@@ -70,14 +67,11 @@ export class ValidationRulesComponent implements OnInit {
 
   protected ruleSyncError: string | null = null;
 
-  private readonly baseUrl = environment.apiBaseUrl.replace(/\/$/, '');
-
   private readonly aiRuleSchema = VALIDATION_RULE_AI_SCHEMA;
 
   constructor(
     private readonly dialog: MatDialog,
-    private readonly http: HttpClient,
-    private readonly store: Store
+    private readonly validationRulesService: ValidationRulesService
   ) {}
 
   async ngOnInit(): Promise<void> {
@@ -93,11 +87,7 @@ export class ValidationRulesComponent implements OnInit {
     this.ruleLoadError = null;
 
     try {
-      const session = await this.getSessionSnapshot();
-      const headers = this.buildAuthHeaders(session);
-      const data = await firstValueFrom(
-        this.http.get<unknown>(`${this.baseUrl}/rules`, { headers })
-      );
+      const data = await this.validationRulesService.fetchRules();
 
       this.rules = this.parseRuleListResponse(data);
     } catch (error) {
@@ -255,7 +245,7 @@ export class ValidationRulesComponent implements OnInit {
     const dialogRef = this.dialog.open<
       ValidationRuleFormDialogComponent,
       ValidationRuleFormDialogData,
-      ValidationRuleFormDialogResult
+      ValidationRuleFormDialogSubmitResult
     >(ValidationRuleFormDialogComponent, {
       disableClose: true,
       width: '92vw',
@@ -267,7 +257,7 @@ export class ValidationRulesComponent implements OnInit {
       }
     });
 
-    dialogRef.afterClosed().subscribe((result: ValidationRuleFormDialogResult | undefined) => {
+    dialogRef.afterClosed().subscribe((result: ValidationRuleFormDialogSubmitResult | undefined) => {
       if (!result) {
         return;
       }
@@ -280,7 +270,7 @@ export class ValidationRulesComponent implements OnInit {
     const dialogRef = this.dialog.open<
       ValidationRuleFormDialogComponent,
       ValidationRuleFormDialogData,
-      ValidationRuleFormDialogResult
+      ValidationRuleFormDialogSubmitResult
     >(ValidationRuleFormDialogComponent, {
       disableClose: true,
       width: '92vw',
@@ -289,11 +279,12 @@ export class ValidationRulesComponent implements OnInit {
       panelClass: 'validation-rule-dialog',
       data: {
         mode: 'edit',
-        rule: this.toDialogResult(rule)
+        rule: this.toDialogResult(rule),
+        payload: rule.payload
       }
     });
 
-    dialogRef.afterClosed().subscribe((result: ValidationRuleFormDialogResult | undefined) => {
+    dialogRef.afterClosed().subscribe((result: ValidationRuleFormDialogSubmitResult | undefined) => {
       if (!result) {
         return;
       }
@@ -344,7 +335,7 @@ export class ValidationRulesComponent implements OnInit {
     const payloadClone = JSON.parse(JSON.stringify(option.payload)) as RulePayload;
     const rule = this.buildRuleFromPayload(payloadClone, 'Inactiva', 'ia');
     this.rules = [rule, ...this.rules];
-    this.persistRule(payloadClone, 'Inactiva', 'ia');
+    this.persistRule(payloadClone, false);
   }
 
   protected describeRuleConfig(payload: RulePayload): string[] {
@@ -355,23 +346,21 @@ export class ValidationRulesComponent implements OnInit {
     return getExampleEntriesUtil(payload);
   }
 
-  private addRule(result: ValidationRuleFormDialogResult): void {
-    const payload = this.buildPayloadFromFormResult(result);
+  private addRule(result: ValidationRuleFormDialogSubmitResult): void {
+    const payload = JSON.parse(JSON.stringify(result.payload)) as RulePayload;
     console.log('[ValidationRules] Payload listo para enviar (manual):', payload);
     const entry = this.buildRuleFromPayload(payload, result.status, 'manual');
     this.rules = [entry, ...this.rules];
-    this.persistRule(payload, result.status, 'manual');
+    this.persistRule(payload, result.status === 'Activa');
   }
 
-  private updateRule(ruleId: string, result: ValidationRuleFormDialogResult): void {
+  private updateRule(ruleId: string, result: ValidationRuleFormDialogSubmitResult): void {
     this.rules = this.rules.map((rule) => {
       if (rule.id !== ruleId) {
         return rule;
       }
 
-      const payload = this.buildPayloadFromFormResult(result);
-
-      return this.buildRuleFromPayload(payload, result.status, rule.source, rule.id);
+      return this.buildRuleFromPayload(result.payload, result.status, rule.source, rule.id);
     });
   }
 
@@ -413,173 +402,13 @@ export class ValidationRulesComponent implements OnInit {
     };
   }
 
-  private buildPayloadFromFormResult(result: ValidationRuleFormDialogResult): RulePayload {
-    const name = result.name.trim();
-    const dataType = result.dataType;
-    const additionalHeaders = result.secondaryHeaders
-      .map((item) => item.trim())
-      .filter((item, index, array) => item.length > 0 && array.indexOf(item) === index);
-    const primaryHeader = result.primaryHeader.trim();
-    const headers = [primaryHeader.length > 0 ? primaryHeader : 'Plantilla Global', ...additionalHeaders]
-      .map((item) => item.trim())
-      .filter((item, index, array) => item.length > 0 && array.indexOf(item) === index);
-
-    const example = result.exampleEntries.reduce<RuleExample>((acc, entry) => {
-      const key = entry.key.trim();
-      if (!key) {
-        return acc;
-      }
-
-      acc[key] = entry.value.trim();
-      return acc;
-    }, {});
-
-    return {
-      'Nombre de la regla': name,
-      'Tipo de dato': dataType,
-      'Campo obligatorio': result.mandatory,
-      Header: headers,
-      'Descripción': result.description.trim(),
-      'Ejemplo': example,
-      'Regla': this.normalizeManualRuleConfig(result.ruleConfig, dataType)
-    };
-  }
-
-  private normalizeManualRuleConfig(
-    config: Record<string, unknown>,
-    dataType: string
-  ): Record<string, unknown> {
-    const clone = config && typeof config === 'object'
-      ? JSON.parse(JSON.stringify(config))
-      : generateDefaultRuleConfigUtil(dataType);
-
-    const record = clone as Record<string, unknown>;
-
-    switch (dataType) {
-      case 'Texto':
-        record['Longitud minima'] = this.toNumber(record['Longitud minima'], 0);
-        record['Longitud maxima'] = this.toNumber(record['Longitud maxima'], 0);
-        break;
-      case 'Número':
-        record['Valor mínimo'] = this.toNumber(record['Valor mínimo'], null);
-        record['Valor máximo'] = this.toNumber(record['Valor máximo'], null);
-        record['Número de decimales'] = this.toNumber(record['Número de decimales'], 0);
-        break;
-      case 'Documento':
-        record['Longitud minima'] = this.toNumber(record['Longitud minima'], 1);
-        record['Longitud maxima'] = this.toNumber(record['Longitud maxima'], 1);
-        break;
-      case 'Lista': {
-        const values = Array.isArray(record['Lista'])
-          ? (record['Lista'] as unknown[])
-              .map((item) => (typeof item === 'string' ? item.trim() : ''))
-              .filter((item, index, array) => item.length > 0 && array.indexOf(item) === index)
-          : [];
-        record['Lista'] = values;
-        break;
-      }
-      case 'Lista compleja':
-        record['Lista compleja'] = Array.isArray(record['Lista compleja'])
-          ? (record['Lista compleja'] as unknown[])
-          : [];
-        break;
-      case 'Telefono':
-        record['Longitud minima'] = this.toNumber(record['Longitud minima'], 1);
-        record['Código de país'] = this.sanitizeString(record['Código de país']) ?? '+00';
-        break;
-      case 'Correo':
-        record['Formato'] = this.sanitizeString(record['Formato']) ?? 'usuario@dominio.com';
-        record['Longitud máxima'] = this.toNumber(record['Longitud máxima'], 1);
-        break;
-      case 'Fecha':
-        record['Formato'] = this.sanitizeString(record['Formato']) ?? 'yyyy-MM-dd';
-        record['Fecha mínima'] = this.sanitizeString(record['Fecha mínima']) ?? '1900-01-01';
-        record['Fecha máxima'] = this.sanitizeString(record['Fecha máxima']) ?? '2100-12-31';
-        break;
-      case 'Dependencia':
-        record['reglas especifica'] = Array.isArray(record['reglas especifica'])
-          ? (record['reglas especifica'] as unknown[]).filter((item) => item && typeof item === 'object')
-          : [];
-        break;
-      case 'Validación conjunta': {
-        const values = Array.isArray(record['Nombre de campos'])
-          ? (record['Nombre de campos'] as unknown[])
-              .map((item) => (typeof item === 'string' ? item.trim() : ''))
-              .filter((item, index, array) => item.length > 0 && array.indexOf(item) === index)
-          : [];
-        record['Nombre de campos'] = values;
-        break;
-      }
-      case 'Duplicados': {
-        const values = Array.isArray(record['Campos'])
-          ? (record['Campos'] as unknown[])
-              .map((item) => (typeof item === 'string' ? item.trim() : ''))
-              .filter((item, index, array) => item.length > 0 && array.indexOf(item) === index)
-          : [];
-        record['Campos'] = values;
-        record['Ignorar vacios'] = this.toBoolean(record['Ignorar vacios']);
-        break;
-      }
-      default:
-        break;
-    }
-
-    return record;
-  }
 
 
-  private persistRule(
-    payload: RulePayload,
-    status: ValidationRule['status'],
-    source: 'manual' | 'ia'
-  ): void {
+  private persistRule(payload: RulePayload, isActive: boolean): void {
     this.ruleSyncError = null;
-    void this.sendRuleToServer(payload, status, source).catch((error) => this.handleRuleSyncError(error));
-  }
-
-  private async sendRuleToServer(
-    payload: RulePayload,
-    status: ValidationRule['status'],
-    source: 'manual' | 'ia'
-  ): Promise<void> {
-    const session = await this.getSessionSnapshot();
-    const body = {
-      rule: {
-        payload,
-        status,
-        source
-      },
-      is_admin: this.isAdmin(session)
-    };
-
-    await this.postAuthorized<void>('/rules', body, session);
-  }
-
-  private async postAuthorized<T>(path: string, body: unknown, session?: SessionState): Promise<T> {
-    const snapshot = session ?? (await this.getSessionSnapshot());
-    const headers = this.buildAuthHeaders(snapshot);
-    return await firstValueFrom(this.http.post<T>(`${this.baseUrl}${path}`, body, { headers }));
-  }
-
-  private async getSessionSnapshot(): Promise<SessionState> {
-    return await firstValueFrom(this.store.select(selectSessionState));
-  }
-
-  private buildAuthHeaders(session: SessionState): HttpHeaders {
-    if (!session.accessToken) {
-      throw new Error('No hay un token de autenticación disponible.');
-    }
-
-    const tokenType = session.tokenType ?? 'Bearer';
-
-    return new HttpHeaders({
-      'Content-Type': 'application/json',
-      Authorization: `${tokenType} ${session.accessToken}`
-    });
-  }
-
-  private isAdmin(session: SessionState): boolean {
-    return (session.role ?? '').toLowerCase() === 'admin';
+    void this.validationRulesService.saveRule(payload, isActive).catch((error) =>
+      this.handleRuleSyncError(error)
+    );
   }
 
   private handleRuleSyncError(error: unknown): void {
@@ -620,20 +449,6 @@ export class ValidationRulesComponent implements OnInit {
 
     return false;
   }
-
-  private toNumber(value: unknown, defaultValue: number | null): number | null {
-    if (value === null || value === undefined || value === '') {
-      return defaultValue;
-    }
-
-    const numeric = Number(value);
-    if (Number.isNaN(numeric)) {
-      return defaultValue;
-    }
-
-    return numeric;
-  }
-
 
   private toDialogResult(rule: ValidationRule): ValidationRuleFormDialogResult {
     return {
