@@ -89,29 +89,23 @@
           <td>
             <span class="users-table__date">{{ user.createdAt }}</span>
           </td>
-          <td class="users-table__actions-column">
+          <td class="users-table__actions">
             <button
-              class="icon-button"
+              class="icon-button icon-button--ghost"
               type="button"
-              aria-label="Abrir acciones"
-              [matMenuTriggerFor]="actionsMenu"
+              (click)="openEditDialog(user)"
+              aria-label="Editar"
             >
-              <span class="material-symbols-rounded" aria-hidden="true">more_vert</span>
+              <span class="material-symbols-rounded" aria-hidden="true">edit</span>
             </button>
-            <mat-menu #actionsMenu="matMenu">
-              <button mat-menu-item type="button" (click)="openEditDialog(user)">
-                <div class="menu-item-text">
-                  <span class="material-symbols-rounded" aria-hidden="true">edit</span>
-                  <span>Editar</span>
-                </div>
-              </button>
-              <button mat-menu-item type="button" (click)="openDeleteDialog(user)">
-                <div class="menu-item-text text-danger">
-                  <span class="material-symbols-rounded" aria-hidden="true">delete</span>
-                  <span>Eliminar</span>
-                </div>
-              </button>
-            </mat-menu>
+            <button
+              class="icon-button icon-button--danger"
+              type="button"
+              (click)="openDeleteDialog(user)"
+              aria-label="Eliminar"
+            >
+              <span class="material-symbols-rounded" aria-hidden="true">delete</span>
+            </button>
           </td>
         </tr>
         <tr *ngIf="items.length === 0">

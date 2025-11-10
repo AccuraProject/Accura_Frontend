@@ -52,7 +52,7 @@ export class UsersComponent implements OnInit {
   protected formAlert: UsersAlert | null = null;
 
   protected readonly roles: UserRoleOption[] = [
-    { id: 1, label: 'Administrador' },
+    // { id: 1, label: 'Administrador' },
     { id: 2, label: 'Cliente' },
   ];
 

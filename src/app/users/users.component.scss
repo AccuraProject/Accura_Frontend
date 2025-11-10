@@ -156,10 +156,31 @@
   font-size: 0.9rem;
 }
 
-.users-table__actions-column {
-  width: 1%;
+.users-table__actions {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
   white-space: nowrap;
-  text-align: right;
+}
+
+.icon-button--ghost {
+  background: rgba(248, 250, 252, 0.95);
+  color: #475569;
+}
+
+.icon-button--ghost:hover {
+  background: rgba(99, 102, 241, 0.12);
+  color: #312e81;
+}
+
+.icon-button--danger {
+  background: rgba(254, 226, 226, 0.9);
+  color: #b91c1c;
+}
+
+.icon-button--danger:hover {
+  background: rgba(248, 113, 113, 0.16);
+  color: #7f1d1d;
 }
 
 .users-table__empty {
