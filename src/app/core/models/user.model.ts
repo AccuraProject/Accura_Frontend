@@ -31,7 +31,7 @@ export interface UserDetail {
   role: UserRole;
 }
 
-export type UserCreatedByMeResponse = UserDetail;
+export type UserResponse = UserDetail;
 export type CurrentUserResponse = UserDetail;
 
 export interface UpdateUserPayload {

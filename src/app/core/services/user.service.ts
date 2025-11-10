@@ -10,7 +10,7 @@ import {
   CurrentUserResponse,
   ResetPasswordPayload,
   UpdateUserPayload,
-  UserCreatedByMeResponse
+  UserResponse
 } from '../models/user.model';
 import { selectSessionState } from '../store/session/session.reducer';
 
@@ -40,7 +40,7 @@ export class UserService {
     );
   }
 
-  getUsersCreatedByMe(): Observable<UserCreatedByMeResponse[]> {
+  getUsers(): Observable<UserResponse[]> {
     return this.store.select(selectSessionState).pipe(
       take(1),
       switchMap((session) => {
@@ -53,7 +53,7 @@ export class UserService {
           Authorization: `${tokenType} ${session.accessToken}`
         });
 
-        return this.http.get<UserCreatedByMeResponse[]>(`${this.baseUrl}/users/created-by/me`, {
+        return this.http.get<UserResponse[]>(`${this.baseUrl}/users`, {
           headers
         });
       })

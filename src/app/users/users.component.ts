@@ -18,7 +18,7 @@ import { UserService } from '../core/services/user.service';
 import {
   CreatedUserResponse,
   UpdateUserPayload,
-  UserCreatedByMeResponse,
+  UserResponse,
   UserRole,
 } from '../core/models/user.model';
 
@@ -217,7 +217,7 @@ export class UsersComponent implements OnInit {
     this.formAlert = null;
 
     this.userService.updateUser(user.id, payload).subscribe({
-      next: (updatedUser: UserCreatedByMeResponse) => {
+      next: (updatedUser: UserResponse) => {
         const updatedRow = this.mapToUserRow(updatedUser);
         this.users = this.users.map((current) =>
           current.id === updatedRow.id ? updatedRow : current,
@@ -275,8 +275,8 @@ export class UsersComponent implements OnInit {
   }
 
   private loadUsers(): void {
-    this.userService.getUsersCreatedByMe().subscribe({
-      next: (users: UserCreatedByMeResponse[]) => {
+    this.userService.getUsers().subscribe({
+      next: (users: UserResponse[]) => {
         this.users = users.map((user) => this.mapToUserRow(user));
       },
       error: (error: unknown) => {
@@ -290,7 +290,7 @@ export class UsersComponent implements OnInit {
     });
   }
 
-  private mapToUserRow(user: UserCreatedByMeResponse): UserRow {
+  private mapToUserRow(user: UserResponse): UserRow {
     return this.createUserRow(
       user.id,
       user.name,

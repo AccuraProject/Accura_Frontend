@@ -24,7 +24,7 @@ import { selectSessionUser } from '../core/store/session/session.selectors';
 import {
   CurrentUserResponse,
   UpdateUserPayload,
-  UserCreatedByMeResponse,
+  UserResponse,
   UserRole,
   UserDetail,
 } from '../core/models/user.model';
@@ -352,8 +352,8 @@ export class SettingsComponent {
 
     this.manageUsersLoaded = true;
 
-    this.userService.getUsersCreatedByMe().subscribe({
-      next: (users: UserCreatedByMeResponse[]) => {
+    this.userService.getUsers().subscribe({
+      next: (users: UserResponse[]) => {
         this.users = users.map((user) => this.mapToManagedUser(user));
       },
       error: (error: unknown) => {
