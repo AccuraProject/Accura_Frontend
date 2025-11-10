@@ -1,0 +1,51 @@
+:host {
+  display: block;
+  min-width: 340px;
+}
+
+.session-expired-dialog__content {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.session-expired-dialog__status {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 1.25rem 1.5rem;
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(79, 70, 229, 0.1));
+  border: 1px solid rgba(99, 102, 241, 0.18);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+.session-expired-dialog__status-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  color: #312e81;
+}
+
+.session-expired-dialog__status-text p {
+  margin: 0;
+  font-weight: 600;
+}
+
+.session-expired-dialog__status-text span {
+  font-size: 0.9rem;
+  color: #4338ca;
+}
+
+@media (max-width: 480px) {
+  :host {
+    min-width: 0;
+  }
+
+  .session-expired-dialog__status {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+}

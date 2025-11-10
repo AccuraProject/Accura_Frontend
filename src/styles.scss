@@ -73,6 +73,11 @@ button {
   border-radius: 28px;
 }
 
+.session-expired-dialog .mat-mdc-dialog-surface {
+  border-radius: 28px;
+  padding: 0;
+}
+
 .mat-mdc-menu-panel {
   background-color: #ffffff !important;
   border-radius: 1rem !important;
