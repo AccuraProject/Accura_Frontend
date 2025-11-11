@@ -40,9 +40,15 @@ export interface TemplateCreatePayload {
   description?: string;
 }
 
+export interface TemplateColumnRulePayload {
+  id: number | string;
+  ['header rule']?: string[];
+}
+
 export interface TemplateColumnPayload {
   name: string;
-  rule_id?: number | string | null;
+  description?: string;
+  rules: TemplateColumnRulePayload[];
   [key: string]: unknown;
 }
 
@@ -66,15 +72,11 @@ export class TemplateService {
     );
   }
 
-  async createColumns(
-    templateId: number | string,
-    columns: TemplateColumnPayload[]
-  ): Promise<unknown> {
+  async createColumn(templateId: number | string, column: TemplateColumnPayload): Promise<unknown> {
     const headers = await this.buildAuthHeaders();
-    const body = { columns };
     const encodedId = encodeURIComponent(String(templateId));
     return await firstValueFrom(
-      this.http.post<unknown>(`${this.baseUrl}/templates/${encodedId}/columns`, body, { headers })
+      this.http.post<unknown>(`${this.baseUrl}/templates/${encodedId}/columns`, column, { headers })
     );
   }
 

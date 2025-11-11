@@ -5,17 +5,32 @@ import { FormsModule, NgForm } from '@angular/forms';
 import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { read, utils, writeFileXLSX } from 'xlsx';
 
-import { TemplateService, TemplateCreatePayload, TemplateWithColumns } from './template.service';
+import {
+  TemplateService,
+  TemplateCreatePayload,
+  TemplateWithColumns,
+  TemplateColumnPayload,
+  TemplateColumnRulePayload
+} from './template.service';
 import { ValidationRulesService } from '../validation-rules/validation-rules.service';
 
 interface RuleOption {
   id: string;
   label: string;
+  type: string | null;
+  headerOptions: string[];
+}
+
+interface ColumnRuleDraft {
+  id: string;
+  header: string | null;
 }
 
 interface TemplateColumnDraft {
   name: string;
-  ruleId: string | null;
+  description: string;
+  rules: ColumnRuleDraft[];
+  ruleDraft: string | null;
 }
 
 @Component({
@@ -47,6 +62,7 @@ export class TemplateCreateDialogComponent {
   protected rulesLoading = false;
   protected rulesError: string | null = null;
   private rulesLoaded = false;
+  private ruleOptionLookup = new Map<string, RuleOption>();
 
   constructor(
     private readonly dialogRef: MatDialogRef<TemplateCreateDialogComponent, boolean>,
@@ -87,18 +103,94 @@ export class TemplateCreateDialogComponent {
   }
 
   protected addColumnRow(): void {
-    this.columns = [...this.columns, { name: '', ruleId: null }];
+    this.columns = [...this.columns, this.createEmptyColumn()];
   }
 
   protected removeColumnRow(index: number): void {
-    this.columns = this.columns.filter((_, i) => i !== index);
-    if (this.columns.length === 0) {
-      this.addColumnRow();
-    }
+    const updated = this.columns.filter((_, i) => i !== index);
+    this.columns = updated.length > 0 ? updated : [];
+    this.ensureInitialColumnRow();
   }
 
   protected trackByColumnIndex(index: number): number {
     return index;
+  }
+
+  protected getRuleLabel(ruleId: string): string {
+    const option = this.getRuleOption(ruleId);
+    return option?.label ?? 'Regla sin nombre';
+  }
+
+  protected getRuleType(ruleId: string): string | null {
+    const option = this.getRuleOption(ruleId);
+    return option?.type ?? null;
+  }
+
+  protected trackByRuleIndex(index: number): number {
+    return index;
+  }
+
+  protected requiresRuleHeader(ruleId: string): boolean {
+    const option = this.getRuleOption(ruleId);
+    if (!option) {
+      return false;
+    }
+
+    const type = option.type?.toLowerCase() ?? '';
+    return option.headerOptions.length > 0 && (type === 'lista compleja' || type === 'dependencia');
+  }
+
+  protected headerOptionsForRule(ruleId: string): string[] {
+    const option = this.getRuleOption(ruleId);
+    return option?.headerOptions ?? [];
+  }
+
+  protected isRuleSelected(column: TemplateColumnDraft, ruleId: string): boolean {
+    return column.rules.some((rule) => rule.id === ruleId);
+  }
+
+  protected addRuleToColumn(columnIndex: number): void {
+    const column = this.columns[columnIndex];
+    if (!column) {
+      return;
+    }
+
+    const draftRuleId = column.ruleDraft;
+    if (!draftRuleId) {
+      return;
+    }
+
+    if (this.isRuleSelected(column, draftRuleId)) {
+      const updated: TemplateColumnDraft = { ...column, ruleDraft: null };
+      this.columns = this.columns.map((col, index) => (index === columnIndex ? updated : col));
+      return;
+    }
+
+    const option = this.getRuleOption(draftRuleId);
+    const requiresHeader = option ? this.requiresRuleHeader(option.id) : false;
+    const defaultHeader = requiresHeader ? this.pickDefaultHeader(option) : null;
+
+    const updatedColumn: TemplateColumnDraft = {
+      ...column,
+      ruleDraft: null,
+      rules: [...column.rules, { id: draftRuleId, header: defaultHeader }]
+    };
+
+    this.columns = this.columns.map((col, index) => (index === columnIndex ? updatedColumn : col));
+  }
+
+  protected removeRuleFromColumn(columnIndex: number, ruleIndex: number): void {
+    const column = this.columns[columnIndex];
+    if (!column) {
+      return;
+    }
+
+    const updatedColumn: TemplateColumnDraft = {
+      ...column,
+      rules: column.rules.filter((_, index) => index !== ruleIndex)
+    };
+
+    this.columns = this.columns.map((col, index) => (index === columnIndex ? updatedColumn : col));
   }
 
   protected async submitColumns(): Promise<void> {
@@ -111,7 +203,11 @@ export class TemplateCreateDialogComponent {
 
     const sanitized = this.columns.map((column) => ({
       name: column.name.trim(),
-      ruleId: column.ruleId && column.ruleId.trim().length > 0 ? column.ruleId.trim() : null
+      description: column.description.trim(),
+      rules: column.rules.map((rule) => ({
+        id: rule.id,
+        header: rule.header ? rule.header.trim() : null
+      }))
     }));
 
     if (sanitized.length === 0 || sanitized.every((column) => column.name.length === 0)) {
@@ -124,16 +220,30 @@ export class TemplateCreateDialogComponent {
       return;
     }
 
+    for (const column of sanitized) {
+      const seen = new Set<string>();
+      for (const rule of column.rules) {
+        if (seen.has(rule.id)) {
+          this.columnsError = `La columna "${column.name}" tiene reglas duplicadas.`;
+          return;
+        }
+        seen.add(rule.id);
+
+        if (this.requiresRuleHeader(rule.id) && !rule.header) {
+          const ruleLabel = this.getRuleLabel(rule.id);
+          this.columnsError = `Selecciona un header para la regla "${ruleLabel}" en la columna "${column.name}".`;
+          return;
+        }
+      }
+    }
+
     this.columnsSubmitting = true;
 
     try {
-      const payload = sanitized.map((column, index) => ({
-        name: column.name,
-        rule_id: this.normalizeRuleId(column.ruleId),
-        order: index + 1
-      }));
-
-      await this.templateService.createColumns(this.createdTemplate.id, payload);
+      for (const column of sanitized) {
+        const payload = this.buildColumnPayload(column);
+        await this.templateService.createColumn(this.createdTemplate.id, payload);
+      }
       this.dialogRef.close(true);
     } catch (error) {
       this.columnsError = this.extractErrorMessage(error);
@@ -150,30 +260,52 @@ export class TemplateCreateDialogComponent {
 
     try {
       const rows = await this.readExcelRows(file);
-      const names = this.buildColumnNames(rows);
+      const imported = this.buildColumnsFromRows(rows);
 
-      if (names.length === 0) {
-        throw new Error('El archivo no contiene registros válidos en la primera columna.');
+      if (imported.length === 0) {
+        throw new Error('El archivo no contiene registros válidos en las columnas requeridas.');
       }
 
-      const next: TemplateColumnDraft[] = this.columns
-        .map((column) => ({ name: column.name.trim(), ruleId: column.ruleId }))
-        .filter((column) => column.name.length > 0);
+      const next = this.columns.map((column) => ({
+        name: column.name.trim(),
+        description: column.description.trim(),
+        rules: column.rules.map((rule) => ({ ...rule })),
+        ruleDraft: column.ruleDraft
+      }));
 
-      const existing = new Set(next.map((column) => column.name.toLowerCase()));
-      names.forEach((name) => {
-        const lower = name.toLowerCase();
-        if (!existing.has(lower)) {
-          next.push({ name, ruleId: null });
-          existing.add(lower);
+      const existing = new Map<string, TemplateColumnDraft>();
+      next.forEach((column) => {
+        if (column.name) {
+          existing.set(column.name.toLowerCase(), column);
+        }
+      });
+
+      imported.forEach((item) => {
+        const lower = item.name.toLowerCase();
+        const found = existing.get(lower);
+        if (found) {
+          if (!found.description && item.description) {
+            found.description = item.description;
+          }
+        } else {
+          const draft = this.createEmptyColumn();
+          draft.name = item.name;
+          draft.description = item.description;
+          next.push(draft);
+          existing.set(lower, draft);
         }
       });
 
       if (next.length === 0) {
-        next.push({ name: '', ruleId: null });
+        next.push(this.createEmptyColumn());
       }
 
-      this.columns = next;
+      this.columns = next.map((column) => ({
+        name: column.name,
+        description: column.description,
+        rules: column.rules.map((rule) => ({ ...rule })),
+        ruleDraft: column.ruleDraft
+      }));
       this.columnsError = null;
     } catch (error) {
       this.columnsError = this.extractErrorMessage(error);
@@ -184,13 +316,17 @@ export class TemplateCreateDialogComponent {
 
   protected downloadTemplate(): void {
     const workbook = utils.book_new();
-    const sheet = utils.aoa_to_sheet([[this.columnHeaderLabel]]);
+    const sheet = utils.aoa_to_sheet([[this.columnHeaderLabel, this.columnDescriptionLabel]]);
     utils.book_append_sheet(workbook, sheet, 'Plantilla');
     writeFileXLSX(workbook, 'plantilla-columnas.xlsx');
   }
 
   protected get columnHeaderLabel(): string {
     return 'Nombre';
+  }
+
+  protected get columnDescriptionLabel(): string {
+    return 'Descripción';
   }
 
   private async ensureRulesLoaded(): Promise<void> {
@@ -204,10 +340,12 @@ export class TemplateCreateDialogComponent {
     try {
       const data = await this.validationRulesService.fetchRules();
       this.ruleOptions = this.parseRuleOptions(data);
+      this.rebuildRuleLookup();
       this.rulesLoaded = true;
     } catch (error) {
       this.rulesError = this.extractErrorMessage(error);
       this.ruleOptions = [];
+      this.ruleOptionLookup.clear();
     } finally {
       this.rulesLoading = false;
     }
@@ -215,8 +353,68 @@ export class TemplateCreateDialogComponent {
 
   private ensureInitialColumnRow(): void {
     if (this.columns.length === 0) {
-      this.columns = [{ name: '', ruleId: null }];
+      this.columns = [this.createEmptyColumn()];
     }
+  }
+
+  private createEmptyColumn(): TemplateColumnDraft {
+    return {
+      name: '',
+      description: '',
+      rules: [],
+      ruleDraft: null
+    };
+  }
+
+  private pickDefaultHeader(option: RuleOption | null): string | null {
+    if (!option || option.headerOptions.length === 0) {
+      return null;
+    }
+
+    return option.headerOptions[0] ?? null;
+  }
+
+  private getRuleOption(ruleId: string): RuleOption | null {
+    return this.ruleOptionLookup.get(ruleId) ?? null;
+  }
+
+  private rebuildRuleLookup(): void {
+    this.ruleOptionLookup.clear();
+    this.ruleOptions.forEach((option) => {
+      this.ruleOptionLookup.set(option.id, option);
+    });
+  }
+
+  private buildColumnPayload(column: {
+    name: string;
+    description: string;
+    rules: Array<{ id: string; header: string | null }>;
+  }): TemplateColumnPayload {
+    const rules: TemplateColumnRulePayload[] = column.rules.map((rule) => {
+      const option = this.getRuleOption(rule.id);
+      const normalizedId = this.normalizeRuleId(rule.id) ?? rule.id;
+      const payload: TemplateColumnRulePayload = { id: normalizedId };
+
+      const requiresHeader = option ? this.requiresRuleHeader(option.id) : false;
+      if (requiresHeader && rule.header) {
+        payload['header rule'] = [rule.header];
+      } else if (rule.header) {
+        payload['header rule'] = [rule.header];
+      }
+
+      return payload;
+    });
+
+    const result: TemplateColumnPayload = {
+      name: column.name,
+      rules
+    };
+
+    if (column.description.length > 0) {
+      result.description = column.description;
+    }
+
+    return result;
   }
 
   private normalizeRuleId(ruleId: string | null): number | string | null {
@@ -274,30 +472,44 @@ export class TemplateCreateDialogComponent {
     });
   }
 
-  private buildColumnNames(rows: string[][]): string[] {
+  private buildColumnsFromRows(rows: string[][]): Array<{ name: string; description: string }> {
     if (rows.length === 0) {
       return [];
     }
 
     const headers = (rows[0] ?? []).map((cell) => cell.trim());
-    let columnIndex = headers.findIndex((header) => header.toLowerCase() === this.columnHeaderLabel.toLowerCase());
-    if (columnIndex < 0) {
-      columnIndex = 0;
+    const lowerHeaders = headers.map((header) => header.toLowerCase());
+
+    let nameIndex = lowerHeaders.indexOf(this.columnHeaderLabel.toLowerCase());
+    if (nameIndex < 0) {
+      nameIndex = 0;
     }
 
-    const names = rows
-      .slice(1)
-      .map((row) => (row[columnIndex] ?? '').trim())
-      .filter((cell) => cell.length > 0);
+    let descriptionIndex = lowerHeaders.indexOf(this.columnDescriptionLabel.toLowerCase());
+    if (descriptionIndex < 0) {
+      descriptionIndex = headers.findIndex((header) => header.toLowerCase() === 'descripcion');
+    }
 
-    const unique: string[] = [];
-    names.forEach((name) => {
-      if (!unique.includes(name)) {
-        unique.push(name);
+    const seen = new Set<string>();
+    const result: Array<{ name: string; description: string }> = [];
+
+    rows.slice(1).forEach((row) => {
+      const name = (row[nameIndex] ?? '').trim();
+      if (!name) {
+        return;
       }
+
+      const lower = name.toLowerCase();
+      if (seen.has(lower)) {
+        return;
+      }
+
+      const description = descriptionIndex >= 0 ? (row[descriptionIndex] ?? '').trim() : '';
+      seen.add(lower);
+      result.push({ name, description });
     });
 
-    return unique;
+    return result;
   }
 
   private parseRuleOptions(source: unknown): RuleOption[] {
@@ -341,37 +553,28 @@ export class TemplateCreateDialogComponent {
       return null;
     }
 
-    const directName =
-      this.sanitizeString(record['name']) ||
-      this.sanitizeString(record['Nombre de la regla']);
-
-    if (directName) {
-      return { id, label: directName };
-    }
-
-    const payload = this.extractRulePayload(record['rule'] ?? record['payload']);
-    if (payload?.name) {
-      return { id, label: payload.name };
-    }
-
-    return null;
-  }
-
-  private extractRulePayload(value: unknown): { name: string } | null {
-    if (!value || typeof value !== 'object') {
-      return null;
-    }
-
-    const record = value as Record<string, unknown>;
-    const name =
-      this.sanitizeString(record['Nombre de la regla']) ||
-      this.sanitizeString(record['name']);
-
+    const name = this.extractRuleName(record);
     if (!name) {
       return null;
     }
 
-    return { name };
+    const type = this.extractRuleType(record);
+    const headerOptions = this.extractRuleHeaders(record);
+
+    return {
+      id,
+      label: name,
+      type,
+      headerOptions
+    };
+  }
+
+  private extractRulePayload(value: unknown): Record<string, unknown> | null {
+    if (!value || typeof value !== 'object') {
+      return null;
+    }
+
+    return value as Record<string, unknown>;
   }
 
   private toId(value: unknown): string | null {
@@ -394,6 +597,105 @@ export class TemplateCreateDialogComponent {
     }
 
     return null;
+  }
+
+  private extractRuleName(record: Record<string, unknown>): string | null {
+    const directName =
+      this.sanitizeString(record['name']) ||
+      this.sanitizeString(record['Nombre de la regla']) ||
+      this.sanitizeString(record['rule_name']) ||
+      this.sanitizeString(record['title']);
+
+    if (directName) {
+      return directName;
+    }
+
+    const payload = this.extractRulePayload(record['rule'] ?? record['payload']);
+    if (payload) {
+      return (
+        this.sanitizeString(payload['Nombre de la regla']) ||
+        this.sanitizeString(payload['name']) ||
+        this.sanitizeString(payload['rule_name']) ||
+        null
+      );
+    }
+
+    return null;
+  }
+
+  private extractRuleType(record: Record<string, unknown>): string | null {
+    const directType =
+      this.sanitizeString(record['type']) ||
+      this.sanitizeString(record['Tipo de dato']) ||
+      this.sanitizeString(record['data_type']) ||
+      this.sanitizeString(record['rule_type']);
+
+    if (directType) {
+      return directType;
+    }
+
+    const payload = this.extractRulePayload(record['rule'] ?? record['payload']);
+    if (payload) {
+      return (
+        this.sanitizeString(payload['Tipo de dato']) ||
+        this.sanitizeString(payload['type']) ||
+        this.sanitizeString(payload['data_type']) ||
+        null
+      );
+    }
+
+    return null;
+  }
+
+  private extractRuleHeaders(record: Record<string, unknown>): string[] {
+    const headers: string[] = [];
+    const keys = [
+      'Header rule',
+      'header rule',
+      'Header_rule',
+      'header_rule',
+      'headerRule',
+      'Header'
+    ];
+
+    keys.forEach((key) => {
+      const value = record[key];
+      this.appendHeaderValues(headers, value);
+    });
+
+    const payload = this.extractRulePayload(record['rule'] ?? record['payload']);
+    if (payload) {
+      keys.forEach((key) => {
+        const value = payload[key];
+        this.appendHeaderValues(headers, value);
+      });
+    }
+
+    return headers;
+  }
+
+  private appendHeaderValues(target: string[], value: unknown): void {
+    const values = this.toStringArray(value);
+    values.forEach((item) => {
+      if (!target.includes(item)) {
+        target.push(item);
+      }
+    });
+  }
+
+  private toStringArray(value: unknown): string[] {
+    if (Array.isArray(value)) {
+      return value
+        .map((item) => this.sanitizeString(item))
+        .filter((item): item is string => item !== null);
+    }
+
+    const text = this.sanitizeString(value);
+    if (text) {
+      return [text];
+    }
+
+    return [];
   }
 
   private stringifyCell(value: unknown): string {

@@ -103,6 +103,7 @@
         <thead>
           <tr>
             <th>Nombre</th>
+            <th>Descripción</th>
             <th>Reglas</th>
             <th class="template-create__table-actions-header">Acciones</th>
           </tr>
@@ -119,14 +120,82 @@
               />
             </td>
             <td>
-              <select
-                [(ngModel)]="column.ruleId"
-                name="columnRule{{ i }}"
+              <input
+                type="text"
+                placeholder="Descripción de la columna (opcional)"
+                [(ngModel)]="column.description"
+                name="columnDescription{{ i }}"
                 [ngModelOptions]="{ standalone: true }"
-              >
-                <option [ngValue]="null">Sin regla asignada</option>
-                <option *ngFor="let option of ruleOptions" [ngValue]="option.id">{{ option.label }}</option>
-              </select>
+              />
+            </td>
+            <td>
+              <div class="template-create__rules">
+                <div class="template-create__rule-list" *ngIf="column.rules.length > 0; else noRules">
+                  <div
+                    class="template-create__rule"
+                    *ngFor="let rule of column.rules; let ruleIndex = index; trackBy: trackByRuleIndex"
+                  >
+                    <div class="template-create__rule-header">
+                      <div class="template-create__rule-title">
+                        <span>{{ getRuleLabel(rule.id) }}</span>
+                        <span *ngIf="getRuleType(rule.id)" class="template-create__rule-type">
+                          {{ getRuleType(rule.id) }}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        class="template-create__icon-button template-create__icon-button--ghost"
+                        (click)="removeRuleFromColumn(i, ruleIndex)"
+                        aria-label="Eliminar regla"
+                      >
+                        <span class="material-symbols-rounded" aria-hidden="true">close</span>
+                      </button>
+                    </div>
+                    <div class="template-create__rule-header-select" *ngIf="requiresRuleHeader(rule.id)">
+                      <label>
+                        Header asociado
+                        <select
+                          [(ngModel)]="column.rules[ruleIndex].header"
+                          [ngModelOptions]="{ standalone: true }"
+                          [attr.name]="'columnRuleHeader' + i + '-' + ruleIndex"
+                        >
+                          <option value="" disabled>Selecciona un header</option>
+                          <option *ngFor="let header of headerOptionsForRule(rule.id)" [ngValue]="header">
+                            {{ header }}
+                          </option>
+                        </select>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+                <ng-template #noRules>
+                  <p class="template-create__rules-empty">Sin reglas asignadas.</p>
+                </ng-template>
+                <div class="template-create__rule-add">
+                  <select
+                    [(ngModel)]="column.ruleDraft"
+                    [ngModelOptions]="{ standalone: true }"
+                    [attr.name]="'columnRuleDraft' + i"
+                  >
+                    <option [ngValue]="null">Selecciona una regla</option>
+                    <option
+                      *ngFor="let option of ruleOptions"
+                      [ngValue]="option.id"
+                      [disabled]="isRuleSelected(column, option.id)"
+                    >
+                      {{ option.label }}
+                    </option>
+                  </select>
+                  <button
+                    type="button"
+                    class="template-create__rule-add-button"
+                    (click)="addRuleToColumn(i)"
+                    [disabled]="!column.ruleDraft"
+                  >
+                    Agregar regla
+                  </button>
+                </div>
+              </div>
             </td>
             <td class="template-create__table-actions">
               <button type="button" class="template-create__icon-button" (click)="removeColumnRow(i)" aria-label="Eliminar columna">
@@ -146,7 +215,8 @@
     </div>
 
     <p class="template-create__hint">
-      Puedes cargar masivamente los nombres desde el archivo Excel. Las reglas deben configurarse manualmente desde esta tabla.
+      Puedes cargar masivamente los nombres y descripciones desde el archivo Excel. Las reglas deben configurarse manualmente desde
+      esta tabla.
     </p>
     <p *ngIf="columnsError" class="template-create__error">{{ columnsError }}</p>
 
