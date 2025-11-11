@@ -60,7 +60,7 @@
           <input
             type="search"
             name="search"
-            placeholder="Buscar por nombre, versión o descripción..."
+            placeholder="Buscar por nombre, tabla o descripción..."
             [(ngModel)]="searchTerm"
           />
         </label>
@@ -73,12 +73,23 @@
       </div>
     </header>
 
-    <div class="templates-table__wrapper" *ngIf="filteredTemplates as items">
-      <table class="templates-table">
+    <div class="templates-table__wrapper">
+      <div *ngIf="templatesLoading" class="templates-table__state">
+        <span class="material-symbols-rounded" aria-hidden="true">hourglass_top</span>
+        <p>Cargando plantillas...</p>
+      </div>
+
+      <div *ngIf="!templatesLoading && templatesError" class="templates-table__state templates-table__state--error">
+        <span class="material-symbols-rounded" aria-hidden="true">error</span>
+        <p>{{ templatesError }}</p>
+        <button type="button" class="templates-table__retry" (click)="refreshTemplates()">Reintentar</button>
+      </div>
+
+      <table class="templates-table" *ngIf="!templatesLoading && !templatesError && filteredTemplates as items">
         <thead>
           <tr>
             <th>Nombre</th>
-            <th>Versión</th>
+            <th>Tabla asociada</th>
             <th>Descripción</th>
             <th>Última Actualización</th>
             <th>Estado</th>
@@ -94,10 +105,10 @@
               </div>
             </td>
             <td>
-              <span class="templates-table__version">{{ template.version }}</span>
+              <span class="templates-table__version">{{ template.tableName }}</span>
             </td>
             <td>
-              <span class="templates-table__description">{{ template.description }}</span>
+              <span class="templates-table__description">{{ template.description || 'Sin descripción' }}</span>
             </td>
             <td>
               <span class="templates-table__date">{{ template.lastUpdated | date: 'dd/MM/yyyy' }}</span>

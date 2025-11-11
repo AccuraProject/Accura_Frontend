@@ -1,0 +1,232 @@
+<div mat-dialog-content class="template-create">
+  <header class="template-create__header">
+    <div>
+      <p class="template-create__step-indicator">Paso {{ step }} de 2</p>
+      <h2>Crear nueva plantilla</h2>
+      <p *ngIf="step === 1" class="template-create__description">
+        Define la información general de la plantilla para continuar con la configuración avanzada.
+      </p>
+      <p *ngIf="step === 2" class="template-create__description">
+        Configura las columnas que formarán parte de la plantilla y asigna las reglas correspondientes.
+      </p>
+    </div>
+    <button type="button" class="icon-button" aria-label="Cerrar" (click)="close()">
+      <span class="material-symbols-rounded" aria-hidden="true">close</span>
+    </button>
+  </header>
+
+  <section *ngIf="step === 1">
+    <form #generalForm="ngForm" class="template-create__form" (ngSubmit)="submitGeneral(generalForm)">
+      <label class="form-field">
+        <span class="form-field__label">Nombre de la plantilla</span>
+        <input
+          type="text"
+          name="name"
+          required
+          minlength="3"
+          maxlength="80"
+          [(ngModel)]="generalModel.name"
+          placeholder="Ej. Plantilla de Clientes"
+        />
+        <span class="form-field__hint">Usa un nombre descriptivo para identificarla fácilmente.</span>
+      </label>
+
+      <label class="form-field">
+        <span class="form-field__label">Nombre de la tabla</span>
+        <input
+          type="text"
+          name="tableName"
+          required
+          minlength="3"
+          maxlength="80"
+          [(ngModel)]="generalModel.tableName"
+          placeholder="Ej. clientes"
+        />
+        <span class="form-field__hint">Corresponde al nombre de la tabla destino donde se registrarán los datos.</span>
+      </label>
+
+      <label class="form-field">
+        <span class="form-field__label">Descripción</span>
+        <textarea
+          name="description"
+          rows="4"
+          maxlength="280"
+          [(ngModel)]="generalModel.description"
+          placeholder="Describe el objetivo o el proceso asociado a esta plantilla"
+        ></textarea>
+        <span class="form-field__hint">Este campo es opcional y sirve para brindar contexto adicional.</span>
+      </label>
+
+      <div *ngIf="generalError" class="template-create__error">{{ generalError }}</div>
+
+      <footer class="template-create__footer">
+        <button type="button" class="button button--ghost" (click)="close()" [disabled]="generalSubmitting">
+          Cancelar
+        </button>
+        <button type="submit" class="button button--primary" [disabled]="generalSubmitting">
+          {{ generalSubmitting ? 'Creando…' : 'Siguiente' }}
+        </button>
+      </footer>
+    </form>
+  </section>
+
+  <section *ngIf="step === 2" class="template-create__step">
+    <header class="template-create__section-header">
+      <div>
+        <h3>Configuración avanzada</h3>
+        <p>Agrega las columnas de la plantilla y asigna las reglas disponibles en el sistema.</p>
+      </div>
+      <div class="template-create__table-toolbar">
+        <button type="button" class="template-create__template-button" (click)="downloadTemplate()">
+          <span class="material-symbols-rounded" aria-hidden="true">download</span>
+          <span>Descargar plantilla</span>
+        </button>
+        <label class="template-create__import-button">
+          <input type="file" accept=".xlsx,.xls" (change)="importColumnsFromExcel($event)" />
+          <span class="material-symbols-rounded" aria-hidden="true">upload_file</span>
+          <span>Cargar desde Excel</span>
+        </label>
+      </div>
+    </header>
+
+    <div class="template-create__rules-state" *ngIf="rulesLoading">
+      <span class="material-symbols-rounded" aria-hidden="true">hourglass_top</span>
+      <p>Cargando reglas disponibles…</p>
+    </div>
+    <div class="template-create__rules-state template-create__rules-state--error" *ngIf="rulesError && !rulesLoading">
+      <span class="material-symbols-rounded" aria-hidden="true">error</span>
+      <p>{{ rulesError }}</p>
+    </div>
+
+    <div class="template-create__table-wrapper">
+      <table class="template-create__table">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Descripción</th>
+            <th>Reglas</th>
+            <th class="template-create__table-actions-header">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let column of columns; let i = index; trackBy: trackByColumnIndex">
+            <td>
+              <input
+                type="text"
+                placeholder="Nombre de la columna"
+                [(ngModel)]="column.name"
+                name="columnName{{ i }}"
+                [ngModelOptions]="{ standalone: true }"
+              />
+            </td>
+            <td>
+              <input
+                type="text"
+                placeholder="Descripción de la columna (opcional)"
+                [(ngModel)]="column.description"
+                name="columnDescription{{ i }}"
+                [ngModelOptions]="{ standalone: true }"
+              />
+            </td>
+            <td>
+              <div class="template-create__rules">
+                <div class="template-create__rule-list" *ngIf="column.rules.length > 0; else noRules">
+                  <div
+                    class="template-create__rule"
+                    *ngFor="let rule of column.rules; let ruleIndex = index; trackBy: trackByRuleIndex"
+                  >
+                    <div class="template-create__rule-header">
+                      <div class="template-create__rule-title">
+                        <span>{{ getRuleLabel(rule.id) }}</span>
+                        <span *ngIf="getRuleType(rule.id)" class="template-create__rule-type">
+                          {{ getRuleType(rule.id) }}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        class="template-create__icon-button template-create__icon-button--ghost"
+                        (click)="removeRuleFromColumn(i, ruleIndex)"
+                        aria-label="Eliminar regla"
+                      >
+                        <span class="material-symbols-rounded" aria-hidden="true">close</span>
+                      </button>
+                    </div>
+                    <div class="template-create__rule-header-select" *ngIf="requiresRuleHeader(rule.id)">
+                      <label>
+                        Header asociado
+                        <select
+                          [(ngModel)]="column.rules[ruleIndex].header"
+                          [ngModelOptions]="{ standalone: true }"
+                          [attr.name]="'columnRuleHeader' + i + '-' + ruleIndex"
+                        >
+                          <option value="" disabled>Selecciona un header</option>
+                          <option *ngFor="let header of headerOptionsForRule(rule.id)" [ngValue]="header">
+                            {{ header }}
+                          </option>
+                        </select>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+                <ng-template #noRules>
+                  <p class="template-create__rules-empty">Sin reglas asignadas.</p>
+                </ng-template>
+                <div class="template-create__rule-add">
+                  <select
+                    [(ngModel)]="column.ruleDraft"
+                    [ngModelOptions]="{ standalone: true }"
+                    [attr.name]="'columnRuleDraft' + i"
+                  >
+                    <option [ngValue]="null">Selecciona una regla</option>
+                    <option
+                      *ngFor="let option of ruleOptions"
+                      [ngValue]="option.id"
+                      [disabled]="isRuleSelected(column, option.id)"
+                    >
+                      {{ option.label }}
+                    </option>
+                  </select>
+                  <button
+                    type="button"
+                    class="template-create__rule-add-button"
+                    (click)="addRuleToColumn(i)"
+                    [disabled]="!column.ruleDraft"
+                  >
+                    Agregar regla
+                  </button>
+                </div>
+              </div>
+            </td>
+            <td class="template-create__table-actions">
+              <button type="button" class="template-create__icon-button" (click)="removeColumnRow(i)" aria-label="Eliminar columna">
+                <span class="material-symbols-rounded" aria-hidden="true">delete</span>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="template-create__table-footer">
+      <button type="button" class="template-create__add-button" (click)="addColumnRow()">
+        <span class="material-symbols-rounded" aria-hidden="true">add</span>
+        <span>Agregar fila</span>
+      </button>
+    </div>
+
+    <p class="template-create__hint">
+      Puedes cargar masivamente los nombres y descripciones desde el archivo Excel. Las reglas deben configurarse manualmente desde
+      esta tabla.
+    </p>
+    <p *ngIf="columnsError" class="template-create__error">{{ columnsError }}</p>
+
+    <footer class="template-create__footer">
+      <button type="button" class="button button--ghost" (click)="close()" [disabled]="columnsSubmitting">
+        Cancelar
+      </button>
+      <button type="button" class="button button--primary" (click)="submitColumns()" [disabled]="columnsSubmitting">
+        {{ columnsSubmitting ? 'Guardando…' : 'Finalizar' }}
+      </button>
+    </footer>
+  </section>
+</div>

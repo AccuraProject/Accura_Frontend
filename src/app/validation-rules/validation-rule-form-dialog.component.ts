@@ -96,6 +96,8 @@ export class ValidationRuleFormDialogComponent {
   protected listTableHeader = this.defaultListTableHeader;
 
   private referencePayload: RulePayload | null;
+  private headerRuleReference: string[] = [];
+  private headerRulePayloadReference: string[] | null = null;
 
   protected aiPrompt = '';
   protected aiIsLoading = false;
@@ -125,6 +127,8 @@ export class ValidationRuleFormDialogComponent {
     this.formModel = data.rule ? this.cloneRule(data.rule) : this.createEmptyForm();
     this.manualFormEnabled = this.isEditMode;
     this.referencePayload = data.payload ? this.clonePayload(data.payload) : null;
+    this.headerRuleReference = this.extractHeaderRule(this.referencePayload);
+    this.headerRulePayloadReference = this.getHeaderRuleSource(this.referencePayload);
     this.ensureCollections();
     this.syncAdvancedTableFromRule();
     this.syncListTableHeader();
@@ -162,6 +166,8 @@ export class ValidationRuleFormDialogComponent {
       exampleEntries
     );
     this.referencePayload = this.clonePayload(submissionPayload);
+    this.headerRuleReference = this.extractHeaderRule(this.referencePayload);
+    this.headerRulePayloadReference = this.getHeaderRuleSource(this.referencePayload);
 
     const result: ValidationRuleFormDialogSubmitResult = {
       ...this.formModel,
@@ -906,6 +912,8 @@ export class ValidationRuleFormDialogComponent {
   private applyAiPayload(payload: RulePayload): void {
     this.manualFormEnabled = true;
     this.referencePayload = this.clonePayload(payload);
+    this.headerRuleReference = this.extractHeaderRule(this.referencePayload);
+    this.headerRulePayloadReference = this.getHeaderRuleSource(this.referencePayload);
 
     const headers = Array.isArray(payload.Header)
       ? (payload.Header as unknown[])
@@ -1052,6 +1060,15 @@ export class ValidationRuleFormDialogComponent {
     base['Ejemplo'] = example;
     base['Regla'] = config;
 
+    const headerRule = this.resolveHeaderRule(headers);
+    if (headerRule.length > 0) {
+      base['Header rule'] = headerRule.map((value) => value);
+    } else {
+      delete (base as Record<string, unknown>)['Header rule'];
+    }
+    this.headerRuleReference = this.extractHeaderRule(base);
+    this.headerRulePayloadReference = this.getHeaderRuleSource(base);
+
     return base;
   }
 
@@ -1078,11 +1095,18 @@ export class ValidationRuleFormDialogComponent {
       this.formModel.exampleEntries.map((entry) => ({ key: entry.key.trim(), value: entry.value.trim() }))
     );
 
+    const headerRule = this.uniqueHeaderRuleValues(headers);
+    this.headerRulePayloadReference = headerRule.length > 0 ? headerRule.map((value) => value) : null;
+    this.headerRuleReference = [...(this.headerRulePayloadReference ?? [])];
+
     return {
       'Nombre de la regla': this.formModel.name.trim(),
       'Tipo de dato': this.formModel.dataType,
       'Campo obligatorio': this.formModel.mandatory,
       Header: headers,
+      'Header rule': this.headerRulePayloadReference
+        ? this.headerRulePayloadReference.map((value) => value)
+        : this.resolveHeaderRule(headers),
       'Mensaje de error': this.referenceErrorMessage,
       'Descripción': this.formModel.description.trim(),
       'Ejemplo': example,
@@ -1091,6 +1115,99 @@ export class ValidationRuleFormDialogComponent {
         this.formModel.dataType
       )
     };
+  }
+
+  private resolveHeaderRule(headers: string[]): string[] {
+    if (this.headerRulePayloadReference && this.headerRulePayloadReference.length > 0) {
+      return this.headerRulePayloadReference.map((value) => value);
+    }
+
+    const reference = this.uniqueHeaderRuleValues(this.headerRuleReference);
+    if (reference.length > 0) {
+      return reference;
+    }
+
+    return this.uniqueHeaderRuleValues(headers);
+  }
+
+  private getHeaderRuleSource(payload: RulePayload | Record<string, unknown> | null): string[] | null {
+    if (!payload || typeof payload !== 'object') {
+      return null;
+    }
+
+    const record = payload as Record<string, unknown>;
+    const keys = ['Header rule', 'header rule', 'Header_rule', 'header_rule', 'HeaderRule', 'headerRule'];
+
+    for (const key of keys) {
+      if (!Array.isArray(record[key])) {
+        continue;
+      }
+
+      const source = (record[key] as unknown[]).filter((item): item is string => typeof item === 'string');
+      if (source.length > 0) {
+        return source.map((item) => item);
+      }
+    }
+
+    return null;
+  }
+
+  private extractHeaderRule(payload: RulePayload | null): string[] {
+    if (!payload || typeof payload !== 'object') {
+      return [];
+    }
+
+    const record = payload as unknown as Record<string, unknown>;
+    const keys = ['Header rule', 'header rule', 'Header_rule', 'header_rule', 'HeaderRule', 'headerRule'];
+    const collected: string[] = [];
+
+    keys.forEach((key) => {
+      if (key in record) {
+        this.collectHeaderRuleValues(collected, record[key]);
+      }
+    });
+
+    return this.uniqueHeaderRuleValues(collected);
+  }
+
+  private collectHeaderRuleValues(target: string[], value: unknown): void {
+    if (Array.isArray(value)) {
+      value.forEach((item) => this.collectHeaderRuleValues(target, item));
+      return;
+    }
+
+    if (typeof value === 'string') {
+      const normalized = value.trim();
+      if (normalized.length > 0 && !target.includes(normalized)) {
+        target.push(normalized);
+      }
+    }
+  }
+
+  private uniqueHeaderRuleValues(values: Array<string | unknown>): string[] {
+    const result: string[] = [];
+    const seen = new Set<string>();
+
+    values.forEach((value) => {
+      if (typeof value !== 'string') {
+        return;
+      }
+
+      const normalized = value.trim();
+      if (!normalized) {
+        return;
+      }
+
+      const key = normalized.toLowerCase();
+      if (seen.has(key)) {
+        return;
+      }
+
+      seen.add(key);
+      result.push(normalized);
+    });
+
+    return result;
   }
 
   private buildExampleFromEntries(entries: Array<{ key: string; value: string }>): RuleExample {
