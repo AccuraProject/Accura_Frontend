@@ -455,12 +455,6 @@ export class ValidationRulesComponent implements OnInit {
     isActive: boolean,
     ruleId?: string
   ): Promise<void> {
-    this.ruleSyncError = null;
-    const request = ruleId
-      ? this.validationRulesService.updateRule(ruleId, payload, isActive)
-      : this.validationRulesService.saveRule(payload, isActive);
-
-    void request.catch((error) => this.handleRuleSyncError(error));
     try {
       if (ruleId) {
         await this.validationRulesService.updateRule(ruleId, payload, isActive);

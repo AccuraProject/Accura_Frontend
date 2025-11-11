@@ -418,6 +418,7 @@ export class ValidationRuleFormDialogComponent {
       'Campo obligatorio': this.formModel.mandatory,
       Header: headers,
       'Mensaje de error': this.referenceErrorMessage,
+      "Header rule": this.formModel.headerRule,
       'Descripción': this.formModel.description,
       'Ejemplo': {},
       'Regla': this.formModel.ruleConfig ?? {}
