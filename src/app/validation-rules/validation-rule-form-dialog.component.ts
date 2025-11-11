@@ -1044,6 +1044,9 @@ export class ValidationRuleFormDialogComponent {
     exampleEntries: Array<{ key: string; value: string }>
   ): RulePayload {
     const base = this.referencePayload ? this.clonePayload(this.referencePayload) : this.createBaselinePayload();
+    const preservedHeaderRule = this.headerRulePayloadReference
+      ? this.headerRulePayloadReference.map((value) => value)
+      : this.getHeaderRuleSource(base);
     const headers = [primaryHeader, ...secondaryHeaders];
     const example = this.buildExampleFromEntries(exampleEntries);
     const config = this.normalizeManualRuleConfig(
@@ -1060,10 +1063,9 @@ export class ValidationRuleFormDialogComponent {
     base['Ejemplo'] = example;
     base['Regla'] = config;
 
-    const headerRule = this.resolveHeaderRule(headers);
-    if (headerRule.length > 0) {
-      base['Header rule'] = headerRule.map((value) => value);
-    } else {
+    if (preservedHeaderRule && preservedHeaderRule.length > 0) {
+      base['Header rule'] = preservedHeaderRule.map((value) => value);
+    } else if ('Header rule' in base) {
       delete (base as Record<string, unknown>)['Header rule'];
     }
     this.headerRuleReference = this.extractHeaderRule(base);
