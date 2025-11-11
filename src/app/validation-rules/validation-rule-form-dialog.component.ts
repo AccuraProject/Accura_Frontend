@@ -29,6 +29,7 @@ export interface ValidationRuleFormDialogResult {
   description: string;
   primaryHeader: string;
   secondaryHeaders: string[];
+  headerRule: string[];
   exampleEntries: Array<{ key: string; value: string }>;
   ruleConfig: Record<string, unknown>;
 }
@@ -125,6 +126,7 @@ export class ValidationRuleFormDialogComponent {
     this.formModel = data.rule ? this.cloneRule(data.rule) : this.createEmptyForm();
     this.manualFormEnabled = this.isEditMode;
     this.referencePayload = data.payload ? this.clonePayload(data.payload) : null;
+    this.formModel.headerRule = this.extractHeaderRule(this.referencePayload);
     this.ensureCollections();
     this.syncAdvancedTableFromRule();
     this.syncListTableHeader();
@@ -155,11 +157,14 @@ export class ValidationRuleFormDialogComponent {
 
     this.formModel.exampleEntries = exampleEntries.map((entry) => ({ ...entry }));
     this.formModel.primaryHeader = sanitizedPrimaryHeader;
+    const headerRule = this.sanitizeStringArray(this.formModel.headerRule);
+    this.formModel.headerRule = [...headerRule];
 
     const submissionPayload = this.buildSubmissionPayload(
       sanitizedPrimaryHeader,
       secondaryHeaders,
-      exampleEntries
+      exampleEntries,
+      headerRule
     );
     this.referencePayload = this.clonePayload(submissionPayload);
 
@@ -169,6 +174,7 @@ export class ValidationRuleFormDialogComponent {
       description: this.formModel.description.trim(),
       primaryHeader: sanitizedPrimaryHeader,
       secondaryHeaders,
+      headerRule,
       exampleEntries,
       ruleConfig: JSON.parse(JSON.stringify(this.formModel.ruleConfig)) as Record<string, unknown>,
       payload: submissionPayload
@@ -906,6 +912,7 @@ export class ValidationRuleFormDialogComponent {
   private applyAiPayload(payload: RulePayload): void {
     this.manualFormEnabled = true;
     this.referencePayload = this.clonePayload(payload);
+    const headerRule = this.extractHeaderRule(payload);
 
     const headers = Array.isArray(payload.Header)
       ? (payload.Header as unknown[])
@@ -927,6 +934,7 @@ export class ValidationRuleFormDialogComponent {
       : this.formModel.description;
     this.formModel.primaryHeader = primaryHeader;
     this.formModel.secondaryHeaders = secondaryHeaders;
+    this.formModel.headerRule = headerRule;
     const normalizedDataType = this.normalizeDataType(dataType);
     this.syncListTableHeader(
       normalizedDataType === this.normalizeDataType('Lista') ? primaryHeader : null
@@ -1033,9 +1041,12 @@ export class ValidationRuleFormDialogComponent {
   private buildSubmissionPayload(
     primaryHeader: string,
     secondaryHeaders: string[],
-    exampleEntries: Array<{ key: string; value: string }>
+    exampleEntries: Array<{ key: string; value: string }>,
+    headerRule: string[]
   ): RulePayload {
-    const base = this.referencePayload ? this.clonePayload(this.referencePayload) : this.createBaselinePayload();
+    const base = this.referencePayload
+      ? this.clonePayload(this.referencePayload)
+      : this.createBaselinePayload(headerRule);
     const headers = [primaryHeader, ...secondaryHeaders];
     const example = this.buildExampleFromEntries(exampleEntries);
     const config = this.normalizeManualRuleConfig(
@@ -1048,6 +1059,7 @@ export class ValidationRuleFormDialogComponent {
     base['Campo obligatorio'] = this.formModel.mandatory;
     base['Descripción'] = this.formModel.description.trim();
     base.Header = headers;
+    base['Header rule'] = headerRule;
     base['Mensaje de error'] = this.referenceErrorMessage;
     base['Ejemplo'] = example;
     base['Regla'] = config;
@@ -1066,7 +1078,7 @@ export class ValidationRuleFormDialogComponent {
       : this.defaultErrorMessage;
   }
 
-  private createBaselinePayload(): RulePayload {
+  private createBaselinePayload(headerRule: string[]): RulePayload {
     const headers = [
       this.formModel.primaryHeader.trim().length > 0 ? this.formModel.primaryHeader.trim() : 'Plantilla Global',
       ...this.formModel.secondaryHeaders
@@ -1083,6 +1095,7 @@ export class ValidationRuleFormDialogComponent {
       'Tipo de dato': this.formModel.dataType,
       'Campo obligatorio': this.formModel.mandatory,
       Header: headers,
+      'Header rule': headerRule,
       'Mensaje de error': this.referenceErrorMessage,
       'Descripción': this.formModel.description.trim(),
       'Ejemplo': example,
@@ -1103,6 +1116,24 @@ export class ValidationRuleFormDialogComponent {
       acc[key] = entry.value.trim();
       return acc;
     }, {});
+  }
+
+  private sanitizeStringArray(value: unknown): string[] {
+    if (!Array.isArray(value)) {
+      return [];
+    }
+
+    return (value as unknown[])
+      .map((item) => (typeof item === 'string' ? item.trim() : ''))
+      .filter((item, index, array) => item.length > 0 && array.indexOf(item) === index);
+  }
+
+  private extractHeaderRule(payload: RulePayload | null | undefined): string[] {
+    if (!payload) {
+      return [];
+    }
+
+    return this.sanitizeStringArray(payload['Header rule']);
   }
 
   private normalizeManualRuleConfig(
@@ -1288,6 +1319,7 @@ export class ValidationRuleFormDialogComponent {
       description: 'Describe la regla para que otros usuarios entiendan su propósito.',
       primaryHeader: 'Plantilla Global',
       secondaryHeaders: [],
+      headerRule: [],
       exampleEntries: this.createDefaultExamples(),
       ruleConfig: this.createDefaultRuleConfig('Texto')
     };
@@ -1298,6 +1330,7 @@ export class ValidationRuleFormDialogComponent {
       ...rule,
       primaryHeader: typeof rule.primaryHeader === 'string' ? rule.primaryHeader : 'Plantilla Global',
       secondaryHeaders: [...(rule.secondaryHeaders ?? [])],
+      headerRule: this.sanitizeStringArray(rule.headerRule),
       exampleEntries: this.normalizeExampleEntries(rule.exampleEntries ?? []),
       ruleConfig: JSON.parse(JSON.stringify(rule.ruleConfig ?? {})) as Record<string, unknown>
     };
@@ -1312,6 +1345,7 @@ export class ValidationRuleFormDialogComponent {
       this.formModel.secondaryHeaders = [];
     }
 
+    this.formModel.headerRule = this.sanitizeStringArray(this.formModel.headerRule);
     this.ensureExampleEntries();
   }
 

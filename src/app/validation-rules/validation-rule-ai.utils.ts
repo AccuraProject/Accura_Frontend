@@ -8,6 +8,7 @@ export interface RulePayload {
   'Tipo de dato': string;
   'Campo obligatorio': boolean;
   Header: string[];
+  'Header rule': string[];
   'Mensaje de error': string;
   'Descripción': string;
   'Ejemplo': RuleExample;
@@ -29,6 +30,7 @@ export const VALIDATION_RULE_AI_SCHEMA: Record<string, unknown> = {
     'Campo obligatorio',
     'Header',
     'Mensaje de error',
+    'Header rule',
     'Descripción',
     'Ejemplo',
     'Regla'
@@ -59,6 +61,11 @@ export const VALIDATION_RULE_AI_SCHEMA: Record<string, unknown> = {
       type: 'array',
       minItems: 1,
       items: { type: 'string', minLength: 1 }
+    },
+    'Header rule': {
+      type: 'array',
+      minItems: 0,
+      items: { type: 'string' }
     },
     Regla: {}
   },
@@ -413,6 +420,7 @@ export function normalizeAiPayload(payload: unknown): RulePayload | null {
   const dataType = sanitizeString(record['Tipo de dato']) ?? 'Texto';
   const mandatory = toBoolean(record['Campo obligatorio']);
   const header = sanitizeHeader('Header' in record ? record['Header'] : record['header']);
+  const headerRule = sanitizeHeaderRule(record['Header rule']);
   const errorMessage = sanitizeString(record['Mensaje de error']) ?? DEFAULT_RULE_ERROR_MESSAGE;
   const description = sanitizeString(record['Descripción']) ?? 'Descripción generada automáticamente.';
   const example = sanitizeExample(record['Ejemplo']);
@@ -423,6 +431,7 @@ export function normalizeAiPayload(payload: unknown): RulePayload | null {
     'Tipo de dato': dataType,
     'Campo obligatorio': mandatory,
     Header: header.length > 0 ? header : ['Plantilla Global'],
+    'Header rule': headerRule,
     'Mensaje de error': errorMessage,
     'Descripción': description,
     'Ejemplo': example,
@@ -609,6 +618,21 @@ function sanitizeHeader(value: unknown): string[] {
 
   if (typeof value === 'string' && value.trim().length > 0) {
     return [value.trim()];
+  }
+
+  return [];
+}
+
+function sanitizeHeaderRule(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return (value as unknown[])
+      .map((item) => (typeof item === 'string' ? item.trim() : ''))
+      .filter((item, index, array) => item.length > 0 && array.indexOf(item) === index);
+  }
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? [trimmed] : [];
   }
 
   return [];

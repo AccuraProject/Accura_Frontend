@@ -39,6 +39,7 @@ interface ValidationRule {
   status: 'Activa' | 'Inactiva';
   description: string;
   header: string[];
+  headerRule: string[];
   example: RuleExample;
   ruleConfig: Record<string, unknown>;
   source: 'manual' | 'ia';
@@ -198,16 +199,13 @@ export class ValidationRulesComponent implements OnInit {
       return null;
     }
 
-    const headerSource = record['Header'];
-    const header = Array.isArray(headerSource)
-      ? (headerSource as unknown[])
-          .map((item) => this.sanitizeString(item))
-          .filter((item): item is string => Boolean(item))
-      : [];
+    const header = this.sanitizeStringArray(record['Header']);
 
     if (header.length === 0) {
       header.push('Plantilla Global');
     }
+
+    const headerRule = this.sanitizeStringArray(record['Header rule']);
 
     const example =
       record['Ejemplo'] &&
@@ -230,6 +228,7 @@ export class ValidationRulesComponent implements OnInit {
       'Tipo de dato': dataType,
       'Campo obligatorio': mandatory,
       Header: header,
+      'Header rule': headerRule,
       'Mensaje de error': errorMessage,
       Descripción: description,
       Ejemplo: example,
@@ -421,9 +420,11 @@ export class ValidationRulesComponent implements OnInit {
     currentId?: string
   ): ValidationRule {
     const clone = JSON.parse(JSON.stringify(payload)) as RulePayload;
-    const header = Array.isArray(clone.Header)
-      ? clone.Header.filter((item) => typeof item === 'string')
-      : [];
+    const header = this.sanitizeStringArray(clone.Header);
+    if (header.length === 0) {
+      header.push('Plantilla Global');
+    }
+    const headerRule = this.sanitizeStringArray(clone['Header rule']);
     const example =
       clone['Ejemplo'] && typeof clone['Ejemplo'] === 'object' && !Array.isArray(clone['Ejemplo'])
         ? (clone['Ejemplo'] as RuleExample)
@@ -441,6 +442,7 @@ export class ValidationRulesComponent implements OnInit {
       status,
       description: clone['Descripción'],
       header,
+      headerRule,
       example,
       ruleConfig,
       source,
@@ -474,6 +476,16 @@ export class ValidationRulesComponent implements OnInit {
   private handleRuleSyncError(error: unknown): void {
     console.error('[ValidationRules] Error al sincronizar la regla:', error);
     this.ruleSyncError = this.getErrorMessage(error);
+  }
+
+  private sanitizeStringArray(value: unknown): string[] {
+    if (!Array.isArray(value)) {
+      return [];
+    }
+
+    return (value as unknown[])
+      .map((item) => (typeof item === 'string' ? item.trim() : ''))
+      .filter((item, index, array) => item.length > 0 && array.indexOf(item) === index);
   }
 
   private sanitizeString(value: unknown): string | null {
@@ -514,6 +526,7 @@ export class ValidationRulesComponent implements OnInit {
       description: rule.description,
       primaryHeader: rule.header[0] ?? 'Plantilla Global',
       secondaryHeaders: rule.header.slice(1),
+      headerRule: [...rule.headerRule],
       exampleEntries: this.buildDialogExamples(rule.payload),
       ruleConfig: JSON.parse(JSON.stringify(rule.ruleConfig)) as Record<string, unknown>,
     };
