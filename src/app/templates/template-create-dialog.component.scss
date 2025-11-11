@@ -1,4 +1,6 @@
-.template-create{width:min(1100px,95vw);padding:1.75rem;display:flex;flex-direction:column;gap:1.75rem;background:#fff}
+:host{display:block;width:min(92vw,1240px);max-width:none}
+:host ::ng-deep .mat-mdc-dialog-content{max-height:none;padding:0;overflow:visible}
+.template-create{width:100%;padding:1.75rem;display:flex;flex-direction:column;gap:1.75rem;background:#fff}
 .template-create__header{display:flex;justify-content:space-between;gap:1rem;align-items:flex-start}
 .template-create__step-indicator{margin:0;font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;color:#6366f1;font-weight:600}
 .template-create__description{margin:.5rem 0 0;font-size:.95rem;color:#475569}

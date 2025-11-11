@@ -8,6 +8,7 @@ export interface RulePayload {
   'Tipo de dato': string;
   'Campo obligatorio': boolean;
   Header: string[];
+  'Header rule'?: string[];
   'Mensaje de error': string;
   'Descripción': string;
   'Ejemplo': RuleExample;

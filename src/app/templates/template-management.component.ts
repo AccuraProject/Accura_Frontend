@@ -278,7 +278,11 @@ export class TemplateManagementComponent implements OnInit {
     const dialogRef = this.dialog.open<TemplateCreateDialogComponent, void, boolean>(
       TemplateCreateDialogComponent,
       {
-        disableClose: true
+        disableClose: true,
+        width: '92vw',
+        maxWidth: '1240px',
+        maxHeight: '95vh',
+        panelClass: 'template-create-dialog'
       }
     );
 

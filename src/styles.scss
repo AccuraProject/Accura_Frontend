@@ -73,6 +73,16 @@ button {
   border-radius: 28px;
 }
 
+.template-create-dialog .mat-mdc-dialog-surface {
+  border-radius: 28px;
+  padding: 0;
+}
+
+.template-create-dialog .mat-mdc-dialog-content {
+  max-height: none;
+  padding: 0;
+}
+
 .session-expired-dialog .mat-mdc-dialog-surface {
   border-radius: 28px;
   padding: 0;
