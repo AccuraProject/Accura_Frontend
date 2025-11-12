@@ -78,7 +78,7 @@
         <thead>
           <tr>
             <th>Nombre</th>
-            <th>Versión</th>
+            <th>Versión / Tabla</th>
             <th>Descripción</th>
             <th>Última Actualización</th>
             <th>Estado</th>
@@ -91,10 +91,11 @@
               <div class="templates-table__name">
                 <p class="templates-table__title">{{ template.name }}</p>
                 <p class="templates-table__meta">{{ template.createdAt | date: 'dd/MM/yyyy' }}</p>
+                <p class="templates-table__meta" *ngIf="template.tableName">Tabla: {{ template.tableName }}</p>
               </div>
             </td>
             <td>
-              <span class="templates-table__version">{{ template.version }}</span>
+              <span class="templates-table__version">{{ template.version || '—' }}</span>
             </td>
             <td>
               <span class="templates-table__description">{{ template.description }}</span>

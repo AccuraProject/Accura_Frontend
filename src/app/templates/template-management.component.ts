@@ -12,12 +12,17 @@ import {
   TemplateFormDialogResult
 } from './template-form-dialog.component';
 import {
+  TemplateCreateDialogComponent,
+  TemplateCreateDialogResult
+} from './template-create-dialog.component';
+import {
   TemplateColumnDetail,
   TemplateDetailDialogComponent,
   TemplateDetailDialogData
 } from './template-detail-dialog.component';
 import { TemplateDeleteDialogComponent, TemplateDeleteDialogData } from './template-delete-dialog.component';
 import { selectIsAdmin } from '../core/store/session/session.selectors';
+import { TemplateColumnResponse, TemplatesService } from './templates.service';
 
 type ManagementTemplateStatus = 'Publicado' | 'Borrador' | 'Inactivo';
 type ClientTemplateStatus = 'Activo' | 'En Revisión';
@@ -33,6 +38,8 @@ interface TemplateRow {
   lastUpdated: string;
   columns: number;
   columnsDetail: TemplateColumnDetail[];
+  tableName?: string;
+  statusCode?: string;
 }
 
 interface ClientTemplate {
@@ -60,6 +67,7 @@ interface ClientTemplate {
 export class TemplateManagementComponent {
   private readonly dialog = inject(MatDialog);
   private readonly store = inject(Store);
+  private readonly templatesService = inject(TemplatesService);
 
   protected searchTerm = '';
   protected statusFilter: ManagementTemplateStatus | 'Todos' = 'Todos';
@@ -344,26 +352,23 @@ export class TemplateManagementComponent {
     }
   }
 
-   protected openCreateDialog(): void {
-     const dialogRef = this.dialog.open<
-       TemplateFormDialogComponent,
-       TemplateFormDialogData,
-       TemplateFormDialogResult
-     >(TemplateFormDialogComponent, {
-       disableClose: true,
-       data: {
-         mode: 'create'
-       }
-     });
+  protected openCreateDialog(): void {
+    const dialogRef = this.dialog.open<
+      TemplateCreateDialogComponent,
+      void,
+      TemplateCreateDialogResult
+    >(TemplateCreateDialogComponent, {
+      disableClose: true
+    });
 
-     dialogRef.afterClosed().subscribe((result: TemplateFormDialogResult | undefined) => {
-       if (!result) {
-         return;
-       }
+    dialogRef.afterClosed().subscribe((result: TemplateCreateDialogResult | undefined) => {
+      if (!result) {
+        return;
+      }
 
-       this.addTemplate(result);
-     });
-   }
+      this.addTemplateFromCreate(result);
+    });
+  }
 
    protected openEditDialog(template: TemplateRow): void {
      const dialogRef = this.dialog.open<
@@ -515,21 +520,124 @@ export class TemplateManagementComponent {
      });
    }
 
-   private addTemplate(result: TemplateFormDialogResult): void {
-     const entry: TemplateRow = {
-       id: this.generateId(),
-       name: result.name,
-       description: result.description,
-       version: 'v1.0',
-       status: 'Borrador',
-       createdAt: new Date().toISOString().slice(0, 10),
-       lastUpdated: new Date().toISOString().slice(0, 10),
-       columns: 0,
-       columnsDetail: []
-     };
+  private addTemplateFromCreate(result: TemplateCreateDialogResult): void {
+    const entry = this.mapTemplateResultToRow(result);
+    this.templates = [entry, ...this.templates];
 
-     this.templates = [entry, ...this.templates];
-   }
+    if (result.template?.id !== undefined && result.template?.id !== null) {
+      void this.refreshTemplateColumns(result.template.id);
+    }
+  }
+
+  private mapTemplateResultToRow(result: TemplateCreateDialogResult): TemplateRow {
+    const template = result.template;
+    const columns = result.columns ?? [];
+
+    const createdAt = this.toIsoDate(template.created_at);
+    const updatedAt = this.toIsoDate(template.updated_at ?? template.created_at);
+    const status = this.toDisplayStatus(template.status);
+    const version = template.table_name?.trim().length ? template.table_name : '—';
+
+    const columnsDetail = this.mapColumnsToDetail(columns);
+
+    return {
+      id: this.normalizeId(template.id),
+      name: template.name ?? 'Nueva plantilla',
+      description: template.description ?? '',
+      version,
+      status,
+      createdAt,
+      lastUpdated: updatedAt,
+      columns: columns.length,
+      columnsDetail,
+      tableName: template.table_name ?? undefined,
+      statusCode: template.status ?? undefined
+    };
+  }
+
+  private mapColumnsToDetail(columns: TemplateColumnResponse[]): TemplateColumnDetail[] {
+    return columns.map((column) => {
+      const ruleSummary = Array.isArray(column.rules) && column.rules.length > 0
+        ? `Reglas asignadas: ${column.rules.map((rule) => rule.id).join(', ')}`
+        : 'Sin reglas configuradas';
+
+      return {
+        name: column.name,
+        type: column.data_type ?? 'Dato',
+        required: (column.rules?.length ?? 0) > 0,
+        rule: ruleSummary,
+        example: column.description && column.description.length > 0 ? column.description : undefined
+      };
+    });
+  }
+
+  private toDisplayStatus(status: string | undefined): TemplateStatus {
+    if (!status) {
+      return 'Borrador';
+    }
+
+    const normalized = status.trim().toLowerCase();
+
+    switch (normalized) {
+      case 'published':
+      case 'publicado':
+        return 'Publicado';
+      case 'inactive':
+      case 'inactivo':
+        return 'Inactivo';
+      case 'draft':
+      case 'unpublished':
+      default:
+        return 'Borrador';
+    }
+  }
+
+  private toIsoDate(value: string | undefined): string {
+    if (!value) {
+      return new Date().toISOString().slice(0, 10);
+    }
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return new Date().toISOString().slice(0, 10);
+    }
+
+    return date.toISOString().slice(0, 10);
+  }
+
+  private normalizeId(value: unknown): string {
+    if (typeof value === 'string') {
+      return value;
+    }
+
+    if (typeof value === 'number') {
+      return value.toString();
+    }
+
+    return this.generateId();
+  }
+
+  private async refreshTemplateColumns(templateId: number | string): Promise<void> {
+    try {
+      const columns = await this.templatesService.fetchTemplateColumns(templateId);
+      const normalizedId = this.normalizeId(templateId);
+      const columnsDetail = this.mapColumnsToDetail(columns);
+
+      this.templates = this.templates.map((template) => {
+        if (template.id !== normalizedId) {
+          return template;
+        }
+
+        return {
+          ...template,
+          columns: columns.length,
+          columnsDetail
+        };
+      });
+    } catch (error) {
+      console.error('[TemplateManagement] No se pudieron sincronizar las columnas de la plantilla creada.', error);
+    }
+  }
 
    private updateTemplate(templateId: string, result: TemplateFormDialogResult): void {
      this.templates = this.templates.map((template) => {
