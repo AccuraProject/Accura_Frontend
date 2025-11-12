@@ -7,6 +7,8 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { SessionActions } from '../../core/store/session/session.actions';
 import { CurrentUserResponse } from '../../core/models/user.model';
 import { selectSessionUser } from '../../core/store/session/session.selectors';
+import { NotificationService } from '../../core/services/notification.service';
+import { NotificationEvent } from '../../core/models/notification.model';
 
 @Component({
   selector: 'app-toolbar',
@@ -20,8 +22,13 @@ export class ToolbarComponent {
 
   private readonly store = inject(Store);
   private readonly router = inject(Router);
+  private readonly notificationService = inject(NotificationService);
 
-  protected readonly notifications = 4;
+  protected notifications: NotificationEvent[] = [];
+  protected unreadCount = 0;
+  protected showNotifications = false;
+  protected isLoadingNotifications = true;
+  protected notificationsError = '';
   protected userInitials = '??';
 
   constructor() {
@@ -31,15 +38,38 @@ export class ToolbarComponent {
       .subscribe((user) => {
         this.userInitials = this.getInitials(user);
       });
+
+    this.notificationService
+      .fetchNotifications()
+      .pipe(takeUntilDestroyed())
+      .subscribe({
+        next: (notifications) => {
+          this.notifications = notifications;
+          this.unreadCount = notifications.filter((notification) => !notification.read_at).length;
+          this.isLoadingNotifications = false;
+        },
+        error: (error) => {
+          this.notificationsError = error?.message ?? 'No fue posible cargar las notificaciones.';
+          this.isLoadingNotifications = false;
+        }
+      });
   }
 
   protected onToggleMenu(): void {
     this.menuToggle.emit();
   }
 
+  protected onToggleNotifications(): void {
+    this.showNotifications = !this.showNotifications;
+  }
+
   protected onLogout(): void {
     this.store.dispatch(SessionActions.logout());
     void this.router.navigate(['/login']);
+  }
+
+  protected trackByNotificationId(_: number, notification: NotificationEvent): number {
+    return notification.id;
   }
 
   private getInitials(user: CurrentUserResponse | null): string {
