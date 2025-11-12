@@ -64,17 +64,34 @@ export class TemplatesService {
     );
   }
 
-  async createTemplateColumn(
+  async createTemplateColumns(
     templateId: number | string,
-    payload: TemplateColumnPayload
-  ): Promise<TemplateColumnResponse> {
+    payload: TemplateColumnPayload[]
+  ): Promise<TemplateColumnResponse[]> {
     const headers = await this.buildAuthHeaders();
     const encodedId = encodeURIComponent(String(templateId));
-    return await firstValueFrom(
-      this.http.post<TemplateColumnResponse>(`${this.baseUrl}/templates/${encodedId}/columns`, payload, {
-        headers
-      })
+    const data = await firstValueFrom(
+      this.http.post<TemplateColumnResponse | TemplateColumnResponse[] | Record<string, unknown> | null>(
+        `${this.baseUrl}/templates/${encodedId}/columns`,
+        payload,
+        { headers }
+      )
     );
+
+    if (Array.isArray(data)) {
+      return data;
+    }
+
+    if (data && typeof data === 'object') {
+      if (this.isTemplateColumnResponse(data)) {
+        return [data];
+      }
+
+      const asColumn = this.toColumnResponse(data as Record<string, unknown>);
+      return asColumn ? [asColumn] : [];
+    }
+
+    return [];
   }
 
   async fetchTemplates(): Promise<TemplateResponse[]> {
@@ -171,5 +188,14 @@ export class TemplatesService {
       'Content-Type': 'application/json',
       Authorization: `${tokenType} ${session.accessToken}`
     });
+  }
+
+  private isTemplateColumnResponse(entry: unknown): entry is TemplateColumnResponse {
+    if (!entry || typeof entry !== 'object') {
+      return false;
+    }
+
+    const candidate = entry as Partial<TemplateColumnResponse>;
+    return typeof candidate.id === 'number' && typeof candidate.name === 'string';
   }
 }

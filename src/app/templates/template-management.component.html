@@ -73,7 +73,21 @@
       </div>
     </header>
 
-    <div class="templates-table__wrapper" *ngIf="filteredTemplates as items">
+    <div class="templates-table__state" *ngIf="templatesLoading">
+      <span class="material-symbols-rounded" aria-hidden="true">hourglass_top</span>
+      <p>Cargando plantillas registradas...</p>
+    </div>
+    <div
+      class="templates-table__state templates-table__state--error"
+      *ngIf="!templatesLoading && templatesError"
+    >
+      <span class="material-symbols-rounded" aria-hidden="true">error</span>
+      <p>{{ templatesError }}</p>
+    </div>
+    <div
+      class="templates-table__wrapper"
+      *ngIf="!templatesLoading && !templatesError && filteredTemplates as items"
+    >
       <table class="templates-table">
         <thead>
           <tr>

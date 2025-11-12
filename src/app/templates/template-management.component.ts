@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatMenuModule } from '@angular/material/menu';
@@ -22,7 +22,7 @@ import {
 } from './template-detail-dialog.component';
 import { TemplateDeleteDialogComponent, TemplateDeleteDialogData } from './template-delete-dialog.component';
 import { selectIsAdmin } from '../core/store/session/session.selectors';
-import { TemplateColumnResponse, TemplatesService } from './templates.service';
+import { TemplateColumnResponse, TemplateResponse, TemplatesService } from './templates.service';
 
 type ManagementTemplateStatus = 'Publicado' | 'Borrador' | 'Inactivo';
 type ClientTemplateStatus = 'Activo' | 'En Revisión';
@@ -64,7 +64,7 @@ interface ClientTemplate {
   templateUrl: './template-management.component.html',
   styleUrl: './template-management.component.scss'
 })
-export class TemplateManagementComponent {
+export class TemplateManagementComponent implements OnInit {
   private readonly dialog = inject(MatDialog);
   private readonly store = inject(Store);
   private readonly templatesService = inject(TemplatesService);
@@ -76,125 +76,24 @@ export class TemplateManagementComponent {
   protected uploadErrors: Record<string, string | null> = {};
   protected dragActiveId: string | null = null;
 
-   protected readonly isAdmin$: Observable<boolean> = this.store.select(selectIsAdmin);
+  protected readonly isAdmin$: Observable<boolean> = this.store.select(selectIsAdmin);
 
-   protected readonly statusOptions: (TemplateStatus | 'Todos')[] = [
+  protected readonly statusOptions: (TemplateStatus | 'Todos')[] = [
      'Todos',
      'Publicado',
      'Borrador',
      'Inactivo'
    ];
 
-   protected templates: TemplateRow[] = [
-     {
-       id: 'policy-template',
-       name: 'Plantilla de Pólizas',
-       description: 'Plantilla para cargar datos de pólizas emitidas mensualmente.',
-       version: 'v1.0',
-       status: 'Publicado',
-       createdAt: '2024-11-12',
-       lastUpdated: '2025-02-14',
-       columns: 14,
-       columnsDetail: [
-         {
-           name: 'Número de Póliza',
-           type: 'Texto',
-           required: true,
-           rule: 'Formato alfanumérico de 12 caracteres',
-           example: 'POL-2025-001'
-         },
-         {
-           name: 'Fecha de Emisión',
-           type: 'Fecha',
-           required: true,
-           rule: 'Debe corresponder al mes reportado',
-           example: '2025-02-01'
-         },
-         {
-           name: 'Tipo de Seguro',
-           type: 'Catálogo',
-           required: true,
-           rule: 'Valor contenido en catálogo corporativo',
-           example: 'Autos'
-         },
-         {
-           name: 'Prima Total',
-           type: 'Numérico',
-           required: true,
-           rule: 'Mayor a 0 y con dos decimales',
-           example: '120000.00'
-         }
-       ]
-     },
-     {
-       id: 'claims-template',
-       name: 'Plantilla de Siniestros',
-       description: 'Plantilla para registrar siniestros reportados por los asegurados.',
-       version: 'v2.1',
-       status: 'Borrador',
-       createdAt: '2024-10-03',
-       lastUpdated: '2025-01-28',
-       columns: 11,
-       columnsDetail: [
-         {
-           name: 'Número de Siniestro',
-           type: 'Texto',
-           required: true,
-           rule: 'Formato consecutivo asignado por el sistema',
-           example: 'SIN-001-2025'
-         },
-         {
-           name: 'Fecha del Evento',
-           type: 'Fecha',
-           required: true,
-           rule: 'No puede ser posterior a la fecha de registro',
-           example: '2025-01-12'
-         },
-         {
-           name: 'Monto Estimado',
-           type: 'Numérico',
-           required: false,
-           rule: 'Hasta dos decimales, opcional',
-           example: '45000.50'
-         }
-       ]
-     },
-     {
-       id: 'brokers-template',
-       name: 'Plantilla de Brokers',
-       description: 'Estructura para actualizar información de brokers y agentes externos.',
-       version: 'v1.3',
-       status: 'Inactivo',
-       createdAt: '2024-07-22',
-       lastUpdated: '2024-12-18',
-       columns: 9,
-       columnsDetail: [
-         {
-           name: 'Código de Broker',
-           type: 'Texto',
-           required: true,
-           rule: 'Formato alfanumérico único',
-           example: 'BRK-0123'
-         },
-         {
-           name: 'Nombre Comercial',
-           type: 'Texto',
-           required: true,
-           rule: 'Máximo 80 caracteres',
-           example: 'Agencia Norte'
-         },
-         {
-           name: 'Correo de Contacto',
-           type: 'Correo',
-           required: true,
-           rule: 'Debe ser un correo válido',
-           example: 'contacto@agencianorte.com'
-         }
-       ]
-     }
-   ];
+  protected templates: TemplateRow[] = [];
+  protected templatesLoading = false;
+  protected templatesError: string | null = null;
 
-   protected readonly assignedTemplates: ClientTemplate[] = [
+  ngOnInit(): void {
+    void this.loadTemplates();
+  }
+
+  protected readonly assignedTemplates: ClientTemplate[] = [
      {
        id: 'policy-template',
        name: 'Plantilla de Pólizas',
@@ -520,8 +419,34 @@ export class TemplateManagementComponent {
      });
    }
 
+  private async loadTemplates(): Promise<void> {
+    if (this.templatesLoading) {
+      return;
+    }
+
+    this.templatesLoading = true;
+    this.templatesError = null;
+
+    try {
+      const templates = await this.templatesService.fetchTemplates();
+      this.templates = templates.map((template) =>
+        this.mapTemplateResponseToRow(
+          template,
+          Array.isArray(template.columns) ? template.columns : []
+        )
+      );
+    } catch (error) {
+      console.error('[TemplateManagement] Error al obtener plantillas registradas:', error);
+      this.templatesError = this.getErrorMessage(error);
+      this.templates = [];
+    } finally {
+      this.templatesLoading = false;
+    }
+  }
+
   private addTemplateFromCreate(result: TemplateCreateDialogResult): void {
     const entry = this.mapTemplateResultToRow(result);
+    this.templatesError = null;
     this.templates = [entry, ...this.templates];
 
     if (result.template?.id !== undefined && result.template?.id !== null) {
@@ -532,7 +457,13 @@ export class TemplateManagementComponent {
   private mapTemplateResultToRow(result: TemplateCreateDialogResult): TemplateRow {
     const template = result.template;
     const columns = result.columns ?? [];
+    return this.mapTemplateResponseToRow(template, columns);
+  }
 
+  private mapTemplateResponseToRow(
+    template: TemplateResponse,
+    columns: TemplateColumnResponse[] = []
+  ): TemplateRow {
     const createdAt = this.toIsoDate(template.created_at);
     const updatedAt = this.toIsoDate(template.updated_at ?? template.created_at);
     const status = this.toDisplayStatus(template.status);
@@ -637,6 +568,42 @@ export class TemplateManagementComponent {
     } catch (error) {
       console.error('[TemplateManagement] No se pudieron sincronizar las columnas de la plantilla creada.', error);
     }
+  }
+
+  private getErrorMessage(error: unknown): string {
+    if (!error) {
+      return 'Ocurrió un error inesperado. Intenta nuevamente más tarde.';
+    }
+
+    if (typeof error === 'string') {
+      return error;
+    }
+
+    const message = (error as { message?: string }).message;
+    if (typeof message === 'string' && message.trim().length > 0) {
+      return message;
+    }
+
+    const responseError = (error as { error?: unknown }).error;
+    if (responseError && typeof responseError === 'object') {
+      const detail = (responseError as { detail?: unknown }).detail;
+
+      if (typeof detail === 'string' && detail.trim().length > 0) {
+        return detail;
+      }
+
+      if (Array.isArray(detail) && detail.length > 0) {
+        const first = detail[0];
+        if (first && typeof first === 'object' && 'msg' in first && typeof (first as { msg?: unknown }).msg === 'string') {
+          const msg = (first as { msg: string }).msg.trim();
+          if (msg.length > 0) {
+            return msg;
+          }
+        }
+      }
+    }
+
+    return 'No fue posible completar la operación. Intenta nuevamente.';
   }
 
    private updateTemplate(templateId: string, result: TemplateFormDialogResult): void {

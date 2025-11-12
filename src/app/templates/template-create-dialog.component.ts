@@ -103,10 +103,11 @@ export class TemplateCreateDialogComponent {
       return;
     }
 
+    const description = this.stepOneForm.description.trim();
     const payload: TemplateCreatePayload = {
       name: this.stepOneForm.name.trim(),
       table_name: this.stepOneForm.tableName.trim(),
-      description: this.stepOneForm.description.trim()
+      ...(description ? { description } : {})
     };
 
     if (!payload.name || !payload.table_name) {
@@ -236,13 +237,14 @@ export class TemplateCreateDialogComponent {
     this.columnsLoading = true;
     this.columnsError = null;
 
-    const createdColumns: TemplateColumnResponse[] = [];
-
     try {
-      for (const column of this.columns) {
-        const payload: TemplateColumnPayload = {
-          name: column.name.trim(),
-          description: column.description.trim(),
+      const payload = this.columns.map<TemplateColumnPayload>((column) => {
+        const name = column.name.trim();
+        const description = column.description.trim();
+
+        return {
+          name,
+          ...(description ? { description } : {}),
           rules: column.ruleSelections.map((selection) => {
             const headerRule = this.requiresHeaderSelection(selection.option)
               ? selection.headerSelection
@@ -256,10 +258,12 @@ export class TemplateCreateDialogComponent {
             };
           })
         };
+      });
 
-        const response = await this.templatesService.createTemplateColumn(this.templateResponse.id, payload);
-        createdColumns.push(response);
-      }
+      const createdColumns = await this.templatesService.createTemplateColumns(
+        this.templateResponse.id,
+        payload
+      );
 
       this.dialogRef.close({
         template: this.templateResponse,
