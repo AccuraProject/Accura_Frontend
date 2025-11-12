@@ -209,6 +209,15 @@ export class TemplatesService {
     );
   }
 
+  async deleteTemplate(templateId: number | string): Promise<void> {
+    const headers = await this.buildAuthHeaders();
+    const encodedId = encodeURIComponent(String(templateId));
+
+    await firstValueFrom(
+      this.http.delete<void>(`${this.baseUrl}/templates/${encodedId}`, { headers })
+    );
+  }
+
   private parseTemplateResponse(data: unknown): TemplateResponse | null {
     if (!data) {
       return null;

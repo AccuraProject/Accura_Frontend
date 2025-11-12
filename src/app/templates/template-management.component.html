@@ -160,7 +160,12 @@
                     <span>Editar</span>
                   </div>
                 </button>
-                <button mat-menu-item type="button" (click)="openDeleteDialog(template)">
+                <button
+                  mat-menu-item
+                  type="button"
+                  (click)="openDeleteDialog(template)"
+                  [disabled]="deletingTemplates[template.id]"
+                >
                   <div class="menu-item-text text-danger">
                     <span class="material-symbols-rounded" aria-hidden="true">delete</span>
                     <span>Eliminar</span>

@@ -75,6 +75,7 @@ export class TemplateManagementComponent implements OnInit {
   protected uploadErrors: Record<string, string | null> = {};
   protected dragActiveId: string | null = null;
   protected statusUpdating: Record<string, boolean> = {};
+  protected deletingTemplates: Record<string, boolean> = {};
 
   protected readonly isAdmin$: Observable<boolean> = this.store.select(selectIsAdmin);
 
@@ -499,7 +500,7 @@ export class TemplateManagementComponent implements OnInit {
         return;
       }
 
-      this.removeTemplate(template.id);
+      void this.deleteTemplate(template.id);
     });
   }
 
@@ -721,8 +722,23 @@ export class TemplateManagementComponent implements OnInit {
     return 'No fue posible completar la operación. Intenta nuevamente.';
   }
 
-  private removeTemplate(templateId: string): void {
-    this.templates = this.templates.filter((template) => template.id !== templateId);
+  private async deleteTemplate(templateId: string): Promise<void> {
+    if (!templateId || this.deletingTemplates[templateId]) {
+      return;
+    }
+
+    this.templatesError = null;
+    this.deletingTemplates[templateId] = true;
+
+    try {
+      await this.templatesService.deleteTemplate(templateId);
+      this.templates = this.templates.filter((template) => template.id !== templateId);
+    } catch (error) {
+      console.error('[TemplateManagement] No se pudo eliminar la plantilla seleccionada:', error);
+      this.templatesError = this.getErrorMessage(error);
+    } finally {
+      delete this.deletingTemplates[templateId];
+    }
   }
 
   private generateId(): string {
