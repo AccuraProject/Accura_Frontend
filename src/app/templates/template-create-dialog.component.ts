@@ -102,7 +102,11 @@ export class TemplateCreateDialogComponent implements OnInit {
     this.generalLoading = true;
 
     try {
-      this.template = await this.templateService.createTemplate(payload);
+      const response = await this.templateService.createTemplate(payload);
+      this.template = {
+        ...response,
+        columns: Array.isArray(response.columns) ? response.columns : [],
+      };
       this.step = 'columns';
     } catch (error) {
       console.error('[TemplateCreateDialog] Error creating template', error);
@@ -128,21 +132,20 @@ export class TemplateCreateDialogComponent implements OnInit {
     }
 
     this.columnSaveLoading = true;
-    const createdColumns: TemplateColumnResponse[] = [];
-
     try {
-      for (const draft of this.columns) {
-        const payload: TemplateColumnPayload = {
-          name: draft.name.trim(),
-          description: draft.description.trim() || undefined,
-          rules: draft.rules.map((rule) => this.mapRuleSelection(rule)),
-        };
+      const payload: TemplateColumnPayload[] = this.columns.map((draft) => ({
+        name: draft.name.trim(),
+        description: draft.description.trim() || undefined,
+        rules: draft.rules.map((rule) => this.mapRuleSelection(rule)),
+      }));
 
-        const column = await this.templateService.createColumn(this.template.id, payload);
-        createdColumns.push(column);
-      }
+      const createdColumns = await this.templateService.createColumns(this.template.id, payload);
+      const templateWithColumns: TemplateResponse = {
+        ...this.template,
+        columns: createdColumns,
+      };
 
-      this.dialogRef.close({ template: this.template, columns: createdColumns });
+      this.dialogRef.close({ template: templateWithColumns, columns: createdColumns });
     } catch (error) {
       console.error('[TemplateCreateDialog] Error creating column', error);
       this.columnError = this.getErrorMessage(error, 'No fue posible registrar las columnas.');

@@ -25,7 +25,7 @@ export interface TemplateResponse {
   deleted: boolean;
   deleted_by: number | null;
   deleted_at: string | null;
-  columns: unknown[];
+  columns?: TemplateColumnResponse[] | null;
 }
 
 export interface TemplateColumnRulePayload {
@@ -71,13 +71,13 @@ export class TemplateService {
     );
   }
 
-  async createColumn(
+  async createColumns(
     templateId: number,
-    payload: TemplateColumnPayload
-  ): Promise<TemplateColumnResponse> {
+    payload: TemplateColumnPayload[]
+  ): Promise<TemplateColumnResponse[]> {
     const headers = await this.buildAuthHeaders();
     return await firstValueFrom(
-      this.http.post<TemplateColumnResponse>(
+      this.http.post<TemplateColumnResponse[]>(
         `${this.baseUrl}/templates/${encodeURIComponent(String(templateId))}/columns`,
         payload,
         { headers }

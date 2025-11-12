@@ -115,20 +115,7 @@ export class TemplateManagementComponent implements OnInit {
     try {
       await this.loadRulesDictionary();
       const templates = await this.templateService.listTemplates();
-
-      const entries = await Promise.all(
-        templates.map(async (template) => {
-          try {
-            const columns = await this.templateService.listColumns(template.id);
-            return this.mapTemplate(template, columns);
-          } catch (error) {
-            console.error('[TemplateManagement] Error al obtener columnas', error);
-            return this.mapTemplate(template, []);
-          }
-        })
-      );
-
-      this.templates = entries;
+      this.templates = templates.map((template) => this.mapTemplate(template));
     } catch (error) {
       console.error('[TemplateManagement] Error al cargar plantillas', error);
       this.templatesError = this.getErrorMessage(error, 'No fue posible obtener las plantillas registradas.');
@@ -149,8 +136,12 @@ export class TemplateManagementComponent implements OnInit {
     }
   }
 
-  private mapTemplate(template: TemplateResponse, columns: TemplateColumnResponse[]): TemplateRow {
+  private mapTemplate(
+    template: TemplateResponse,
+    columnsOverride?: TemplateColumnResponse[]
+  ): TemplateRow {
     const status = this.normalizeStatus(template.status);
+    const columns = this.getTemplateColumns(template, columnsOverride);
     return {
       id: template.id,
       name: template.name,
@@ -164,6 +155,30 @@ export class TemplateManagementComponent implements OnInit {
       columns: columns.length,
       columnsDetail: columns.map((column) => this.mapColumn(column)),
     };
+  }
+
+  private getTemplateColumns(
+    template: TemplateResponse,
+    columnsOverride?: TemplateColumnResponse[]
+  ): TemplateColumnResponse[] {
+    if (Array.isArray(columnsOverride)) {
+      return columnsOverride.filter((column) => this.isTemplateColumnResponse(column));
+    }
+
+    if (Array.isArray(template.columns)) {
+      return template.columns.filter((column) => this.isTemplateColumnResponse(column));
+    }
+
+    return [];
+  }
+
+  private isTemplateColumnResponse(column: unknown): column is TemplateColumnResponse {
+    if (!column || typeof column !== 'object') {
+      return false;
+    }
+
+    const record = column as Record<string, unknown>;
+    return typeof record['name'] === 'string';
   }
 
   private mapColumn(column: TemplateColumnResponse): TemplateColumnDetail {
