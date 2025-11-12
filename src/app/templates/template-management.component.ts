@@ -22,7 +22,12 @@ import {
   TemplateDeleteDialogData,
 } from './template-delete-dialog.component';
 import { selectIsAdmin } from '../core/store/session/session.selectors';
-import { TemplateColumnResponse, TemplateResponse, TemplatesService } from './templates.service';
+import {
+  TemplateColumnResponse,
+  TemplateColumnRulePayload,
+  TemplateResponse,
+  TemplatesService,
+} from './templates.service';
 
 type ManagementTemplateStatus = 'Publicado' | 'Borrador' | 'Inactivo';
 type ClientTemplateStatus = 'Activo' | 'En Revisión';

@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, Inject, OnInit } from '@angular/core';
 import { MatDialogModule, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { ValidationRulesService } from '../validation-rules/validation-rules.service';
 import { normalizeAiPayload } from '../validation-rules/validation-rule-ai.utils';
@@ -38,7 +39,7 @@ export interface TemplateDetailDialogData {
 @Component({
   selector: 'app-template-detail-dialog',
   standalone: true,
-  imports: [CommonModule, MatDialogModule],
+  imports: [CommonModule, MatDialogModule, MatTooltipModule],
   templateUrl: './template-detail-dialog.component.html',
   styleUrl: './template-detail-dialog.component.scss',
 })
@@ -308,6 +309,56 @@ export class TemplateDetailDialogComponent implements OnInit {
     }
 
     return 'No se pudo obtener la regla asociada.';
+  }
+
+  protected getRuleLabel(rule: TemplateColumnRuleDetail, index: number): string {
+    if (rule.id) {
+      return `Regla ${rule.id}`;
+    }
+
+    return `Regla ${index + 1}`;
+  }
+
+  protected getRuleTooltip(rule: TemplateColumnRuleDetail): string {
+    if (rule.loading) {
+      return 'Cargando resumen de la regla…';
+    }
+
+    if (rule.error) {
+      return rule.error;
+    }
+
+    return rule.summary ?? 'Sin resumen disponible.';
+  }
+
+  protected getRuleTooltipClass(rule: TemplateColumnRuleDetail): string[] {
+    const classes = ['template-detail__tooltip'];
+
+    if (rule.error) {
+      classes.push('template-detail__tooltip--error');
+    } else if (rule.loading) {
+      classes.push('template-detail__tooltip--muted');
+    }
+
+    return classes;
+  }
+
+  protected getRuleInfoStateClass(rule: TemplateColumnRuleDetail): string {
+    if (rule.error) {
+      return 'template-detail__rule-info--error';
+    }
+
+    if (rule.loading) {
+      return 'template-detail__rule-info--loading';
+    }
+
+    return 'template-detail__rule-info--ready';
+  }
+
+  protected getRuleTooltipAriaLabel(rule: TemplateColumnRuleDetail, index: number): string {
+    const label = this.getRuleLabel(rule, index);
+    const tooltip = this.getRuleTooltip(rule);
+    return `${label}. ${tooltip}`;
   }
 }
 
