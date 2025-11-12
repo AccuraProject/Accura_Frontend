@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Output, inject } from '@angular/core';
+import { Component, DestroyRef, EventEmitter, Output, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -24,6 +24,7 @@ export class ToolbarComponent {
   private readonly store = inject(Store);
   private readonly router = inject(Router);
   private readonly notificationService = inject(NotificationService);
+  private readonly destroyRef = inject(DestroyRef);
 
   protected notifications: NotificationEvent[] = [];
   protected unreadCount = 0;
@@ -37,7 +38,7 @@ export class ToolbarComponent {
   constructor() {
     this.store
       .select(selectSessionUser)
-      .pipe(takeUntilDestroyed())
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((user) => {
         this.userInitials = this.getInitials(user);
       });
@@ -79,7 +80,7 @@ export class ToolbarComponent {
     this.notificationService
       .markNotificationsAsRead(unreadIds)
       .pipe(
-        takeUntilDestroyed(),
+        takeUntilDestroyed(this.destroyRef),
         finalize(() => {
           this.isMarkingNotifications = false;
         })
@@ -143,7 +144,7 @@ export class ToolbarComponent {
   private loadNotifications(): void {
     this.notificationService
       .fetchNotifications()
-      .pipe(takeUntilDestroyed())
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (notifications) => {
           this.notifications = notifications;
