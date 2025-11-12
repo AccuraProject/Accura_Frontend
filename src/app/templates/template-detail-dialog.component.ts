@@ -1,7 +1,6 @@
 import { CommonModule } from '@angular/common';
-import { Component, Inject, OnInit } from '@angular/core';
+import { Component, ElementRef, HostListener, Inject, OnInit } from '@angular/core';
 import { MatDialogModule, MAT_DIALOG_DATA } from '@angular/material/dialog';
-import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { ValidationRulesService } from '../validation-rules/validation-rules.service';
 import { normalizeAiPayload } from '../validation-rules/validation-rule-ai.utils';
@@ -9,6 +8,7 @@ import { normalizeAiPayload } from '../validation-rules/validation-rule-ai.utils
 export interface TemplateColumnRuleDetail {
   id?: string;
   summary?: string;
+  summaryDisplay?: RuleSummaryDisplay;
   requiresLookup?: boolean;
   loading?: boolean;
   error?: string | null;
@@ -39,7 +39,7 @@ export interface TemplateDetailDialogData {
 @Component({
   selector: 'app-template-detail-dialog',
   standalone: true,
-  imports: [CommonModule, MatDialogModule, MatTooltipModule],
+  imports: [CommonModule, MatDialogModule],
   templateUrl: './template-detail-dialog.component.html',
   styleUrl: './template-detail-dialog.component.scss',
 })
@@ -55,12 +55,26 @@ export class TemplateDetailDialogComponent implements OnInit {
   protected readonly columnsDetail: TemplateColumnDetail[];
 
   private readonly ruleRegistry = new Map<string, TemplateColumnRuleDetail[]>();
+  private activeRule: TemplateColumnRuleDetail | null = null;
 
   constructor(
     @Inject(MAT_DIALOG_DATA) protected readonly data: TemplateDetailDialogData,
-    private readonly validationRulesService: ValidationRulesService
+    private readonly validationRulesService: ValidationRulesService,
+    private readonly host: ElementRef<HTMLElement>
   ) {
     this.columnsDetail = this.prepareColumns(data.columnsDetail ?? []);
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: Event): void {
+    if (!this.host.nativeElement.contains(event.target as Node)) {
+      this.closeRuleSummary();
+    }
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    this.closeRuleSummary();
   }
 
   async ngOnInit(): Promise<void> {
@@ -110,6 +124,7 @@ export class TemplateDetailDialogComponent implements OnInit {
     const id = this.toRuleId(rule.id);
     const requiresLookup = rule.requiresLookup ?? (!!id && !rule.summary);
     const summary = this.toSummary(rule.summary);
+    const summaryDisplay = summary ? this.buildDisplayFromText(summary, id) : undefined;
     const error = rule.error ?? null;
     const loading = requiresLookup && !summary && !error;
 
@@ -119,6 +134,7 @@ export class TemplateDetailDialogComponent implements OnInit {
       requiresLookup,
       summary,
       error,
+      summaryDisplay,
       loading,
     };
   }
@@ -154,12 +170,14 @@ export class TemplateDetailDialogComponent implements OnInit {
     try {
       const response = await this.validationRulesService.fetchRule(ruleId);
       const summaryData = this.parseRuleSummary(response);
-      const summaryText = this.buildRuleSummary(summaryData, ruleId);
+      const summaryDisplay = this.buildRuleSummaryDisplay(summaryData, ruleId);
+      const summaryText = this.buildRuleSummaryText(summaryDisplay);
 
       for (const target of targets) {
         target.loading = false;
         target.error = null;
         target.summary = summaryText;
+        target.summaryDisplay = summaryDisplay;
         target.requiresLookup = false;
       }
     } catch (error) {
@@ -222,12 +240,15 @@ export class TemplateDetailDialogComponent implements OnInit {
     };
   }
 
-  private buildRuleSummary(summary: RuleSummary | null, ruleId: string): string {
+  private buildRuleSummaryDisplay(summary: RuleSummary | null, ruleId: string): RuleSummaryDisplay {
     if (!summary) {
-      return `Regla ${ruleId}`;
+      return {
+        title: `Regla ${ruleId}`,
+        description: undefined,
+        conditions: [],
+      };
     }
 
-    const segments: string[] = [];
     const titleParts: string[] = [];
 
     if (summary.name) {
@@ -238,23 +259,42 @@ export class TemplateDetailDialogComponent implements OnInit {
       titleParts.push(`(${summary.dataType})`);
     }
 
-    const title = titleParts.join(' ').trim();
+    const title = titleParts.join(' ').trim() || `Regla ${ruleId}`;
 
-    if (title.length > 0) {
+    return {
+      title,
+      description: summary.description ?? undefined,
+      conditions: summary.headerRule ?? [],
+    };
+  }
+
+  private buildDisplayFromText(text: string, ruleId?: string): RuleSummaryDisplay {
+    return {
+      title: ruleId ? `Regla ${ruleId}` : 'Resumen de la regla',
+      description: text,
+      conditions: [],
+    };
+  }
+
+  private buildRuleSummaryText(display: RuleSummaryDisplay): string {
+    const segments: string[] = [];
+
+    const title = display.title?.trim();
+    const description = display.description?.trim();
+
+    if (title) {
       segments.push(title);
-    } else {
-      segments.push(`Regla ${ruleId}`);
     }
 
-    if (summary.description) {
-      segments.push(summary.description);
+    if (description && description !== title) {
+      segments.push(description);
     }
 
-    if (summary.headerRule?.length) {
-      segments.push(`Condiciones: ${summary.headerRule.join(', ')}`);
+    if (display.conditions?.length) {
+      segments.push(`Condiciones: ${display.conditions.join(', ')}`);
     }
 
-    return segments.join(' · ');
+    return segments.join('. ');
   }
 
   private extractString(value: unknown): string | null {
@@ -319,30 +359,6 @@ export class TemplateDetailDialogComponent implements OnInit {
     return `Regla ${index + 1}`;
   }
 
-  protected getRuleTooltip(rule: TemplateColumnRuleDetail): string {
-    if (rule.loading) {
-      return 'Cargando resumen de la regla…';
-    }
-
-    if (rule.error) {
-      return rule.error;
-    }
-
-    return rule.summary ?? 'Sin resumen disponible.';
-  }
-
-  protected getRuleTooltipClass(rule: TemplateColumnRuleDetail): string[] {
-    const classes = ['template-detail__tooltip'];
-
-    if (rule.error) {
-      classes.push('template-detail__tooltip--error');
-    } else if (rule.loading) {
-      classes.push('template-detail__tooltip--muted');
-    }
-
-    return classes;
-  }
-
   protected getRuleInfoStateClass(rule: TemplateColumnRuleDetail): string {
     if (rule.error) {
       return 'template-detail__rule-info--error';
@@ -355,10 +371,65 @@ export class TemplateDetailDialogComponent implements OnInit {
     return 'template-detail__rule-info--ready';
   }
 
-  protected getRuleTooltipAriaLabel(rule: TemplateColumnRuleDetail, index: number): string {
-    const label = this.getRuleLabel(rule, index);
-    const tooltip = this.getRuleTooltip(rule);
-    return `${label}. ${tooltip}`;
+  protected getRuleSummaryTitle(rule: TemplateColumnRuleDetail, index: number): string {
+    if (rule.summaryDisplay?.title) {
+      return rule.summaryDisplay.title;
+    }
+
+    return this.getRuleLabel(rule, index);
+  }
+
+  protected isRuleSummaryOpen(rule: TemplateColumnRuleDetail): boolean {
+    return this.activeRule === rule;
+  }
+
+  protected toggleRuleSummary(event: Event, rule: TemplateColumnRuleDetail): void {
+    event.stopPropagation();
+
+    if (event instanceof KeyboardEvent) {
+      const key = event.key.toLowerCase();
+      if (key === ' ' || key === 'spacebar') {
+        event.preventDefault();
+      }
+    }
+
+    if (this.activeRule === rule) {
+      this.activeRule = null;
+    } else {
+      this.activeRule = rule;
+    }
+  }
+
+  protected closeRuleSummary(): void {
+    this.activeRule = null;
+  }
+
+  protected getRuleSummaryContent(rule: TemplateColumnRuleDetail): RuleSummaryDisplay | null {
+    if (rule.summaryDisplay) {
+      return rule.summaryDisplay;
+    }
+
+    if (rule.summary) {
+      return this.buildDisplayFromText(rule.summary, rule.id);
+    }
+
+    return null;
+  }
+
+  protected getRulePopoverId(columnIndex: number, ruleIndex: number): string {
+    return `template-rule-popover-${columnIndex}-${ruleIndex}`;
+  }
+
+  protected getRuleAriaDescription(rule: TemplateColumnRuleDetail): string {
+    if (rule.loading) {
+      return 'Resumen cargándose';
+    }
+
+    if (rule.error) {
+      return rule.error;
+    }
+
+    return rule.summary ?? 'Sin resumen disponible.';
   }
 }
 
@@ -367,4 +438,10 @@ interface RuleSummary {
   dataType?: string;
   description?: string;
   headerRule?: string[];
+}
+
+interface RuleSummaryDisplay {
+  title: string;
+  description?: string;
+  conditions?: string[];
 }

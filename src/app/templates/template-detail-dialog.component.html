@@ -64,7 +64,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let column of columnsDetail">
+          <tr *ngFor="let column of columnsDetail; let columnIndex = index">
             <td>
               <span class="template-detail__column-name">{{ column.name }}</span>
             </td>
@@ -93,14 +93,48 @@
                         type="button"
                         class="template-detail__rule-info"
                         [ngClass]="getRuleInfoStateClass(rule)"
-                        [matTooltip]="getRuleTooltip(rule)"
-                        [matTooltipClass]="getRuleTooltipClass(rule)"
-                        matTooltipPosition="above"
-                        [attr.aria-label]="getRuleTooltipAriaLabel(rule, index)"
+                        (click)="toggleRuleSummary($event, rule)"
+                        (keydown.enter)="toggleRuleSummary($event, rule)"
+                        (keydown.space)="toggleRuleSummary($event, rule)"
+                        [attr.aria-label]="getRuleSummaryTitle(rule, index)"
+                        [attr.aria-expanded]="isRuleSummaryOpen(rule)"
+                        [attr.aria-controls]="isRuleSummaryOpen(rule) ? getRulePopoverId(columnIndex, index) : null"
+                        [attr.aria-description]="getRuleAriaDescription(rule)"
                         aria-haspopup="true"
                       >
                         <span class="material-symbols-rounded" aria-hidden="true">info</span>
                       </button>
+                      <div
+                        *ngIf="isRuleSummaryOpen(rule)"
+                        class="template-detail__rule-popover"
+                        role="dialog"
+                        [attr.id]="getRulePopoverId(columnIndex, index)"
+                        aria-live="polite"
+                      >
+                        <header class="template-detail__rule-popover-header">
+                          <h4>{{ getRuleSummaryTitle(rule, index) }}</h4>
+                          <button type="button" class="template-detail__rule-popover-close" (click)="closeRuleSummary()">
+                            <span class="material-symbols-rounded" aria-hidden="true">close</span>
+                            <span class="sr-only">Cerrar resumen</span>
+                          </button>
+                        </header>
+                        <div class="template-detail__rule-popover-body">
+                          <p *ngIf="rule.loading" class="template-detail__rule-popover-status">Cargando resumen…</p>
+                          <p *ngIf="!rule.loading && rule.error" class="template-detail__rule-popover-error">{{ rule.error }}</p>
+                          <ng-container *ngIf="!rule.loading && !rule.error">
+                            <ng-container *ngIf="getRuleSummaryContent(rule) as summary">
+                              <p *ngIf="summary.description" class="template-detail__rule-popover-description">{{ summary.description }}</p>
+                              <ul *ngIf="summary.conditions?.length" class="template-detail__rule-popover-list">
+                                <li *ngFor="let condition of summary.conditions">{{ condition }}</li>
+                              </ul>
+                              <p *ngIf="!summary.description && (!summary.conditions?.length)">
+                                Sin resumen disponible.
+                              </p>
+                            </ng-container>
+                            <p *ngIf="!getRuleSummaryContent(rule)">Sin resumen disponible.</p>
+                          </ng-container>
+                        </div>
+                      </div>
                     </div>
                   </li>
                 </ul>
