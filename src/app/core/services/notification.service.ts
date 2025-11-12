@@ -32,4 +32,26 @@ export class NotificationService {
       })
     );
   }
+
+  markNotificationsAsRead(ids: number[]): Observable<unknown> {
+    if (!ids.length) {
+      return throwError(() => new Error('No hay notificaciones por marcar como leídas.'));
+    }
+
+    return this.store.select(selectSessionState).pipe(
+      take(1),
+      switchMap((session) => {
+        if (!session.accessToken) {
+          return throwError(() => new Error('No hay un token de autenticación disponible.'));
+        }
+
+        const tokenType = session.tokenType ?? 'Bearer';
+        const headers = new HttpHeaders({
+          Authorization: `${tokenType} ${session.accessToken}`
+        });
+
+        return this.http.post(`${this.baseUrl}/notifications/mark-read`, { ids }, { headers });
+      })
+    );
+  }
 }

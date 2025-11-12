@@ -3,6 +3,7 @@ import { Component, EventEmitter, Output, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { finalize } from 'rxjs';
 
 import { SessionActions } from '../../core/store/session/session.actions';
 import { CurrentUserResponse } from '../../core/models/user.model';
@@ -29,6 +30,8 @@ export class ToolbarComponent {
   protected showNotifications = false;
   protected isLoadingNotifications = true;
   protected notificationsError = '';
+  protected markNotificationsError = '';
+  protected isMarkingNotifications = false;
   protected userInitials = '??';
 
   constructor() {
@@ -39,20 +42,7 @@ export class ToolbarComponent {
         this.userInitials = this.getInitials(user);
       });
 
-    this.notificationService
-      .fetchNotifications()
-      .pipe(takeUntilDestroyed())
-      .subscribe({
-        next: (notifications) => {
-          this.notifications = notifications;
-          this.unreadCount = notifications.filter((notification) => !notification.read_at).length;
-          this.isLoadingNotifications = false;
-        },
-        error: (error) => {
-          this.notificationsError = error?.message ?? 'No fue posible cargar las notificaciones.';
-          this.isLoadingNotifications = false;
-        }
-      });
+    this.loadNotifications();
   }
 
   protected onToggleMenu(): void {
@@ -70,6 +60,44 @@ export class ToolbarComponent {
 
   protected trackByNotificationId(_: number, notification: NotificationEvent): number {
     return notification.id;
+  }
+
+  protected onMarkNotificationsAsRead(): void {
+    if (this.isMarkingNotifications || this.unreadCount === 0) {
+      return;
+    }
+
+    const unreadIds = this.notifications.filter((notification) => !notification.read_at).map((notification) => notification.id);
+
+    if (unreadIds.length === 0) {
+      return;
+    }
+
+    this.isMarkingNotifications = true;
+    this.markNotificationsError = '';
+
+    this.notificationService
+      .markNotificationsAsRead(unreadIds)
+      .pipe(
+        takeUntilDestroyed(),
+        finalize(() => {
+          this.isMarkingNotifications = false;
+        })
+      )
+      .subscribe({
+        next: () => {
+          const readTimestamp = new Date().toISOString();
+
+          this.notifications = this.notifications.map((notification) =>
+            notification.read_at ? notification : { ...notification, read_at: readTimestamp }
+          );
+          this.unreadCount = this.notifications.filter((notification) => !notification.read_at).length;
+        },
+        error: (error) => {
+          this.markNotificationsError =
+            error?.message ?? 'No fue posible marcar las notificaciones como leídas. Intenta nuevamente.';
+        }
+      });
   }
 
   private getInitials(user: CurrentUserResponse | null): string {
@@ -110,5 +138,22 @@ export class ToolbarComponent {
 
     const [localPart = ''] = email.split('@');
     return localPart.substring(0, 2).toUpperCase();
+  }
+
+  private loadNotifications(): void {
+    this.notificationService
+      .fetchNotifications()
+      .pipe(takeUntilDestroyed())
+      .subscribe({
+        next: (notifications) => {
+          this.notifications = notifications;
+          this.unreadCount = notifications.filter((notification) => !notification.read_at).length;
+          this.isLoadingNotifications = false;
+        },
+        error: (error) => {
+          this.notificationsError = error?.message ?? 'No fue posible cargar las notificaciones.';
+          this.isLoadingNotifications = false;
+        }
+      });
   }
 }

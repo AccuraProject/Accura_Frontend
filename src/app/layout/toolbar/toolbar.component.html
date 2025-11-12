@@ -32,13 +32,28 @@
 
       <div class="toolbar__notifications-panel" *ngIf="showNotifications">
         <header class="toolbar__notifications-header">
-          <h2 class="toolbar__notifications-title">Notificaciones</h2>
-          <span class="toolbar__notifications-subtitle">
-            {{ unreadCount }} sin leer
-          </span>
+          <div class="toolbar__notifications-header-info">
+            <h2 class="toolbar__notifications-title">Notificaciones</h2>
+            <span class="toolbar__notifications-subtitle">
+              {{ unreadCount }} sin leer
+            </span>
+          </div>
+
+          <button
+            class="toolbar__notifications-action"
+            type="button"
+            (click)="onMarkNotificationsAsRead()"
+            [disabled]="isMarkingNotifications || unreadCount === 0"
+          >
+            {{ isMarkingNotifications ? 'Marcando…' : 'Marcar como leídas' }}
+          </button>
         </header>
 
         <div class="toolbar__notifications-content" *ngIf="!isLoadingNotifications; else loading">
+          <p *ngIf="markNotificationsError && !notificationsError" class="toolbar__notifications-error">
+            {{ markNotificationsError }}
+          </p>
+
           <p *ngIf="notificationsError" class="toolbar__notifications-error">
             {{ notificationsError }}
           </p>
