@@ -25,16 +25,26 @@
       <h2>Actividad Reciente</h2>
       <a class="panel__link" href="#">Ver historial completo</a>
     </header>
-    <ul class="timeline">
-      <li *ngFor="let item of activity" class="timeline__item">
-        <div class="timeline__marker"></div>
-        <div>
-          <p class="timeline__title">{{ item.name }}</p>
-          <p class="timeline__description">{{ item.action }}</p>
-          <p class="timeline__time">{{ item.time }}</p>
-        </div>
-      </li>
-    </ul>
+    <ng-container *ngIf="isActivityLoading; else activityContent">
+      <p class="timeline__empty">Cargando actividad...</p>
+    </ng-container>
+    <ng-template #activityContent>
+      <ul *ngIf="activity.length; else activityEmpty" class="timeline">
+        <li *ngFor="let item of activity" class="timeline__item">
+          <div class="timeline__marker"></div>
+          <div>
+            <p class="timeline__title">{{ item.title }}</p>
+            <p class="timeline__description">{{ item.description }}</p>
+            <p class="timeline__time">{{ item.time }}</p>
+          </div>
+        </li>
+      </ul>
+    </ng-template>
+    <ng-template #activityEmpty>
+      <p class="timeline__empty">
+        {{ activityError ? 'No se pudo cargar la actividad reciente.' : 'No hay actividad reciente.' }}
+      </p>
+    </ng-template>
   </article>
 
   <article class="panel">
