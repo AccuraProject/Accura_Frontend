@@ -7,20 +7,18 @@ import { Store } from '@ngrx/store';
 import { Observable } from 'rxjs';
 
 import {
-  TemplateFormDialogComponent,
-  TemplateFormDialogData,
-  TemplateFormDialogResult
-} from './template-form-dialog.component';
-import {
   TemplateCreateDialogComponent,
-  TemplateCreateDialogResult
+  TemplateCreateDialogResult,
 } from './template-create-dialog.component';
 import {
   TemplateColumnDetail,
   TemplateDetailDialogComponent,
-  TemplateDetailDialogData
+  TemplateDetailDialogData,
 } from './template-detail-dialog.component';
-import { TemplateDeleteDialogComponent, TemplateDeleteDialogData } from './template-delete-dialog.component';
+import {
+  TemplateDeleteDialogComponent,
+  TemplateDeleteDialogData,
+} from './template-delete-dialog.component';
 import { selectIsAdmin } from '../core/store/session/session.selectors';
 import { TemplateColumnResponse, TemplateResponse, TemplatesService } from './templates.service';
 
@@ -62,7 +60,7 @@ interface ClientTemplate {
   standalone: true,
   imports: [CommonModule, FormsModule, MatDialogModule, MatMenuModule],
   templateUrl: './template-management.component.html',
-  styleUrl: './template-management.component.scss'
+  styleUrl: './template-management.component.scss',
 })
 export class TemplateManagementComponent implements OnInit {
   private readonly dialog = inject(MatDialog);
@@ -79,11 +77,11 @@ export class TemplateManagementComponent implements OnInit {
   protected readonly isAdmin$: Observable<boolean> = this.store.select(selectIsAdmin);
 
   protected readonly statusOptions: (TemplateStatus | 'Todos')[] = [
-     'Todos',
-     'Publicado',
-     'Borrador',
-     'Inactivo'
-   ];
+    'Todos',
+    'Publicado',
+    'Borrador',
+    'Inactivo',
+  ];
 
   protected templates: TemplateRow[] = [];
   protected templatesLoading = false;
@@ -94,145 +92,145 @@ export class TemplateManagementComponent implements OnInit {
   }
 
   protected readonly assignedTemplates: ClientTemplate[] = [
-     {
-       id: 'policy-template',
-       name: 'Plantilla de Pólizas',
-       description: 'Plantilla para registrar pólizas emitidas mensualmente.',
-       version: 'v1.0',
-       status: 'Activo',
-       statusClass: 'badge--active',
-       lastUpdated: '2025-04-01',
-       createdAt: '2024-11-12',
-       columnsCount: 14,
-       owner: 'María Hernández',
-       tags: ['Mensual', 'Carga Masiva'],
-       columnsDetail: [
-         {
-           name: 'Número de Póliza',
-           type: 'Texto',
-           required: true,
-           rule: 'Formato alfanumérico de 12 caracteres',
-           example: 'POL-2025-001'
-         },
-         {
-           name: 'Fecha de Emisión',
-           type: 'Fecha',
-           required: true,
-           rule: 'Debe coincidir con el periodo reportado',
-           example: '2025-04-01'
-         },
-         {
-           name: 'Tipo de Seguro',
-           type: 'Catálogo',
-           required: true,
-           rule: 'Seleccionar entre los valores definidos',
-           example: 'Vida'
-         },
-         {
-           name: 'Prima Total',
-           type: 'Numérico',
-           required: true,
-           rule: 'Mayor a 0, separador decimal con punto',
-           example: '120000.00'
-         }
-       ]
-     },
-     {
-       id: 'claims-template',
-       name: 'Plantilla de Siniestros',
-       description: 'Plantilla para registrar siniestros reportados por los asegurados.',
-       version: 'v1.3',
-       status: 'En Revisión',
-       statusClass: 'badge--review',
-       lastUpdated: '2025-03-15',
-       createdAt: '2024-10-03',
-       columnsCount: 12,
-       owner: 'Equipo de Riesgos',
-       tags: ['Seguimiento', 'Reportes'],
-       columnsDetail: [
-         {
-           name: 'Número de Siniestro',
-           type: 'Texto',
-           required: true,
-           rule: 'Formato consecutivo SIN-XXX-YYYY',
-           example: 'SIN-021-2025'
-         },
-         {
-           name: 'Fecha del Evento',
-           type: 'Fecha',
-           required: true,
-           rule: 'Debe ser anterior o igual a la fecha de carga',
-           example: '2025-03-10'
-         },
-         {
-           name: 'Estado del Siniestro',
-           type: 'Catálogo',
-           required: true,
-           rule: 'Valores permitidos: Abierto, En proceso, Cerrado',
-           example: 'En proceso'
-         },
-         {
-           name: 'Monto Estimado',
-           type: 'Numérico',
-           required: false,
-           rule: 'Opcional, máximo 2 decimales',
-           example: '45000.50'
-         }
-       ]
-     }
-   ];
+    {
+      id: 'policy-template',
+      name: 'Plantilla de Pólizas',
+      description: 'Plantilla para registrar pólizas emitidas mensualmente.',
+      version: 'v1.0',
+      status: 'Activo',
+      statusClass: 'badge--active',
+      lastUpdated: '2025-04-01',
+      createdAt: '2024-11-12',
+      columnsCount: 14,
+      owner: 'María Hernández',
+      tags: ['Mensual', 'Carga Masiva'],
+      columnsDetail: [
+        {
+          name: 'Número de Póliza',
+          type: 'Texto',
+          required: true,
+          rule: 'Formato alfanumérico de 12 caracteres',
+          example: 'POL-2025-001',
+        },
+        {
+          name: 'Fecha de Emisión',
+          type: 'Fecha',
+          required: true,
+          rule: 'Debe coincidir con el periodo reportado',
+          example: '2025-04-01',
+        },
+        {
+          name: 'Tipo de Seguro',
+          type: 'Catálogo',
+          required: true,
+          rule: 'Seleccionar entre los valores definidos',
+          example: 'Vida',
+        },
+        {
+          name: 'Prima Total',
+          type: 'Numérico',
+          required: true,
+          rule: 'Mayor a 0, separador decimal con punto',
+          example: '120000.00',
+        },
+      ],
+    },
+    {
+      id: 'claims-template',
+      name: 'Plantilla de Siniestros',
+      description: 'Plantilla para registrar siniestros reportados por los asegurados.',
+      version: 'v1.3',
+      status: 'En Revisión',
+      statusClass: 'badge--review',
+      lastUpdated: '2025-03-15',
+      createdAt: '2024-10-03',
+      columnsCount: 12,
+      owner: 'Equipo de Riesgos',
+      tags: ['Seguimiento', 'Reportes'],
+      columnsDetail: [
+        {
+          name: 'Número de Siniestro',
+          type: 'Texto',
+          required: true,
+          rule: 'Formato consecutivo SIN-XXX-YYYY',
+          example: 'SIN-021-2025',
+        },
+        {
+          name: 'Fecha del Evento',
+          type: 'Fecha',
+          required: true,
+          rule: 'Debe ser anterior o igual a la fecha de carga',
+          example: '2025-03-10',
+        },
+        {
+          name: 'Estado del Siniestro',
+          type: 'Catálogo',
+          required: true,
+          rule: 'Valores permitidos: Abierto, En proceso, Cerrado',
+          example: 'En proceso',
+        },
+        {
+          name: 'Monto Estimado',
+          type: 'Numérico',
+          required: false,
+          rule: 'Opcional, máximo 2 decimales',
+          example: '45000.50',
+        },
+      ],
+    },
+  ];
 
-   protected get filteredTemplates(): TemplateRow[] {
-     const term = this.searchTerm.trim().toLowerCase();
-     const statusFilter = this.statusFilter;
+  protected get filteredTemplates(): TemplateRow[] {
+    const term = this.searchTerm.trim().toLowerCase();
+    const statusFilter = this.statusFilter;
 
-     return this.templates.filter((template) => {
-       const matchesTerm =
-         !term ||
-         template.name.toLowerCase().includes(term) ||
-         template.description.toLowerCase().includes(term) ||
-         template.version.toLowerCase().includes(term);
-       const matchesStatus = statusFilter === 'Todos' || template.status === statusFilter;
+    return this.templates.filter((template) => {
+      const matchesTerm =
+        !term ||
+        template.name.toLowerCase().includes(term) ||
+        template.description.toLowerCase().includes(term) ||
+        template.version.toLowerCase().includes(term);
+      const matchesStatus = statusFilter === 'Todos' || template.status === statusFilter;
 
-       return matchesTerm && matchesStatus;
-     });
-   }
+      return matchesTerm && matchesStatus;
+    });
+  }
 
-   protected get filteredAssignedTemplates(): ClientTemplate[] {
-     const term = this.searchTerm.trim().toLowerCase();
+  protected get filteredAssignedTemplates(): ClientTemplate[] {
+    const term = this.searchTerm.trim().toLowerCase();
 
-     return this.assignedTemplates.filter((template) => {
-       if (!term) {
-         return true;
-       }
+    return this.assignedTemplates.filter((template) => {
+      if (!term) {
+        return true;
+      }
 
-       return (
-         template.name.toLowerCase().includes(term) ||
-         template.description.toLowerCase().includes(term) ||
-         template.version.toLowerCase().includes(term)
-       );
-     });
-   }
+      return (
+        template.name.toLowerCase().includes(term) ||
+        template.description.toLowerCase().includes(term) ||
+        template.version.toLowerCase().includes(term)
+      );
+    });
+  }
 
-   protected get totalTemplates(): number {
-     return this.templates.length;
-   }
+  protected get totalTemplates(): number {
+    return this.templates.length;
+  }
 
-   protected get publishedTemplates(): number {
-     return this.templates.filter((template) => template.status === 'Publicado').length;
-   }
+  protected get publishedTemplates(): number {
+    return this.templates.filter((template) => template.status === 'Publicado').length;
+  }
 
-   protected get draftTemplates(): number {
-     return this.templates.filter((template) => template.status === 'Borrador').length;
-   }
+  protected get draftTemplates(): number {
+    return this.templates.filter((template) => template.status === 'Borrador').length;
+  }
 
-   protected get inactiveTemplates(): number {
-     return this.templates.filter((template) => template.status === 'Inactivo').length;
-   }
+  protected get inactiveTemplates(): number {
+    return this.templates.filter((template) => template.status === 'Inactivo').length;
+  }
 
-   protected trackByTemplateId(_: number, template: TemplateRow): string {
-     return template.id;
-   }
+  protected trackByTemplateId(_: number, template: TemplateRow): string {
+    return template.id;
+  }
 
   protected trackByAssignedTemplateId(_: number, template: ClientTemplate): string {
     return template.id;
@@ -257,7 +255,10 @@ export class TemplateManagementComponent implements OnInit {
       void,
       TemplateCreateDialogResult
     >(TemplateCreateDialogComponent, {
-      disableClose: true
+      disableClose: true,
+      width: '92vw',
+      maxWidth: '1240px',
+      maxHeight: '95vh',
     });
 
     dialogRef.afterClosed().subscribe((result: TemplateCreateDialogResult | undefined) => {
@@ -269,66 +270,45 @@ export class TemplateManagementComponent implements OnInit {
     });
   }
 
-   protected openEditDialog(template: TemplateRow): void {
-     const dialogRef = this.dialog.open<
-       TemplateFormDialogComponent,
-       TemplateFormDialogData,
-       TemplateFormDialogResult
-     >(TemplateFormDialogComponent, {
-       disableClose: true,
-       data: {
-         mode: 'edit',
-         template: {
-           name: template.name,
-           description: template.description
-         }
-       }
-     });
+  protected openEditDialog(template: TemplateRow): void {
+    
+  }
 
-     dialogRef.afterClosed().subscribe((result: TemplateFormDialogResult | undefined) => {
-       if (!result) {
-         return;
-       }
-
-       this.updateTemplate(template.id, result);
-     });
-   }
-
-   protected openDetailDialog(template: TemplateRow): void {
-     this.dialog.open<TemplateDetailDialogComponent, TemplateDetailDialogData, void>(
-       TemplateDetailDialogComponent,
-       {
-         data: {
-           name: template.name,
-           description: template.description,
-           version: template.version,
-           status: template.status,
-           createdAt: template.createdAt,
-           lastUpdated: template.lastUpdated,
-           columnsCount: template.columns,
-           columnsDetail: template.columnsDetail
-         }
-       }
-     );
-   }
+  protected openDetailDialog(template: TemplateRow): void {
+    this.dialog.open<TemplateDetailDialogComponent, TemplateDetailDialogData, void>(
+      TemplateDetailDialogComponent,
+      {
+        data: {
+          name: template.name,
+          description: template.description,
+          version: template.version,
+          status: template.status,
+          createdAt: template.createdAt,
+          lastUpdated: template.lastUpdated,
+          columnsCount: template.columns,
+          columnsDetail: template.columnsDetail,
+        },
+      }
+    );
+  }
 
   protected openClientDetailDialog(template: ClientTemplate): void {
     this.dialog.open<TemplateDetailDialogComponent, TemplateDetailDialogData, void>(
       TemplateDetailDialogComponent,
       {
         data: {
-           name: template.name,
-           description: template.description,
-           version: template.version,
-           status: template.status,
-           statusClass: template.statusClass,
-           lastUpdated: template.lastUpdated,
-           createdAt: template.createdAt,
-           columnsCount: template.columnsCount,
-           owner: template.owner,
-           tags: template.tags,
-           columnsDetail: template.columnsDetail
-         }
+          name: template.name,
+          description: template.description,
+          version: template.version,
+          status: template.status,
+          statusClass: template.statusClass,
+          lastUpdated: template.lastUpdated,
+          createdAt: template.createdAt,
+          columnsCount: template.columnsCount,
+          owner: template.owner,
+          tags: template.tags,
+          columnsDetail: template.columnsDetail,
+        },
       }
     );
   }
@@ -400,24 +380,25 @@ export class TemplateManagementComponent implements OnInit {
   }
 
   protected openDeleteDialog(template: TemplateRow): void {
-     const dialogRef = this.dialog.open<TemplateDeleteDialogComponent, TemplateDeleteDialogData, boolean>(
-       TemplateDeleteDialogComponent,
-       {
-         disableClose: true,
-         data: {
-           name: template.name
-         }
-       }
-     );
+    const dialogRef = this.dialog.open<
+      TemplateDeleteDialogComponent,
+      TemplateDeleteDialogData,
+      boolean
+    >(TemplateDeleteDialogComponent, {
+      disableClose: true,
+      data: {
+        name: template.name,
+      },
+    });
 
-     dialogRef.afterClosed().subscribe((shouldDelete: boolean | undefined) => {
-       if (!shouldDelete) {
-         return;
-       }
+    dialogRef.afterClosed().subscribe((shouldDelete: boolean | undefined) => {
+      if (!shouldDelete) {
+        return;
+      }
 
-       this.removeTemplate(template.id);
-     });
-   }
+      this.removeTemplate(template.id);
+    });
+  }
 
   private async loadTemplates(): Promise<void> {
     if (this.templatesLoading) {
@@ -482,22 +463,24 @@ export class TemplateManagementComponent implements OnInit {
       columns: columns.length,
       columnsDetail,
       tableName: template.table_name ?? undefined,
-      statusCode: template.status ?? undefined
+      statusCode: template.status ?? undefined,
     };
   }
 
   private mapColumnsToDetail(columns: TemplateColumnResponse[]): TemplateColumnDetail[] {
     return columns.map((column) => {
-      const ruleSummary = Array.isArray(column.rules) && column.rules.length > 0
-        ? `Reglas asignadas: ${column.rules.map((rule) => rule.id).join(', ')}`
-        : 'Sin reglas configuradas';
+      const ruleSummary =
+        Array.isArray(column.rules) && column.rules.length > 0
+          ? `Reglas asignadas: ${column.rules.map((rule) => rule.id).join(', ')}`
+          : 'Sin reglas configuradas';
 
       return {
         name: column.name,
         type: column.data_type ?? 'Dato',
         required: (column.rules?.length ?? 0) > 0,
         rule: ruleSummary,
-        example: column.description && column.description.length > 0 ? column.description : undefined
+        example:
+          column.description && column.description.length > 0 ? column.description : undefined,
       };
     });
   }
@@ -562,11 +545,14 @@ export class TemplateManagementComponent implements OnInit {
         return {
           ...template,
           columns: columns.length,
-          columnsDetail
+          columnsDetail,
         };
       });
     } catch (error) {
-      console.error('[TemplateManagement] No se pudieron sincronizar las columnas de la plantilla creada.', error);
+      console.error(
+        '[TemplateManagement] No se pudieron sincronizar las columnas de la plantilla creada.',
+        error
+      );
     }
   }
 
@@ -594,7 +580,12 @@ export class TemplateManagementComponent implements OnInit {
 
       if (Array.isArray(detail) && detail.length > 0) {
         const first = detail[0];
-        if (first && typeof first === 'object' && 'msg' in first && typeof (first as { msg?: unknown }).msg === 'string') {
+        if (
+          first &&
+          typeof first === 'object' &&
+          'msg' in first &&
+          typeof (first as { msg?: unknown }).msg === 'string'
+        ) {
           const msg = (first as { msg: string }).msg.trim();
           if (msg.length > 0) {
             return msg;
@@ -606,23 +597,8 @@ export class TemplateManagementComponent implements OnInit {
     return 'No fue posible completar la operación. Intenta nuevamente.';
   }
 
-   private updateTemplate(templateId: string, result: TemplateFormDialogResult): void {
-     this.templates = this.templates.map((template) => {
-       if (template.id !== templateId) {
-         return template;
-       }
-
-       return {
-         ...template,
-         name: result.name,
-         description: result.description,
-         lastUpdated: new Date().toISOString().slice(0, 10)
-       };
-     });
-   }
-
-   private removeTemplate(templateId: string): void {
-     this.templates = this.templates.filter((template) => template.id !== templateId);
+  private removeTemplate(templateId: string): void {
+    this.templates = this.templates.filter((template) => template.id !== templateId);
   }
 
   private generateId(): string {

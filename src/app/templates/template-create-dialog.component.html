@@ -1,5 +1,5 @@
-<div class="template-modal">
-  <header class="template-modal__header">
+<div class="modal__form">
+  <header class="modal__header">
     <div>
       <p class="template-modal__step">Paso {{ currentStep }} de 2</p>
       <h2>{{ currentStep === 1 ? 'Configuración general' : 'Configuración avanzada' }}</h2>
@@ -16,202 +16,243 @@
     </button>
   </header>
 
-  <ng-container [ngSwitch]="currentStep">
-    <form
-      *ngSwitchCase="1"
-      #generalForm="ngForm"
-      class="template-modal__form"
-      novalidate
-      (ngSubmit)="submitGeneralStep(generalForm)"
-    >
-      <div class="template-modal__body">
-        <label class="template-modal__field" [class.template-modal__field--invalid]="generalForm.submitted && nameRef.invalid">
-          <span>Nombre</span>
-          <input
-            #nameRef="ngModel"
-            type="text"
-            name="name"
-            [(ngModel)]="stepOneForm.name"
-            required
-            minlength="3"
-            maxlength="120"
-            placeholder="Ej. Plantilla de clientes"
-          />
-          <small *ngIf="generalForm.submitted && nameRef.invalid">
-            El nombre de la plantilla es obligatorio.
-          </small>
-        </label>
-
-        <label
-          class="template-modal__field"
-          [class.template-modal__field--invalid]="generalForm.submitted && tableRef.invalid"
-        >
-          <span>Nombre de la tabla</span>
-          <input
-            #tableRef="ngModel"
-            type="text"
-            name="table"
-            [(ngModel)]="stepOneForm.tableName"
-            required
-            minlength="3"
-            maxlength="120"
-            placeholder="Ej. customers_upload"
-          />
-          <small *ngIf="generalForm.submitted && tableRef.invalid">
-            El nombre de la tabla es obligatorio.
-          </small>
-        </label>
-
-        <label class="template-modal__field">
-          <span>Descripción</span>
-          <textarea
-            name="description"
-            [(ngModel)]="stepOneForm.description"
-            rows="4"
-            maxlength="300"
-            placeholder="Describe la finalidad y alcance de esta plantilla"
-          ></textarea>
-          <small>Este campo es opcional.</small>
-        </label>
-
-        <p *ngIf="generalError" class="template-modal__error">{{ generalError }}</p>
-      </div>
-
-      <footer class="template-modal__actions">
-        <button type="button" class="template-modal__button template-modal__button--ghost" (click)="close()">
-          Cancelar
-        </button>
-        <button type="submit" class="template-modal__button template-modal__button--primary" [disabled]="generalLoading">
-          {{ generalLoading ? 'Guardando...' : 'Siguiente' }}
-        </button>
-      </footer>
-    </form>
-
-    <div *ngSwitchCase="2" class="template-modal__form template-modal__form--step-two">
-      <div class="template-modal__body template-modal__body--table">
-        <div class="template-modal__toolbar">
-          <div class="template-modal__toolbar-group">
-            <button type="button" class="template-modal__button template-modal__button--ghost" (click)="downloadTemplate()">
-              <span class="material-symbols-rounded" aria-hidden="true">download</span>
-              Descargar plantilla
-            </button>
-            <label class="template-modal__button template-modal__button--ghost template-modal__button--file">
-              <input type="file" accept=".xlsx,.xls" (change)="importColumns($event)" />
-              <span class="material-symbols-rounded" aria-hidden="true">upload</span>
-              Cargar desde Excel
-            </label>
+  <div mat-dialog-content>
+    <ng-container [ngSwitch]="currentStep">
+      <form
+        *ngSwitchCase="1"
+        #generalForm="ngForm"
+        class="template-modal__form"
+        novalidate
+        (ngSubmit)="submitGeneralStep(generalForm)"
+      >
+        <div class="template-modal__body">
+          <div
+            class="form-field"
+            [class.form-field--invalid]="nameRef.invalid && (generalForm.submitted || nameRef.touched)"
+          >
+            <label for="template-name">Nombre</label>
+            <input
+              #nameRef="ngModel"
+              type="text"
+              id="template-name"
+              name="name"
+              [(ngModel)]="stepOneForm.name"
+              required
+              minlength="3"
+              maxlength="120"
+              placeholder="Ej. Plantilla de clientes"
+            />
+            <small *ngIf="nameRef.invalid && (generalForm.submitted || nameRef.touched)">
+              El nombre de la plantilla es obligatorio.
+            </small>
           </div>
-          <button type="button" class="template-modal__button template-modal__button--primary" (click)="addColumn()">
-            <span class="material-symbols-rounded" aria-hidden="true">add</span>
-            Agregar columna
-          </button>
+
+          <div
+            class="form-field"
+            [class.form-field--invalid]="nameRef.invalid && (generalForm.submitted || tableRef.touched)"
+          >
+            <label for="template-table-name">Nombre de la tabla</label>
+            <input
+              #tableRef="ngModel"
+              type="text"
+              id="template-table-name"
+              name="table"
+              [(ngModel)]="stepOneForm.tableName"
+              required
+              minlength="3"
+              maxlength="120"
+              placeholder="Ej. customers_upload"
+            />
+            <small *ngIf="nameRef.invalid && (generalForm.submitted || tableRef.touched)">
+              El nombre de la tabla es obligatorio.
+            </small>
+          </div>
+
+          <div class="form-field">
+            <label for="template-description">Descripción (opcional)</label>
+            <textarea
+              id="template-description"
+              name="description"
+              [(ngModel)]="stepOneForm.description"
+              rows="4"
+              maxlength="300"
+              placeholder="Describe la finalidad y alcance de esta plantilla"
+            ></textarea>
+          </div>
+
+          <p *ngIf="generalError" class="template-modal__error">{{ generalError }}</p>
         </div>
 
-        <p *ngIf="rulesLoading" class="template-modal__helper">Cargando reglas disponibles...</p>
-        <p *ngIf="rulesError" class="template-modal__error">{{ rulesError }}</p>
+        <footer class="modal__actions">
+          <button type="button" class="modal__button modal__button--ghost" (click)="close()">
+            Cancelar
+          </button>
+          <button type="submit" class="modal__button" [disabled]="generalLoading || generalForm.invalid">
+            {{ generalLoading ? 'Guardando...' : 'Siguiente' }}
+          </button>
+        </footer>
+      </form>
 
-        <div class="template-modal__table-wrapper" *ngIf="hasColumns; else emptyColumns">
-          <table class="template-modal__table">
-            <thead>
-              <tr>
-                <th>Nombre</th>
-                <th>Descripción</th>
-                <th>Reglas</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let column of columns; trackBy: trackByColumnId">
-                <td>
-                  <input
-                    type="text"
-                    [(ngModel)]="column.name"
-                    [ngModelOptions]="{ standalone: true }"
-                    placeholder="Nombre de la columna"
-                    [class.template-modal__input--invalid]="column.errors.name"
-                  />
-                  <small *ngIf="column.errors.name" class="template-modal__error">{{ column.errors.name }}</small>
-                </td>
-                <td>
-                  <textarea
-                    rows="2"
-                    [(ngModel)]="column.description"
-                    [ngModelOptions]="{ standalone: true }"
-                    placeholder="Descripción (opcional)"
-                  ></textarea>
-                </td>
-                <td>
-                  <div class="template-modal__rules">
-                    <div class="template-modal__rule" *ngFor="let rule of column.ruleSelections; trackBy: trackByRuleId">
-                      <div class="template-modal__rule-header">
-                        <span class="template-modal__rule-name">{{ rule.option.name }}</span>
-                        <button type="button" class="template-modal__icon-button" (click)="removeRule(column, rule.id)" aria-label="Eliminar regla">
-                          <span class="material-symbols-rounded" aria-hidden="true">close</span>
-                        </button>
+      <div *ngSwitchCase="2" class="template-modal__form template-modal__form--step-two">
+        <div class="template-modal__body template-modal__body--table">
+          <div class="modal__table-toolbar">
+            <div class="modal__table-toolbar--compact">
+              <button
+                type="button"
+                class="modal__import-button modal__template-button"
+                (click)="downloadTemplate()"
+              >
+                <span class="material-symbols-rounded" aria-hidden="true">download</span>
+                Descargar plantilla
+              </button>
+              <label class="modal__import-button">
+                <input type="file" accept=".xlsx,.xls" (change)="importColumns($event)" />
+                <span class="material-symbols-rounded" aria-hidden="true">upload</span>
+                Cargar desde Excel
+              </label>
+            </div>
+            <button type="button" class="modal__import-button" (click)="addColumn()">
+              <span class="material-symbols-rounded" aria-hidden="true">add</span>
+              Agregar columna
+            </button>
+          </div>
+
+          <p *ngIf="rulesLoading" class="template-modal__helper">Cargando reglas disponibles...</p>
+          <p *ngIf="rulesError" class="template-modal__error">{{ rulesError }}</p>
+
+          <div class="template-modal__table-wrapper" *ngIf="hasColumns; else emptyColumns">
+            <table class="template-modal__table">
+              <thead>
+                <tr>
+                  <th>Nombre</th>
+                  <th>Descripción</th>
+                  <th>Reglas</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let column of columns; trackBy: trackByColumnId">
+                  <td>
+                    <div class="form-field" [class.form-field--invalid]="column.errors.name">
+                      <input
+                        type="text"
+                        [(ngModel)]="column.name"
+                        [ngModelOptions]="{ standalone: true }"
+                        placeholder="Nombre de la columna"
+                      />
+                      <small *ngIf="column.errors.name">{{ column.errors.name }}</small>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="form-field template-description-field">
+                      <input
+                        type="text"
+                        [(ngModel)]="column.description"
+                        [ngModelOptions]="{ standalone: true }"
+                        placeholder="Descripción"
+                      />
+                    </div>
+                  </td>
+                  <td>
+                    <div class="template-modal__rules">
+                      <div
+                        class="template-modal__rule"
+                        *ngFor="let rule of column.ruleSelections; trackBy: trackByRuleId"
+                      >
+                        <div class="template-modal__rule-header">
+                          <span class="template-modal__rule-name">{{ rule.option.name }}</span>
+                          <button
+                            type="button"
+                            class="modal__icon-button"
+                            (click)="removeRule(column, rule.id)"
+                            aria-label="Eliminar regla"
+                          >
+                            <span class="material-symbols-rounded" aria-hidden="true">close</span>
+                          </button>
+                        </div>
+
+                        <label
+                          *ngIf="requiresHeaderSelection(rule.option)"
+                          class="form-field template-modal__field--inline"
+                          [class.template-modal__field--invalid]="column.errors.headerSelections?.[rule.id]"
+                        >
+                          <span>Header asociado</span>
+                          <select
+                            [(ngModel)]="rule.headerSelection"
+                            [ngModelOptions]="{ standalone: true }"
+                            (ngModelChange)="updateHeaderSelection(column, rule, $event)"
+                          >
+                            <option
+                              *ngFor="let header of getRuleHeaderOptions(rule.option)"
+                              [value]="header"
+                            >
+                              {{ header }}
+                            </option>
+                          </select>
+                          <small
+                            *ngIf="column.errors.headerSelections?.[rule.id]"
+                            >{{ column.errors.headerSelections?.[rule.id] }}</small
+                          >
+                        </label>
                       </div>
 
-                      <label
-                        *ngIf="requiresHeaderSelection(rule.option)"
-                        class="template-modal__field template-modal__field--inline"
-                        [class.template-modal__field--invalid]="column.errors.headerSelections?.[rule.id]"
+                      <div 
+                        class="form-field template-modal__field--inline"
+                        *ngIf="rules.length > 0"
                       >
-                        <span>Header asociado</span>
-                        <select
-                          [(ngModel)]="rule.headerSelection"
-                          [ngModelOptions]="{ standalone: true }"
-                          (ngModelChange)="updateHeaderSelection(column, rule, $event)"
-                        >
-                          <option value="">Seleccionar</option>
-                          <option *ngFor="let header of getRuleHeaderOptions(rule.option)" [value]="header">
-                            {{ header }}
+                        <span>Agregar regla</span>
+                        <select (change)="onRuleSelected(column, $event)">
+                          <option value="">Selecciona una regla</option>
+                          <option *ngFor="let rule of rules" [value]="rule.id">
+                            {{ rule.name }}
                           </option>
                         </select>
-                        <small *ngIf="column.errors.headerSelections?.[rule.id]">{{ column.errors.headerSelections?.[rule.id] }}</small>
-                      </label>
+                      </div>
                     </div>
+                  </td>
+                  <td class="modal__table-actions-cell">
+                    <button
+                      type="button"
+                      class="modal__icon-button"
+                      (click)="removeColumn(column.id)"
+                      aria-label="Eliminar columna"
+                    >
+                      <span class="material-symbols-rounded" aria-hidden="true">delete</span>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
 
-                    <label class="template-modal__field template-modal__field--inline" *ngIf="rules.length > 0">
-                      <span>Agregar regla</span>
-                      <select (change)="onRuleSelected(column, $event)">
-                        <option value="">Selecciona una regla</option>
-                        <option *ngFor="let rule of rules" [value]="rule.id">{{ rule.name }}</option>
-                      </select>
-                    </label>
-                  </div>
-                </td>
-                <td class="template-modal__actions-cell">
-                  <button type="button" class="template-modal__icon-button" (click)="removeColumn(column.id)" aria-label="Eliminar columna">
-                    <span class="material-symbols-rounded" aria-hidden="true">delete</span>
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          <ng-template #emptyColumns>
+            <div class="template-modal__empty">
+              <span class="material-symbols-rounded" aria-hidden="true">dataset_linked</span>
+              <p>Agrega columnas manualmente o importa un archivo Excel para comenzar.</p>
+            </div>
+          </ng-template>
+
+          <p *ngIf="columnsError" class="template-modal__error">{{ columnsError }}</p>
         </div>
 
-        <ng-template #emptyColumns>
-          <div class="template-modal__empty">
-            <span class="material-symbols-rounded" aria-hidden="true">dataset_linked</span>
-            <p>Agrega columnas manualmente o importa un archivo Excel para comenzar.</p>
-          </div>
-        </ng-template>
-
-        <p *ngIf="columnsError" class="template-modal__error">{{ columnsError }}</p>
+        <footer class="modal__actions">
+          <button
+            type="button"
+            class="modal__button modal__button--ghost"
+            (click)="close()"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            class="modal__button"
+            (click)="submitColumns()"
+            [disabled]="columnsLoading"
+          >
+            {{ columnsLoading ? 'Guardando...' : 'Finalizar' }}
+          </button>
+        </footer>
       </div>
-
-      <footer class="template-modal__actions">
-        <button type="button" class="template-modal__button template-modal__button--ghost" (click)="addColumn()">
-          Agregar columna
-        </button>
-        <button
-          type="button"
-          class="template-modal__button template-modal__button--primary"
-          (click)="submitColumns()"
-          [disabled]="columnsLoading"
-        >
-          {{ columnsLoading ? 'Guardando...' : 'Finalizar' }}
-        </button>
-      </footer>
-    </div>
-  </ng-container>
+    </ng-container>
+  </div>
 </div>
