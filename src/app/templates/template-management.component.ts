@@ -398,6 +398,9 @@ export class TemplateManagementComponent implements OnInit {
     this.dialog.open<TemplateDetailDialogComponent, TemplateDetailDialogData, void>(
       TemplateDetailDialogComponent,
       {
+        width: '70vw',
+        maxWidth: '1240px',
+        // maxHeight: '95vh',
         data: {
           name: template.name,
           description: template.description,

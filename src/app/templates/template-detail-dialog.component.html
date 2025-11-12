@@ -1,164 +1,185 @@
-<section class="template-detail">
-  <header class="template-detail__header">
+<div class="template-detail">
+  <header class="modal__header">
     <div>
       <h2>{{ data.name }}</h2>
       <p>{{ data.description }}</p>
     </div>
     <span class="badge" [ngClass]="statusBadgeClass">{{ data.status }}</span>
   </header>
+  <div mat-dialog-content>
+    <section class="template-detail__summary">
+      <article>
+        <p>Tabla</p>
+        <strong>{{ data.version }}</strong>
+      </article>
+      <article>
+        <p>Última Actualización</p>
+        <strong>{{ data.lastUpdated | date : 'dd/MM/yyyy' }}</strong>
+      </article>
+      <article *ngIf="data.createdAt as created">
+        <p>Fecha de Creación</p>
+        <strong>{{ created | date : 'dd/MM/yyyy' }}</strong>
+      </article>
+      <article>
+        <p>Total de Columnas</p>
+        <strong>{{ totalColumns }}</strong>
+      </article>
+      <article *ngIf="data.owner as owner">
+        <p>Última revisión por</p>
+        <strong>{{ owner }}</strong>
+      </article>
+      <article *ngIf="data.tags?.length" class="template-detail__tags">
+        <p>Categorías</p>
+        <span *ngFor="let tag of data.tags" class="template-detail__tag">{{ tag }}</span>
+      </article>
+    </section>
 
-  <section class="template-detail__summary">
-    <article>
-      <p>Versión</p>
-      <strong>{{ data.version }}</strong>
-    </article>
-    <article>
-      <p>Estado</p>
-      <strong>{{ data.status }}</strong>
-    </article>
-    <article>
-      <p>Última Actualización</p>
-      <strong>{{ data.lastUpdated | date: 'dd/MM/yyyy' }}</strong>
-    </article>
-    <article *ngIf="data.createdAt as created">
-      <p>Fecha de Creación</p>
-      <strong>{{ created | date: 'dd/MM/yyyy' }}</strong>
-    </article>
-    <article>
-      <p>Total de Columnas</p>
-      <strong>{{ totalColumns }}</strong>
-    </article>
-    <article *ngIf="data.owner as owner">
-      <p>Última revisión por</p>
-      <strong>{{ owner }}</strong>
-    </article>
-    <article *ngIf="data.tags?.length" class="template-detail__tags">
-      <p>Categorías</p>
-      <span *ngFor="let tag of data.tags" class="template-detail__tag">{{ tag }}</span>
-    </article>
-  </section>
+    <section class="template-detail__columns" *ngIf="columnsDetail?.length">
+      <header>
+        <div>
+          <h3>Especificaciones de Columnas</h3>
+          <p>Consulta la estructura y reglas de validación de cada columna.</p>
+        </div>
+      </header>
 
-  <section class="template-detail__columns" *ngIf="columnsDetail?.length">
-    <header>
-      <div>
-        <h3>Especificaciones de Columnas</h3>
-        <p>Consulta la estructura y reglas de validación de cada columna.</p>
-      </div>
-      <span class="template-detail__legend">
-        <span class="template-detail__icon template-detail__icon--success">
-          <span class="material-symbols-rounded" aria-hidden="true">check_circle</span>
-        </span>
-        <span>Campo obligatorio</span>
-      </span>
-    </header>
-
-    <div class="template-detail__table-wrapper">
-      <table class="template-detail__table">
-        <thead>
-          <tr>
-            <th>Nombre</th>
-            <th>Tipo</th>
-            <th>Obligatorio</th>
-            <th>Regla</th>
-            <th>Ejemplo</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let column of columnsDetail; let columnIndex = index">
-            <td>
-              <span class="template-detail__column-name">{{ column.name }}</span>
-            </td>
-            <td>
-              <span class="template-detail__chip">{{ column.type }}</span>
-            </td>
-            <td>
-              <span
-                class="template-detail__icon"
-                [ngClass]="column.required ? 'template-detail__icon--success' : 'template-detail__icon--muted'"
-                aria-label="{{ column.required ? 'Campo obligatorio' : 'Campo opcional' }}"
-              >
-                <span class="material-symbols-rounded" aria-hidden="true">
-                  {{ column.required ? 'check_circle' : 'radio_button_unchecked' }}
+      <div class="template-detail__table-wrapper">
+        <table class="template-detail__table">
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Tipo</th>
+              <th>Descripción</th>
+              <th>Obligatorio</th>
+              <th>Regla</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let column of columnsDetail; let columnIndex = index">
+              <td>
+                <span class="template-detail__column-name">{{ column.name }}</span>
+              </td>
+              <td>
+                <span class="template-detail__chip">{{ column.type }}</span>
+              </td>
+              <td>
+                <span *ngIf="column.example; else noExample">
+                  {{ column.example }}
                 </span>
-                {{ column.required ? 'Sí' : 'No' }}
-              </span>
-            </td>
-            <td>
-              <ng-container *ngIf="column.rules?.length; else noRules">
-                <ul class="template-detail__rule-list">
-                  <li *ngFor="let rule of column.rules; let index = index" class="template-detail__rule-item">
-                    <div class="template-detail__rule-entry">
-                      <span class="template-detail__rule-name">{{ getRuleLabel(rule, index) }}</span>
-                      <button
-                        type="button"
-                        class="template-detail__rule-info"
-                        [ngClass]="getRuleInfoStateClass(rule)"
-                        (click)="toggleRuleSummary($event, rule)"
-                        (keydown.enter)="toggleRuleSummary($event, rule)"
-                        (keydown.space)="toggleRuleSummary($event, rule)"
-                        [attr.aria-label]="getRuleSummaryTitle(rule, index)"
-                        [attr.aria-expanded]="isRuleSummaryOpen(rule)"
-                        [attr.aria-controls]="isRuleSummaryOpen(rule) ? getRulePopoverId(columnIndex, index) : null"
-                        [attr.aria-description]="getRuleAriaDescription(rule)"
-                        aria-haspopup="true"
-                      >
-                        <span class="material-symbols-rounded" aria-hidden="true">info</span>
-                      </button>
-                      <div
-                        *ngIf="isRuleSummaryOpen(rule)"
-                        class="template-detail__rule-popover"
-                        role="dialog"
-                        [attr.id]="getRulePopoverId(columnIndex, index)"
-                        aria-live="polite"
-                      >
-                        <header class="template-detail__rule-popover-header">
-                          <h4>{{ getRuleSummaryTitle(rule, index) }}</h4>
-                          <button type="button" class="template-detail__rule-popover-close" (click)="closeRuleSummary()">
-                            <span class="material-symbols-rounded" aria-hidden="true">close</span>
-                            <span class="sr-only">Cerrar resumen</span>
-                          </button>
-                        </header>
-                        <div class="template-detail__rule-popover-body">
-                          <p *ngIf="rule.loading" class="template-detail__rule-popover-status">Cargando resumen…</p>
-                          <p *ngIf="!rule.loading && rule.error" class="template-detail__rule-popover-error">{{ rule.error }}</p>
-                          <ng-container *ngIf="!rule.loading && !rule.error">
-                            <ng-container *ngIf="getRuleSummaryContent(rule) as summary">
-                              <p *ngIf="summary.description" class="template-detail__rule-popover-description">{{ summary.description }}</p>
-                              <ul *ngIf="summary.conditions?.length" class="template-detail__rule-popover-list">
-                                <li *ngFor="let condition of summary.conditions">{{ condition }}</li>
-                              </ul>
-                              <p *ngIf="!summary.description && (!summary.conditions?.length)">
-                                Sin resumen disponible.
-                              </p>
+                <ng-template #noExample>
+                  <span class="template-detail__example--muted">—</span>
+                </ng-template>
+              </td>
+              <td>
+                <span
+                  class="template-detail__icon"
+                  [ngClass]="
+                    column.required
+                      ? 'template-detail__icon--success'
+                      : 'template-detail__icon--muted'
+                  "
+                  aria-label="{{ column.required ? 'Campo obligatorio' : 'Campo opcional' }}"
+                >
+                  <span class="material-symbols-rounded" aria-hidden="true">
+                    {{ column.required ? 'check_circle' : 'radio_button_unchecked' }}
+                  </span>
+                  {{ column.required ? 'Sí' : 'No' }}
+                </span>
+              </td>
+              <td>
+                <ng-container *ngIf="column.rules?.length; else noRules">
+                  <ul class="template-detail__rule-list">
+                    <li
+                      *ngFor="let rule of column.rules; let index = index"
+                      class="template-detail__rule-item"
+                    >
+                      <div class="template-detail__rule-entry">
+                        <button
+                          type="button"
+                          class="template-detail__rule-info"
+                          [ngClass]="getRuleInfoStateClass(rule)"
+                          (click)="toggleRuleSummary($event, rule)"
+                          (keydown.enter)="toggleRuleSummary($event, rule)"
+                          (keydown.space)="toggleRuleSummary($event, rule)"
+                          [attr.aria-label]="getRuleSummaryTitle(rule, index)"
+                          [attr.aria-expanded]="isRuleSummaryOpen(rule)"
+                          [attr.aria-controls]="
+                            isRuleSummaryOpen(rule) ? getRulePopoverId(columnIndex, index) : null
+                          "
+                          [attr.aria-description]="getRuleAriaDescription(rule)"
+                          aria-haspopup="true"
+                        >
+                          <span class="material-symbols-rounded" aria-hidden="true">info</span>
+                        </button>
+                        <div
+                          *ngIf="isRuleSummaryOpen(rule)"
+                          class="template-detail__rule-popover"
+                          role="dialog"
+                          [attr.id]="getRulePopoverId(columnIndex, index)"
+                          aria-live="polite"
+                        >
+                          <header class="template-detail__rule-popover-header">
+                            <h4>{{ getRuleSummaryTitle(rule, index) }}</h4>
+                            <button
+                              type="button"
+                              class="template-detail__rule-popover-close"
+                              (click)="closeRuleSummary()"
+                            >
+                              <span class="material-symbols-rounded" aria-hidden="true">close</span>
+                              <span class="sr-only">Cerrar resumen</span>
+                            </button>
+                          </header>
+                          <div class="template-detail__rule-popover-body">
+                            <p *ngIf="rule.loading" class="template-detail__rule-popover-status">
+                              Cargando resumen…
+                            </p>
+                            <p
+                              *ngIf="!rule.loading && rule.error"
+                              class="template-detail__rule-popover-error"
+                            >
+                              {{ rule.error }}
+                            </p>
+                            <ng-container *ngIf="!rule.loading && !rule.error">
+                              <ng-container *ngIf="getRuleSummaryContent(rule) as summary">
+                                <p
+                                  *ngIf="summary.description"
+                                  class="template-detail__rule-popover-description"
+                                >
+                                  {{ summary.description }}
+                                </p>
+                                <ul
+                                  *ngIf="summary.conditions?.length"
+                                  class="template-detail__rule-popover-list"
+                                >
+                                  <li *ngFor="let condition of summary.conditions">
+                                    {{ condition }}
+                                  </li>
+                                </ul>
+                                <p *ngIf="!summary.description && !summary.conditions?.length">
+                                  Sin resumen disponible.
+                                </p>
+                              </ng-container>
+                              <p *ngIf="!getRuleSummaryContent(rule)">Sin resumen disponible.</p>
                             </ng-container>
-                            <p *ngIf="!getRuleSummaryContent(rule)">Sin resumen disponible.</p>
-                          </ng-container>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </li>
-                </ul>
-              </ng-container>
-              <ng-template #noRules>
-                <span class="template-detail__rule template-detail__rule--muted">Sin reglas configuradas</span>
-              </ng-template>
-            </td>
-            <td>
-              <code class="template-detail__example" *ngIf="column.example; else noExample">
-                {{ column.example }}
-              </code>
-              <ng-template #noExample>
-                <span class="template-detail__example template-detail__example--muted">—</span>
-              </ng-template>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </section>
-
+                    </li>
+                  </ul>
+                </ng-container>
+                <ng-template #noRules>
+                  <span class="template-detail__rule template-detail__rule--muted"
+                    >Sin reglas configuradas</span
+                  >
+                </ng-template>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
   <footer class="template-detail__footer">
     <span class="material-symbols-rounded" aria-hidden="true">info</span>
     <p>Esta información corresponde al último estado registrado de la plantilla.</p>
   </footer>
-</section>
+</div>
