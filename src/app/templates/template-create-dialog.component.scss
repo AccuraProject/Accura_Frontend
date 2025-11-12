@@ -1,0 +1,357 @@
+:host {
+  display: block;
+  min-width: 720px;
+  max-width: 960px;
+}
+
+.template-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  color: #0f172a;
+}
+
+.template-dialog__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1.5rem;
+  align-items: flex-start;
+
+  h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+  }
+
+  p {
+    margin: 0.35rem 0 0;
+    color: #475569;
+    line-height: 1.45;
+  }
+}
+
+.template-dialog__progress {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.85rem;
+}
+
+.template-dialog__step {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.8rem;
+  border-radius: 999px;
+  background: #e2e8f0;
+  color: #1e293b;
+  font-weight: 600;
+
+  &::before {
+    content: '';
+    width: 0.55rem;
+    height: 0.55rem;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  &--done {
+    background: rgba(79, 70, 229, 0.1);
+    color: #4f46e5;
+  }
+
+  &--active {
+    background: linear-gradient(135deg, #6366f1, #a855f7);
+    color: #fff;
+  }
+}
+
+.template-dialog__body {
+  background: #ffffff;
+  border-radius: 1.5rem;
+  padding: 1.75rem;
+  box-shadow: 0 28px 64px rgba(15, 23, 42, 0.08);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.template-form {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.template-form__grid {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-size: 0.95rem;
+
+  span {
+    font-weight: 600;
+  }
+
+  input,
+  textarea,
+  select {
+    border-radius: 0.85rem;
+    border: 1px solid rgba(148, 163, 184, 0.5);
+    padding: 0.65rem 0.85rem;
+    font-size: 0.95rem;
+    color: #0f172a;
+    outline: none;
+    transition: border-color 0.2s ease;
+
+    &:focus {
+      border-color: #6366f1;
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+    }
+
+    &.invalid {
+      border-color: #ef4444;
+    }
+  }
+
+  textarea {
+    resize: vertical;
+    min-height: 120px;
+  }
+
+  small {
+    font-size: 0.75rem;
+    color: #ef4444;
+  }
+
+  &--inline {
+    small {
+      visibility: hidden;
+    }
+
+    input:invalid + small,
+    input.ng-dirty:invalid + small,
+    input.ng-touched:invalid + small,
+    input.ng-dirty:not(:placeholder-shown):invalid + small,
+    textarea:invalid + small {
+      visibility: visible;
+    }
+  }
+}
+
+.template-dialog__error {
+  margin: 0;
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  font-size: 0.88rem;
+}
+
+.template-dialog__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  align-items: center;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 999px;
+  border: none;
+  padding: 0.65rem 1.2rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.2s ease;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #ffffff;
+
+  &:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 18px 32px rgba(99, 102, 241, 0.25);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+
+  &--secondary {
+    background: #e2e8f0;
+    color: #1e293b;
+  }
+
+  &--ghost {
+    background: rgba(99, 102, 241, 0.1);
+    color: #4f46e5;
+    border: 1px solid rgba(99, 102, 241, 0.18);
+  }
+
+  &--disabled {
+    opacity: 0.5;
+    pointer-events: none;
+  }
+
+  input[type='file'] {
+    display: none;
+  }
+}
+
+.template-columns__actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.template-columns__hint {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #475569;
+  max-width: 460px;
+}
+
+.template-columns__buttons {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.template-columns__status {
+  margin: 0.35rem 0 0;
+  font-size: 0.85rem;
+  color: #475569;
+}
+
+.template-columns__table-wrapper {
+  margin-top: 1.25rem;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 1.25rem;
+  overflow: hidden;
+}
+
+.template-columns__table {
+  width: 100%;
+  border-collapse: collapse;
+
+  th {
+    background: #f1f5f9;
+    text-align: left;
+    padding: 0.85rem 1rem;
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #64748b;
+  }
+
+  td {
+    padding: 1rem;
+    border-top: 1px solid rgba(226, 232, 240, 0.8);
+    vertical-align: top;
+  }
+}
+
+.template-columns__actions-cell {
+  width: 60px;
+  text-align: center;
+}
+
+.rule-selector {
+  display: grid;
+  gap: 0.85rem;
+  max-height: 240px;
+  overflow-y: auto;
+  padding-right: 0.35rem;
+}
+
+.rule-selector__option {
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  border-radius: 1rem;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+
+  label {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+
+    span {
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+
+      strong {
+        font-size: 0.95rem;
+      }
+
+      small {
+        font-size: 0.75rem;
+        color: #64748b;
+      }
+    }
+  }
+}
+
+.rule-selector__header {
+  label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    font-size: 0.85rem;
+
+    span {
+      font-weight: 600;
+      color: #475569;
+    }
+  }
+}
+
+.template-columns__note {
+  margin-right: auto;
+  font-size: 0.85rem;
+  color: #475569;
+}
+
+@media (max-width: 768px) {
+  :host {
+    min-width: 100%;
+  }
+
+  .template-dialog__body {
+    padding: 1.25rem;
+  }
+
+  .template-columns__table {
+    display: block;
+
+    thead {
+      display: none;
+    }
+
+    tbody {
+      display: grid;
+      gap: 1rem;
+    }
+
+    tr {
+      display: grid;
+      gap: 0.75rem;
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      border-radius: 1rem;
+      padding: 1rem;
+    }
+
+    td {
+      border: none;
+      padding: 0;
+    }
+  }
+}

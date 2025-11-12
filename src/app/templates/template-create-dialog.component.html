@@ -1,0 +1,184 @@
+<section class="template-dialog">
+  <header class="template-dialog__header">
+    <div>
+      <h2>{{ step === 'general' ? 'Nueva plantilla' : 'Configurar columnas' }}</h2>
+      <p *ngIf="step === 'general'">
+        Completa los datos generales de la plantilla. Podrás configurar las columnas en el siguiente paso.
+      </p>
+      <p *ngIf="step === 'columns'">
+        Define la estructura de columnas para la plantilla. Puedes añadir filas manualmente o importar un archivo.
+      </p>
+    </div>
+    <button class="icon-button" type="button" (click)="close()" aria-label="Cerrar">
+      <span class="material-symbols-rounded" aria-hidden="true">close</span>
+    </button>
+  </header>
+
+  <div class="template-dialog__progress" *ngIf="step === 'columns'">
+    <span class="template-dialog__step template-dialog__step--done">1. Configuración general</span>
+    <span class="template-dialog__step template-dialog__step--active">2. Configuración avanzada</span>
+  </div>
+
+  <section class="template-dialog__body" *ngIf="step === 'general'">
+    <form class="template-form" (ngSubmit)="submitGeneralStep()" novalidate>
+      <div class="template-form__grid">
+        <label class="form-field">
+          <span>Nombre de la plantilla</span>
+          <input
+            type="text"
+            name="name"
+            [(ngModel)]="generalForm.name"
+            [class.invalid]="generalFormTouched && !generalForm.name.trim()"
+            required
+          />
+          <small *ngIf="generalFormTouched && !generalForm.name.trim()">Este campo es obligatorio.</small>
+        </label>
+
+        <label class="form-field">
+          <span>Nombre de la tabla</span>
+          <input
+            type="text"
+            name="tableName"
+            [(ngModel)]="generalForm.tableName"
+            [class.invalid]="generalFormTouched && !generalForm.tableName.trim()"
+            required
+          />
+          <small *ngIf="generalFormTouched && !generalForm.tableName.trim()"
+            >Este campo es obligatorio.</small
+          >
+        </label>
+      </div>
+
+      <label class="form-field">
+        <span>Descripción</span>
+        <textarea name="description" rows="3" [(ngModel)]="generalForm.description"></textarea>
+      </label>
+
+      <p class="template-dialog__error" *ngIf="generalError">{{ generalError }}</p>
+
+      <footer class="template-dialog__footer">
+        <button class="button button--secondary" type="button" (click)="close()" [disabled]="generalLoading">
+          Cancelar
+        </button>
+        <button class="button" type="submit" [disabled]="generalLoading">
+          {{ generalLoading ? 'Creando...' : 'Siguiente' }}
+        </button>
+      </footer>
+    </form>
+  </section>
+
+  <section class="template-dialog__body" *ngIf="step === 'columns'">
+    <div class="template-columns__actions">
+      <div>
+        <p class="template-columns__hint">
+          Asocia reglas existentes a cada columna. Las reglas de tipo Lista compleja o Dependencia requieren seleccionar un header.
+        </p>
+        <p *ngIf="rulesLoading" class="template-columns__status">Cargando reglas disponibles...</p>
+        <p *ngIf="rulesError" class="template-dialog__error">{{ rulesError }}</p>
+      </div>
+      <div class="template-columns__buttons">
+        <button class="button button--ghost" type="button" (click)="downloadTemplate()">
+          <span class="material-symbols-rounded" aria-hidden="true">download</span>
+          Descargar plantilla
+        </button>
+        <label class="button button--ghost" [class.button--disabled]="rulesLoading">
+          <span class="material-symbols-rounded" aria-hidden="true">upload_file</span>
+          Cargar columnas
+          <input type="file" accept=".xlsx,.xls" (change)="importColumns($event)" [disabled]="rulesLoading" />
+        </label>
+        <button class="button button--secondary" type="button" (click)="addColumn()">
+          <span class="material-symbols-rounded" aria-hidden="true">add</span>
+          Agregar fila
+        </button>
+      </div>
+    </div>
+
+    <p *ngIf="importError" class="template-dialog__error">{{ importError }}</p>
+
+    <div class="template-columns__table-wrapper">
+      <table class="template-columns__table">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Descripción</th>
+            <th>Reglas</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let column of columns; trackBy: trackByColumnId">
+            <td>
+              <label class="form-field form-field--inline">
+                <input type="text" [(ngModel)]="column.name" name="column-name-{{ column.id }}" required />
+                <small *ngIf="!column.name.trim()">Obligatorio</small>
+              </label>
+            </td>
+            <td>
+              <label class="form-field form-field--inline">
+                <textarea
+                  rows="2"
+                  [(ngModel)]="column.description"
+                  name="column-description-{{ column.id }}"
+                ></textarea>
+              </label>
+            </td>
+            <td>
+              <div class="rule-selector" *ngIf="rules.length > 0; else noRules">
+                <div
+                  class="rule-selector__option"
+                  *ngFor="let rule of rules; trackBy: trackByRuleId"
+                >
+                  <label>
+                    <input
+                      type="checkbox"
+                      [checked]="isRuleSelected(column, rule.id)"
+                      (change)="toggleRule(column, rule, $event.target.checked)"
+                    />
+                    <span>
+                      <strong>{{ rule.name }}</strong>
+                      <small>{{ rule.dataType }}</small>
+                    </span>
+                  </label>
+
+                  <div
+                    class="rule-selector__header"
+                    *ngIf="requiresHeader(rule) && isRuleSelected(column, rule.id)"
+                  >
+                    <label>
+                      <span>Header asociado</span>
+                      <select
+                        [ngModel]="getRuleSelection(column, rule.id)?.selectedHeader ?? ''"
+                        (ngModelChange)="onHeaderChange(column, rule.id, $event)"
+                        name="rule-header-{{ column.id }}-{{ rule.id }}"
+                      >
+                        <option value="" disabled>Selecciona una opción</option>
+                        <option *ngFor="let header of rule.headerRule" [value]="header">{{ header }}</option>
+                      </select>
+                    </label>
+                  </div>
+                </div>
+              </div>
+              <ng-template #noRules>
+                <p class="template-columns__status">No hay reglas disponibles para asociar.</p>
+              </ng-template>
+            </td>
+            <td class="template-columns__actions-cell">
+              <button class="icon-button" type="button" (click)="removeColumn(column.id)">
+                <span class="material-symbols-rounded" aria-hidden="true">delete</span>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="template-dialog__error" *ngIf="columnError">{{ columnError }}</p>
+
+    <footer class="template-dialog__footer">
+      <span class="template-columns__note">Las columnas se guardarán individualmente en el sistema.</span>
+      <button class="button" type="button" (click)="saveColumns()" [disabled]="columnSaveLoading">
+        {{ columnSaveLoading ? 'Guardando columnas...' : 'Guardar plantilla' }}
+      </button>
+    </footer>
+  </section>
+</section>

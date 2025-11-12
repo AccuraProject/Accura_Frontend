@@ -14,7 +14,7 @@
   </section>
 
   <section class="templates-summary">
-    <article class="summary-card">
+    <article class="summary-card" *ngIf="!templatesLoading; else summaryLoading">
       <header>
         <p>Total de Plantillas</p>
         <span class="material-symbols-rounded" aria-hidden="true">auto_awesome</span>
@@ -22,7 +22,7 @@
       <strong>{{ totalTemplates }}</strong>
       <span>Registradas en la plataforma</span>
     </article>
-    <article class="summary-card summary-card--accent">
+    <article class="summary-card summary-card--accent" *ngIf="!templatesLoading">
       <header>
         <p>Plantillas Publicadas</p>
         <span class="material-symbols-rounded" aria-hidden="true">task_alt</span>
@@ -30,7 +30,7 @@
       <strong>{{ publishedTemplates }}</strong>
       <span>Listas para su uso</span>
     </article>
-    <article class="summary-card">
+    <article class="summary-card" *ngIf="!templatesLoading">
       <header>
         <p>En Borrador</p>
         <span class="material-symbols-rounded" aria-hidden="true">draw</span>
@@ -38,7 +38,7 @@
       <strong>{{ draftTemplates }}</strong>
       <span>En revisión o edición</span>
     </article>
-    <article class="summary-card">
+    <article class="summary-card" *ngIf="!templatesLoading">
       <header>
         <p>Inactivas</p>
         <span class="material-symbols-rounded" aria-hidden="true">pause_circle</span>
@@ -47,6 +47,16 @@
       <span>Disponibles para reactivar</span>
     </article>
   </section>
+  <ng-template #summaryLoading>
+    <article class="summary-card summary-card--loading">
+      <header>
+        <p>Cargando plantillas...</p>
+        <span class="material-symbols-rounded" aria-hidden="true">hourglass_top</span>
+      </header>
+      <strong>—</strong>
+      <span>Obteniendo información del servidor</span>
+    </article>
+  </ng-template>
 
   <section class="templates-panel">
     <header class="templates-panel__header">
@@ -73,14 +83,21 @@
       </div>
     </header>
 
+    <div class="templates-panel__messages">
+      <p *ngIf="templatesLoading" class="templates-panel__status">Cargando plantillas registradas...</p>
+      <p *ngIf="templatesError" class="templates-panel__error">{{ templatesError }}</p>
+    </div>
+
     <div class="templates-table__wrapper" *ngIf="filteredTemplates as items">
       <table class="templates-table">
         <thead>
           <tr>
             <th>Nombre</th>
+            <th>Tabla</th>
             <th>Versión</th>
             <th>Descripción</th>
             <th>Última Actualización</th>
+            <th>Columnas</th>
             <th>Estado</th>
             <th>Acciones</th>
           </tr>
@@ -90,8 +107,11 @@
             <td>
               <div class="templates-table__name">
                 <p class="templates-table__title">{{ template.name }}</p>
-                <p class="templates-table__meta">{{ template.createdAt | date: 'dd/MM/yyyy' }}</p>
+                <p class="templates-table__meta">Creada: {{ template.createdAt ? (template.createdAt | date: 'dd/MM/yyyy') : '—' }}</p>
               </div>
+            </td>
+            <td>
+              <span class="templates-table__meta">{{ template.tableName }}</span>
             </td>
             <td>
               <span class="templates-table__version">{{ template.version }}</span>
@@ -100,7 +120,12 @@
               <span class="templates-table__description">{{ template.description }}</span>
             </td>
             <td>
-              <span class="templates-table__date">{{ template.lastUpdated | date: 'dd/MM/yyyy' }}</span>
+              <span class="templates-table__date">
+                {{ template.lastUpdated ? (template.lastUpdated | date: 'dd/MM/yyyy') : '—' }}
+              </span>
+            </td>
+            <td>
+              <span class="templates-table__count">{{ template.columns }}</span>
             </td>
             <td>
               <span class="badge" [ngClass]="statusClass(template.status)">{{ template.status }}</span>
@@ -136,8 +161,8 @@
               </mat-menu>
             </td>
           </tr>
-          <tr *ngIf="items.length === 0">
-            <td colspan="6" class="templates-table__empty">
+          <tr *ngIf="!templatesLoading && !templatesError && items.length === 0">
+            <td colspan="8" class="templates-table__empty">
               <span class="material-symbols-rounded" aria-hidden="true">search_off</span>
               <p>No se encontraron plantillas para los criterios seleccionados.</p>
             </td>
