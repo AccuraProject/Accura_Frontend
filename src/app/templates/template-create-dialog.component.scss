@@ -1,7 +1,7 @@
 :host {
   display: block;
-  min-width: 720px;
-  max-width: 960px;
+  min-width: 900px;
+  max-width: 1200px;
 }
 
 .template-dialog {
@@ -262,57 +262,119 @@
   text-align: center;
 }
 
-.rule-selector {
-  display: grid;
-  gap: 0.85rem;
-  max-height: 240px;
-  overflow-y: auto;
-  padding-right: 0.35rem;
-}
-
-.rule-selector__option {
-  border: 1px solid rgba(148, 163, 184, 0.3);
-  border-radius: 1rem;
-  padding: 0.75rem;
+.column-rules {
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
+  gap: 1rem;
+}
 
-  label {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.6rem;
+.column-rules__select {
+  width: 100%;
 
-    span {
-      display: flex;
-      flex-direction: column;
-      gap: 0.15rem;
-
-      strong {
-        font-size: 0.95rem;
-      }
-
-      small {
-        font-size: 0.75rem;
-        color: #64748b;
-      }
-    }
+  ::ng-deep .mdc-notched-outline__leading,
+  ::ng-deep .mdc-notched-outline__trailing,
+  ::ng-deep .mdc-notched-outline__notch {
+    border-radius: 0.85rem;
   }
 }
 
-.rule-selector__header {
+.column-rules__list {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.column-rules__item {
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  border-radius: 1rem;
+  padding: 0.85rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  background: #f8fafc;
+}
+
+.column-rules__item-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.column-rules__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+
+  strong {
+    font-size: 0.95rem;
+    color: #0f172a;
+  }
+
+  span {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #6366f1;
+  }
+}
+
+.column-rules__description {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #475569;
+  line-height: 1.45;
+}
+
+.column-rules__header {
   label {
     display: flex;
     flex-direction: column;
     gap: 0.35rem;
-    font-size: 0.85rem;
+    font-size: 0.88rem;
 
     span {
       font-weight: 600;
       color: #475569;
     }
+
+    select {
+      border-radius: 0.75rem;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      padding: 0.55rem 0.75rem;
+      font-size: 0.9rem;
+      color: #0f172a;
+      background: #ffffff;
+      outline: none;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+      &:focus {
+        border-color: #6366f1;
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+      }
+    }
   }
 }
+
+.rule-option {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.rule-option__name {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.rule-option__type {
+  font-size: 0.78rem;
+  color: #6366f1;
+}
+
+::ng-deep .template-rule-select-panel {
+  max-height: 320px;
+}
+
 
 .template-columns__note {
   margin-right: auto;

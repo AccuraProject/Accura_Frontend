@@ -2,6 +2,8 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatSelectModule } from '@angular/material/select';
 import * as XLSX from 'xlsx';
 
 import { ValidationRulesService } from '../validation-rules/validation-rules.service';
@@ -26,6 +28,7 @@ interface ColumnRuleSelection {
   ruleId: number;
   name: string;
   dataType: string;
+  description: string;
   headerRule: string[];
   selectedHeader: string | null;
 }
@@ -45,7 +48,7 @@ export interface TemplateCreateDialogResult {
 @Component({
   selector: 'app-template-create-dialog',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatDialogModule],
+  imports: [CommonModule, FormsModule, MatDialogModule, MatFormFieldModule, MatSelectModule],
   templateUrl: './template-create-dialog.component.html',
   styleUrl: './template-create-dialog.component.scss',
 })
@@ -163,40 +166,48 @@ export class TemplateCreateDialogComponent implements OnInit {
     }
   }
 
-  protected isRuleSelected(column: TemplateColumnDraft, ruleId: number): boolean {
-    return column.rules.some((rule) => rule.ruleId === ruleId);
+  protected getSelectedRuleIds(column: TemplateColumnDraft): number[] {
+    return column.rules.map((rule) => rule.ruleId);
   }
 
-  protected toggleRule(column: TemplateColumnDraft, rule: RuleOption, checked: boolean): void {
-    if (checked) {
-      if (this.isRuleSelected(column, rule.id)) {
-        return;
+  protected onRulesChange(column: TemplateColumnDraft, ruleIds: number[]): void {
+    const normalized = Array.isArray(ruleIds)
+      ? ruleIds
+          .map((id) => Number(id))
+          .filter((id, index, array) => Number.isFinite(id) && array.indexOf(id) === index)
+      : [];
+
+    const updatedSelections: ColumnRuleSelection[] = [];
+
+    for (const ruleId of normalized) {
+      const existing = column.rules.find((rule) => rule.ruleId === ruleId);
+      if (existing) {
+        updatedSelections.push(existing);
+        continue;
+      }
+
+      const rule = this.rules.find((item) => item.id === ruleId);
+      if (!rule) {
+        continue;
       }
 
       const selection: ColumnRuleSelection = {
         ruleId: rule.id,
         name: rule.name,
         dataType: rule.dataType,
+        description: rule.description,
         headerRule: [...rule.headerRule],
         selectedHeader: null,
       };
 
-      column.rules = [...column.rules, selection];
-      return;
+      updatedSelections.push(selection);
     }
 
-    column.rules = column.rules.filter((item) => item.ruleId !== rule.id);
-  }
-
-  protected getRuleSelection(
-    column: TemplateColumnDraft,
-    ruleId: number
-  ): ColumnRuleSelection | undefined {
-    return column.rules.find((item) => item.ruleId === ruleId);
+    column.rules = updatedSelections;
   }
 
   protected onHeaderChange(column: TemplateColumnDraft, ruleId: number, value: string): void {
-    const selection = this.getRuleSelection(column, ruleId);
+    const selection = column.rules.find((item) => item.ruleId === ruleId);
     if (!selection) {
       return;
     }
@@ -204,9 +215,20 @@ export class TemplateCreateDialogComponent implements OnInit {
     selection.selectedHeader = value ? value.trim() : null;
   }
 
-  protected requiresHeader(rule: RuleOption): boolean {
-    const type = rule.dataType.trim().toLowerCase();
-    return type === 'lista compleja' || type === 'dependencia';
+  protected requiresHeaderSelection(selection: ColumnRuleSelection): boolean {
+    return selection.headerRule.length > 0;
+  }
+
+  protected removeRule(column: TemplateColumnDraft, ruleId: number): void {
+    const remaining = column.rules
+      .filter((rule) => rule.ruleId !== ruleId)
+      .map((rule) => rule.ruleId);
+
+    this.onRulesChange(column, remaining);
+  }
+
+  protected trackByRuleSelection(_: number, selection: ColumnRuleSelection): number {
+    return selection.ruleId;
   }
 
   protected importColumns(event: Event): void {
@@ -281,10 +303,6 @@ export class TemplateCreateDialogComponent implements OnInit {
 
   protected trackByColumnId(_: number, column: TemplateColumnDraft): string {
     return column.id;
-  }
-
-  protected trackByRuleId(_: number, rule: RuleOption): number {
-    return rule.id;
   }
 
   private async loadRules(): Promise<void> {

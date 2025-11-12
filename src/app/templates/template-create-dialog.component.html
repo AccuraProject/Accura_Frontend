@@ -123,44 +123,72 @@
               </label>
             </td>
             <td>
-              <div class="rule-selector" *ngIf="rules.length > 0; else noRules">
-                <div
-                  class="rule-selector__option"
-                  *ngFor="let rule of rules; trackBy: trackByRuleId"
-                >
-                  <label>
-                    <input
-                      type="checkbox"
-                      [checked]="isRuleSelected(column, rule.id)"
-                      (change)="toggleRule(column, rule, $event.target.checked)"
-                    />
-                    <span>
-                      <strong>{{ rule.name }}</strong>
-                      <small>{{ rule.dataType }}</small>
-                    </span>
-                  </label>
-
-                  <div
-                    class="rule-selector__header"
-                    *ngIf="requiresHeader(rule) && isRuleSelected(column, rule.id)"
+              <div class="column-rules">
+                <mat-form-field appearance="outline" class="column-rules__select">
+                  <mat-label>Selecciona reglas</mat-label>
+                  <mat-select
+                    name="rules-{{ column.id }}"
+                    multiple
+                    [disabled]="rulesLoading || rules.length === 0"
+                    [ngModel]="getSelectedRuleIds(column)"
+                    (ngModelChange)="onRulesChange(column, $event)"
+                    panelClass="template-rule-select-panel"
                   >
-                    <label>
-                      <span>Header asociado</span>
-                      <select
-                        [ngModel]="getRuleSelection(column, rule.id)?.selectedHeader ?? ''"
-                        (ngModelChange)="onHeaderChange(column, rule.id, $event)"
-                        name="rule-header-{{ column.id }}-{{ rule.id }}"
+                    <mat-option *ngFor="let rule of rules" [value]="rule.id">
+                      <div class="rule-option">
+                        <span class="rule-option__name">{{ rule.name }}</span>
+                        <span class="rule-option__type">{{ rule.dataType }}</span>
+                      </div>
+                    </mat-option>
+                  </mat-select>
+                  <mat-hint *ngIf="rules.length === 0 && !rulesLoading"
+                    >No hay reglas disponibles</mat-hint
+                  >
+                </mat-form-field>
+
+                <div class="column-rules__list" *ngIf="column.rules.length > 0">
+                  <article
+                    class="column-rules__item"
+                    *ngFor="let selection of column.rules; trackBy: trackByRuleSelection"
+                  >
+                    <div class="column-rules__item-header">
+                      <div class="column-rules__meta">
+                        <strong>{{ selection.name }}</strong>
+                        <span>{{ selection.dataType }}</span>
+                      </div>
+                      <button
+                        type="button"
+                        class="icon-button"
+                        (click)="removeRule(column, selection.ruleId)"
+                        aria-label="Quitar regla"
                       >
-                        <option value="" disabled>Selecciona una opción</option>
-                        <option *ngFor="let header of rule.headerRule" [value]="header">{{ header }}</option>
-                      </select>
-                    </label>
-                  </div>
+                        <span class="material-symbols-rounded" aria-hidden="true">close</span>
+                      </button>
+                    </div>
+                    <p class="column-rules__description" *ngIf="selection.description">
+                      {{ selection.description }}
+                    </p>
+                    <div
+                      class="column-rules__header"
+                      *ngIf="requiresHeaderSelection(selection)"
+                    >
+                      <label>
+                        <span>Header asociado</span>
+                        <select
+                          [ngModel]="selection.selectedHeader ?? ''"
+                          (ngModelChange)="onHeaderChange(column, selection.ruleId, $event)"
+                          name="rule-header-{{ column.id }}-{{ selection.ruleId }}"
+                        >
+                          <option value="" disabled>Selecciona un header</option>
+                          <option *ngFor="let header of selection.headerRule" [value]="header">
+                            {{ header }}
+                          </option>
+                        </select>
+                      </label>
+                    </div>
+                  </article>
                 </div>
               </div>
-              <ng-template #noRules>
-                <p class="template-columns__status">No hay reglas disponibles para asociar.</p>
-              </ng-template>
             </td>
             <td class="template-columns__actions-cell">
               <button class="icon-button" type="button" (click)="removeColumn(column.id)">
