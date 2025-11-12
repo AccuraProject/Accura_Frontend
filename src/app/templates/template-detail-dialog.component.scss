@@ -186,6 +186,29 @@
   line-height: 1.4;
 }
 
+.template-detail__rule-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.template-detail__rule-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.template-detail__rule--muted {
+  color: #94a3b8;
+}
+
+.template-detail__rule--error {
+  color: #b91c1c;
+}
+
 .template-detail__example {
   display: inline-flex;
   align-items: center;

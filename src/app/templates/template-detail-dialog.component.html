@@ -38,7 +38,7 @@
     </article>
   </section>
 
-  <section class="template-detail__columns" *ngIf="data.columnsDetail?.length">
+  <section class="template-detail__columns" *ngIf="columnsDetail?.length">
     <header>
       <div>
         <h3>Especificaciones de Columnas</h3>
@@ -64,7 +64,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let column of data.columnsDetail">
+          <tr *ngFor="let column of columnsDetail">
             <td>
               <span class="template-detail__column-name">{{ column.name }}</span>
             </td>
@@ -84,7 +84,24 @@
               </span>
             </td>
             <td>
-              <span class="template-detail__rule">{{ column.rule }}</span>
+              <ng-container *ngIf="column.rules?.length; else noRules">
+                <ul class="template-detail__rule-list">
+                  <li *ngFor="let rule of column.rules" class="template-detail__rule-item">
+                    <span class="template-detail__rule" *ngIf="rule.summary && !rule.error">
+                      {{ rule.summary }}
+                    </span>
+                    <span class="template-detail__rule template-detail__rule--muted" *ngIf="rule.loading">
+                      Cargando detalles…
+                    </span>
+                    <span class="template-detail__rule template-detail__rule--error" *ngIf="rule.error">
+                      {{ rule.error }}
+                    </span>
+                  </li>
+                </ul>
+              </ng-container>
+              <ng-template #noRules>
+                <span class="template-detail__rule template-detail__rule--muted">Sin reglas configuradas</span>
+              </ng-template>
             </td>
             <td>
               <code class="template-detail__example" *ngIf="column.example; else noExample">

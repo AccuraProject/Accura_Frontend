@@ -13,6 +13,7 @@ import {
 } from './template-create-dialog.component';
 import {
   TemplateColumnDetail,
+  TemplateColumnRuleDetail,
   TemplateDetailDialogComponent,
   TemplateDetailDialogData,
 } from './template-detail-dialog.component';
@@ -112,28 +113,52 @@ export class TemplateManagementComponent implements OnInit {
           name: 'Número de Póliza',
           type: 'Texto',
           required: true,
-          rule: 'Formato alfanumérico de 12 caracteres',
+          rules: [
+            {
+              summary: 'Formato alfanumérico de 12 caracteres',
+              requiresLookup: false,
+              loading: false,
+            },
+          ],
           example: 'POL-2025-001',
         },
         {
           name: 'Fecha de Emisión',
           type: 'Fecha',
           required: true,
-          rule: 'Debe coincidir con el periodo reportado',
+          rules: [
+            {
+              summary: 'Debe coincidir con el periodo reportado',
+              requiresLookup: false,
+              loading: false,
+            },
+          ],
           example: '2025-04-01',
         },
         {
           name: 'Tipo de Seguro',
           type: 'Catálogo',
           required: true,
-          rule: 'Seleccionar entre los valores definidos',
+          rules: [
+            {
+              summary: 'Seleccionar entre los valores definidos',
+              requiresLookup: false,
+              loading: false,
+            },
+          ],
           example: 'Vida',
         },
         {
           name: 'Prima Total',
           type: 'Numérico',
           required: true,
-          rule: 'Mayor a 0, separador decimal con punto',
+          rules: [
+            {
+              summary: 'Mayor a 0, separador decimal con punto',
+              requiresLookup: false,
+              loading: false,
+            },
+          ],
           example: '120000.00',
         },
       ],
@@ -155,28 +180,52 @@ export class TemplateManagementComponent implements OnInit {
           name: 'Número de Siniestro',
           type: 'Texto',
           required: true,
-          rule: 'Formato consecutivo SIN-XXX-YYYY',
+          rules: [
+            {
+              summary: 'Formato consecutivo SIN-XXX-YYYY',
+              requiresLookup: false,
+              loading: false,
+            },
+          ],
           example: 'SIN-021-2025',
         },
         {
           name: 'Fecha del Evento',
           type: 'Fecha',
           required: true,
-          rule: 'Debe ser anterior o igual a la fecha de carga',
+          rules: [
+            {
+              summary: 'Debe ser anterior o igual a la fecha de carga',
+              requiresLookup: false,
+              loading: false,
+            },
+          ],
           example: '2025-03-10',
         },
         {
           name: 'Estado del Siniestro',
           type: 'Catálogo',
           required: true,
-          rule: 'Valores permitidos: Abierto, En proceso, Cerrado',
+          rules: [
+            {
+              summary: 'Valores permitidos: Abierto, En proceso, Cerrado',
+              requiresLookup: false,
+              loading: false,
+            },
+          ],
           example: 'En proceso',
         },
         {
           name: 'Monto Estimado',
           type: 'Numérico',
           required: false,
-          rule: 'Opcional, máximo 2 decimales',
+          rules: [
+            {
+              summary: 'Opcional, máximo 2 decimales',
+              requiresLookup: false,
+              loading: false,
+            },
+          ],
           example: '45000.50',
         },
       ],
@@ -594,20 +643,36 @@ export class TemplateManagementComponent implements OnInit {
 
   private mapColumnsToDetail(columns: TemplateColumnResponse[]): TemplateColumnDetail[] {
     return columns.map((column) => {
-      const ruleSummary =
-        Array.isArray(column.rules) && column.rules.length > 0
-          ? `Reglas asignadas: ${column.rules.map((rule) => rule.id).join(', ')}`
-          : 'Sin reglas configuradas';
+      const rules = Array.isArray(column.rules)
+        ? column.rules
+            .map((rule) => this.mapRuleToDetail(rule))
+            .filter((rule): rule is TemplateColumnRuleDetail => rule !== null)
+        : [];
+
+      const required = rules.length > 0;
 
       return {
         name: column.name,
         type: column.data_type ?? 'Dato',
-        required: (column.rules?.length ?? 0) > 0,
-        rule: ruleSummary,
+        required,
+        rules,
         example:
           column.description && column.description.length > 0 ? column.description : undefined,
       };
     });
+  }
+
+  private mapRuleToDetail(rule: TemplateColumnRulePayload): TemplateColumnRuleDetail | null {
+    const id = this.extractRuleId(rule.id);
+    if (!id) {
+      return null;
+    }
+
+    return {
+      id,
+      requiresLookup: true,
+      loading: true,
+    };
   }
 
   private toDisplayStatus(status: string | undefined): TemplateStatus {
@@ -654,6 +719,19 @@ export class TemplateManagementComponent implements OnInit {
     }
 
     return this.generateId();
+  }
+
+  private extractRuleId(value: unknown): string | null {
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      return trimmed.length > 0 ? trimmed : null;
+    }
+
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return value.toString();
+    }
+
+    return null;
   }
 
   private async refreshTemplateColumns(templateId: number | string): Promise<void> {

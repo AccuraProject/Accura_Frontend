@@ -18,6 +18,14 @@ export class ValidationRulesService {
     return await firstValueFrom(this.http.get<unknown>(`${this.baseUrl}/rules/`, { headers }));
   }
 
+  async fetchRule(ruleId: string | number): Promise<unknown> {
+    const headers = await this.buildAuthHeaders();
+    const encodedId = encodeURIComponent(String(ruleId));
+    return await firstValueFrom(
+      this.http.get<unknown>(`${this.baseUrl}/rules/${encodedId}`, { headers })
+    );
+  }
+
   async saveRule(rule: RulePayload, isActive: boolean): Promise<void> {
     const headers = await this.buildAuthHeaders();
     const body = { rule, is_active: isActive };
