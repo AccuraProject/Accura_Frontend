@@ -233,13 +233,13 @@ export class TemplatesService {
     const idValue = record['id'];
 
     if (typeof idValue === 'number') {
-      return record as TemplateResponse;
+      return (record as unknown) as TemplateResponse;
     }
 
     if (typeof idValue === 'string') {
       const numericId = Number(idValue);
       if (!Number.isNaN(numericId)) {
-        return { ...(record as TemplateResponse), id: numericId };
+        return { ...((record as unknown) as TemplateResponse), id: numericId };
       }
     }
 

@@ -424,8 +424,10 @@ export class TemplateCreateDialogComponent {
 
       const ruleId = String(ruleIdValue);
       const headerRule = this.extractStringArray(
-        (rule as Record<string, unknown>)['header rule'] ??
-          (rule as Record<string, unknown>)['header_rule']
+        rule['header rule'] ??
+          (typeof rule === 'object' && rule !== null
+            ? ((rule as unknown) as Record<string, unknown>)['header_rule']
+            : undefined)
       );
 
       const option = this.rules.find((candidate) => candidate.id === ruleId);
@@ -457,7 +459,7 @@ export class TemplateCreateDialogComponent {
     headerRule: string[]
   ): TemplateRuleOption {
     const requiresHeader = headerRule.length > 0;
-    const ruleRecord = rule as Record<string, unknown>;
+    const ruleRecord = (rule as unknown) as Record<string, unknown>;
     const name =
       this.extractString(ruleRecord['name']) ??
       this.extractString(ruleRecord['rule_name']) ??
