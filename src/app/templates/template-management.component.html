@@ -136,6 +136,19 @@
                     <span>Ver Detalle</span>
                   </div>
                 </button>
+                <button
+                  mat-menu-item
+                  type="button"
+                  (click)="toggleTemplateStatus(template)"
+                  [disabled]="statusUpdating[template.id]"
+                >
+                  <div class="menu-item-text">
+                    <span class="material-symbols-rounded" aria-hidden="true">
+                      {{ template.status === 'Publicado' ? 'toggle_off' : 'publish' }}
+                    </span>
+                    <span>{{ template.status === 'Publicado' ? 'Desactivar' : 'Publicar' }}</span>
+                  </div>
+                </button>
                 <button mat-menu-item type="button" (click)="openEditDialog(template)">
                   <div class="menu-item-text">
                     <span class="material-symbols-rounded" aria-hidden="true">edit</span>

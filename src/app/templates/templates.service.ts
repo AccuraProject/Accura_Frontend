@@ -147,6 +147,22 @@ export class TemplatesService {
     return [];
   }
 
+  async updateTemplateStatus(
+    templateId: number | string,
+    status: 'published' | 'unpublished'
+  ): Promise<TemplateResponse> {
+    const headers = await this.buildAuthHeaders();
+    const encodedId = encodeURIComponent(String(templateId));
+
+    return await firstValueFrom(
+      this.http.patch<TemplateResponse>(
+        `${this.baseUrl}/templates/${encodedId}/status`,
+        { status },
+        { headers }
+      )
+    );
+  }
+
   private toColumnResponse(entry: Record<string, unknown>): TemplateColumnResponse | null {
     const id = entry['id'];
     const name = entry['name'];

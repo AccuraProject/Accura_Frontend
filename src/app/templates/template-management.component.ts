@@ -73,6 +73,7 @@ export class TemplateManagementComponent implements OnInit {
   protected uploadState: Record<string, string | null> = {};
   protected uploadErrors: Record<string, string | null> = {};
   protected dragActiveId: string | null = null;
+  protected statusUpdating: Record<string, boolean> = {};
 
   protected readonly isAdmin$: Observable<boolean> = this.store.select(selectIsAdmin);
 
@@ -311,6 +312,44 @@ export class TemplateManagementComponent implements OnInit {
         },
       }
     );
+  }
+
+  protected async toggleTemplateStatus(template: TemplateRow): Promise<void> {
+    const templateId = template.id;
+    const isPublished = template.status === 'Publicado';
+    const nextStatus = isPublished ? 'unpublished' : 'published';
+
+    if (!templateId) {
+      return;
+    }
+
+    this.statusUpdating[templateId] = true;
+    this.templatesError = null;
+
+    try {
+      const response = await this.templatesService.updateTemplateStatus(templateId, nextStatus);
+      const displayStatus = this.toDisplayStatus(response.status ?? nextStatus);
+      const updatedAt = this.toIsoDate(response.updated_at ?? new Date().toISOString());
+      const statusCode = response.status ?? nextStatus;
+
+      this.templates = this.templates.map((entry) => {
+        if (entry.id !== templateId) {
+          return entry;
+        }
+
+        return {
+          ...entry,
+          status: displayStatus,
+          statusCode,
+          lastUpdated: updatedAt,
+        };
+      });
+    } catch (error) {
+      console.error('[TemplateManagement] No se pudo actualizar el estado de la plantilla:', error);
+      this.templatesError = this.getErrorMessage(error);
+    } finally {
+      delete this.statusUpdating[templateId];
+    }
   }
 
   protected toggleUpload(templateId: string): void {
