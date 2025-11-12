@@ -9,6 +9,7 @@ import { Observable } from 'rxjs';
 import {
   TemplateCreateDialogComponent,
   TemplateCreateDialogResult,
+  TemplateDialogData,
 } from './template-create-dialog.component';
 import {
   TemplateColumnDetail,
@@ -250,16 +251,27 @@ export class TemplateManagementComponent implements OnInit {
     }
   }
 
+  protected canEditTemplate(template: TemplateRow): boolean {
+    const normalizedStatus = template.statusCode?.trim().toLowerCase();
+
+    if (normalizedStatus) {
+      return normalizedStatus === 'unpublished';
+    }
+
+    return template.status === 'Borrador';
+  }
+
   protected openCreateDialog(): void {
     const dialogRef = this.dialog.open<
       TemplateCreateDialogComponent,
-      void,
+      TemplateDialogData,
       TemplateCreateDialogResult
     >(TemplateCreateDialogComponent, {
       disableClose: true,
       width: '92vw',
       maxWidth: '1240px',
       maxHeight: '95vh',
+      data: { mode: 'create' },
     });
 
     dialogRef.afterClosed().subscribe((result: TemplateCreateDialogResult | undefined) => {
@@ -271,8 +283,60 @@ export class TemplateManagementComponent implements OnInit {
     });
   }
 
-  protected openEditDialog(template: TemplateRow): void {
-    
+  protected async openEditDialog(template: TemplateRow): Promise<void> {
+    if (!this.canEditTemplate(template)) {
+      return;
+    }
+
+    const templateId = template.id;
+    this.templatesError = null;
+
+    try {
+      const templateResponse = await this.templatesService.fetchTemplate(templateId);
+
+      if (!templateResponse) {
+        throw new Error('No fue posible obtener la plantilla seleccionada.');
+      }
+
+      let columns: TemplateColumnResponse[] = [];
+
+      try {
+        columns = await this.templatesService.fetchTemplateColumns(templateId);
+      } catch (columnError) {
+        console.error(
+          '[TemplateManagement] No se pudieron obtener las columnas para la edición:',
+          columnError
+        );
+        columns = [];
+      }
+
+      const dialogRef = this.dialog.open<
+        TemplateCreateDialogComponent,
+        TemplateDialogData,
+        TemplateCreateDialogResult
+      >(TemplateCreateDialogComponent, {
+        disableClose: true,
+        width: '92vw',
+        maxWidth: '1240px',
+        maxHeight: '95vh',
+        data: {
+          mode: 'edit',
+          template: templateResponse,
+          columns,
+        },
+      });
+
+      dialogRef.afterClosed().subscribe((result: TemplateCreateDialogResult | undefined) => {
+        if (!result) {
+          return;
+        }
+
+        this.updateTemplateFromEdit(result);
+      });
+    } catch (error) {
+      console.error('[TemplateManagement] Error al preparar edición de plantilla:', error);
+      this.templatesError = this.getErrorMessage(error);
+    }
   }
 
   protected openDetailDialog(template: TemplateRow): void {
@@ -468,6 +532,27 @@ export class TemplateManagementComponent implements OnInit {
     const entry = this.mapTemplateResultToRow(result);
     this.templatesError = null;
     this.templates = [entry, ...this.templates];
+
+    if (result.template?.id !== undefined && result.template?.id !== null) {
+      void this.refreshTemplateColumns(result.template.id);
+    }
+  }
+
+  private updateTemplateFromEdit(result: TemplateCreateDialogResult): void {
+    const updatedEntry = this.mapTemplateResultToRow(result);
+    const updatedId = updatedEntry.id;
+
+    this.templatesError = null;
+    this.templates = this.templates.map((template) => {
+      if (template.id !== updatedId) {
+        return template;
+      }
+
+      return {
+        ...template,
+        ...updatedEntry,
+      };
+    });
 
     if (result.template?.id !== undefined && result.template?.id !== null) {
       void this.refreshTemplateColumns(result.template.id);

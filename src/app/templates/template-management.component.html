@@ -149,7 +149,12 @@
                     <span>{{ template.status === 'Publicado' ? 'Desactivar' : 'Publicar' }}</span>
                   </div>
                 </button>
-                <button mat-menu-item type="button" (click)="openEditDialog(template)">
+                <button
+                  mat-menu-item
+                  type="button"
+                  (click)="openEditDialog(template)"
+                  [disabled]="!canEditTemplate(template)"
+                >
                   <div class="menu-item-text">
                     <span class="material-symbols-rounded" aria-hidden="true">edit</span>
                     <span>Editar</span>

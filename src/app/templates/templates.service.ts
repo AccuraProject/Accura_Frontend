@@ -64,6 +64,52 @@ export class TemplatesService {
     );
   }
 
+  async updateTemplate(
+    templateId: number | string,
+    payload: TemplateCreatePayload
+  ): Promise<TemplateResponse> {
+    const headers = await this.buildAuthHeaders();
+    const encodedId = encodeURIComponent(String(templateId));
+    const data = await firstValueFrom(
+      this.http.put<TemplateResponse | Record<string, unknown> | null>(
+        `${this.baseUrl}/templates/${encodedId}`,
+        payload,
+        { headers }
+      )
+    );
+
+    if (data) {
+      const parsed = this.parseTemplateResponse(data);
+      if (parsed) {
+        return parsed;
+      }
+    }
+
+    const refreshed = await this.fetchTemplate(templateId);
+    if (refreshed) {
+      return refreshed;
+    }
+
+    return this.buildTemplateFallback(templateId, payload);
+  }
+
+  async fetchTemplate(templateId: number | string): Promise<TemplateResponse | null> {
+    const headers = await this.buildAuthHeaders();
+    const encodedId = encodeURIComponent(String(templateId));
+    const data = await firstValueFrom(
+      this.http.get<TemplateResponse | Record<string, unknown> | null>(
+        `${this.baseUrl}/templates/${encodedId}`,
+        { headers }
+      )
+    );
+
+    if (!data) {
+      return null;
+    }
+
+    return this.parseTemplateResponse(data);
+  }
+
   async createTemplateColumns(
     templateId: number | string,
     payload: TemplateColumnPayload[]
@@ -161,6 +207,72 @@ export class TemplatesService {
         { headers }
       )
     );
+  }
+
+  private parseTemplateResponse(data: unknown): TemplateResponse | null {
+    if (!data) {
+      return null;
+    }
+
+    if (Array.isArray(data)) {
+      for (const entry of data) {
+        const parsed = this.parseTemplateResponse(entry);
+        if (parsed) {
+          return parsed;
+        }
+      }
+
+      return null;
+    }
+
+    if (typeof data !== 'object') {
+      return null;
+    }
+
+    const record = data as Record<string, unknown>;
+    const idValue = record['id'];
+
+    if (typeof idValue === 'number') {
+      return record as TemplateResponse;
+    }
+
+    if (typeof idValue === 'string') {
+      const numericId = Number(idValue);
+      if (!Number.isNaN(numericId)) {
+        return { ...(record as TemplateResponse), id: numericId };
+      }
+    }
+
+    const candidateKeys = ['template', 'data', 'item', 'result'];
+    for (const key of candidateKeys) {
+      const candidate = record[key];
+      if (candidate && candidate !== data) {
+        const parsed = this.parseTemplateResponse(candidate);
+        if (parsed) {
+          return parsed;
+        }
+      }
+    }
+
+    return null;
+  }
+
+  private buildTemplateFallback(
+    templateId: number | string,
+    payload: TemplateCreatePayload
+  ): TemplateResponse {
+    const numericId = typeof templateId === 'number' ? templateId : Number(templateId);
+
+    if (Number.isNaN(numericId)) {
+      throw new Error('No fue posible determinar el identificador de la plantilla.');
+    }
+
+    return {
+      id: numericId,
+      name: payload.name,
+      description: payload.description,
+      table_name: payload.table_name,
+    };
   }
 
   private toColumnResponse(entry: Record<string, unknown>): TemplateColumnResponse | null {

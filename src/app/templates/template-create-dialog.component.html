@@ -88,7 +88,7 @@
             Cancelar
           </button>
           <button type="submit" class="modal__button" [disabled]="generalLoading || generalForm.invalid">
-            {{ generalLoading ? 'Guardando...' : 'Siguiente' }}
+            {{ generalLoading ? 'Guardando...' : (isEditMode ? 'Guardar y continuar' : 'Siguiente') }}
           </button>
         </footer>
       </form>
@@ -249,7 +249,7 @@
             (click)="submitColumns()"
             [disabled]="columnsLoading"
           >
-            {{ columnsLoading ? 'Guardando...' : 'Finalizar' }}
+            {{ columnsLoading ? 'Guardando...' : (isEditMode ? 'Guardar cambios' : 'Finalizar') }}
           </button>
         </footer>
       </div>
