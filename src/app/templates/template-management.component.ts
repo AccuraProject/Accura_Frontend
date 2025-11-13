@@ -1,10 +1,11 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatMenuModule } from '@angular/material/menu';
 import { Store } from '@ngrx/store';
-import { Observable, firstValueFrom } from 'rxjs';
+import { HttpEventType } from '@angular/common/http';
+import { Observable, Subscription, firstValueFrom } from 'rxjs';
 import { filter } from 'rxjs/operators';
 
 import {
@@ -72,7 +73,7 @@ interface ClientTemplate {
   templateUrl: './template-management.component.html',
   styleUrl: './template-management.component.scss',
 })
-export class TemplateManagementComponent implements OnInit {
+export class TemplateManagementComponent implements OnInit, OnDestroy {
   private readonly dialog = inject(MatDialog);
   private readonly store = inject(Store);
   private readonly templatesService = inject(TemplatesService);
@@ -82,11 +83,16 @@ export class TemplateManagementComponent implements OnInit {
   protected statusFilter: ManagementTemplateStatus | 'Todos' = 'Todos';
   protected uploadTemplateId: string | null = null;
   protected uploadState: Record<string, string | null> = {};
+  protected uploadFiles: Record<string, File | null> = {};
   protected uploadErrors: Record<string, string | null> = {};
+  protected uploadSuccess: Record<string, string | null> = {};
+  protected uploadProgress: Record<string, number | null> = {};
+  protected uploadInProgress: Record<string, boolean> = {};
   protected dragActiveId: string | null = null;
   protected downloadingTemplates: Record<string, boolean> = {};
   protected statusUpdating: Record<string, boolean> = {};
   protected deletingTemplates: Record<string, boolean> = {};
+  private uploadSubscriptions: Record<string, Subscription | null> = {};
 
   protected readonly isAdmin$: Observable<boolean> = this.store.select(selectIsAdmin);
 
@@ -106,6 +112,12 @@ export class TemplateManagementComponent implements OnInit {
 
   ngOnInit(): void {
     void this.initializeTemplates();
+  }
+
+  ngOnDestroy(): void {
+    for (const subscription of Object.values(this.uploadSubscriptions)) {
+      subscription?.unsubscribe();
+    }
   }
 
   private async initializeTemplates(): Promise<void> {
@@ -427,33 +439,46 @@ export class TemplateManagementComponent implements OnInit {
 
   protected toggleUpload(templateId: string): void {
     this.uploadErrors[templateId] = null;
+    if (!this.uploadInProgress[templateId]) {
+      this.uploadProgress[templateId] = null;
+    }
     if (this.uploadTemplateId === templateId) {
       this.uploadTemplateId = null;
       return;
     }
 
     this.uploadTemplateId = templateId;
+    this.uploadSuccess[templateId] = null;
   }
 
   protected onFileSelected(event: Event, templateId: string): void {
+    if (this.uploadInProgress[templateId]) {
+      return;
+    }
+
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
 
     if (!file) {
       this.uploadState[templateId] = null;
+      this.uploadFiles[templateId] = null;
       this.uploadErrors[templateId] = null;
       return;
     }
 
     if (!this.isExcelFile(file)) {
       this.uploadState[templateId] = null;
+      this.uploadFiles[templateId] = null;
       this.uploadErrors[templateId] = 'Solo se aceptan archivos con formato .xlsx o .xls';
       input.value = '';
       return;
     }
 
     this.uploadState[templateId] = file.name;
+    this.uploadFiles[templateId] = file;
     this.uploadErrors[templateId] = null;
+    this.uploadSuccess[templateId] = null;
+    this.uploadProgress[templateId] = null;
   }
 
   protected onDropFile(event: DragEvent, templateId: string): void {
@@ -465,14 +490,105 @@ export class TemplateManagementComponent implements OnInit {
       return;
     }
 
+    if (this.uploadInProgress[templateId]) {
+      return;
+    }
+
     if (!this.isExcelFile(file)) {
       this.uploadState[templateId] = null;
+      this.uploadFiles[templateId] = null;
       this.uploadErrors[templateId] = 'Solo se aceptan archivos con formato .xlsx o .xls';
       return;
     }
 
     this.uploadState[templateId] = file.name;
+    this.uploadFiles[templateId] = file;
     this.uploadErrors[templateId] = null;
+    this.uploadSuccess[templateId] = null;
+    this.uploadProgress[templateId] = null;
+  }
+
+  protected async confirmUpload(templateId: string): Promise<void> {
+    const file = this.uploadFiles[templateId];
+    if (!file || this.uploadInProgress[templateId]) {
+      return;
+    }
+
+    this.uploadErrors[templateId] = null;
+    this.uploadSuccess[templateId] = null;
+    this.uploadInProgress[templateId] = true;
+    this.uploadProgress[templateId] = 0;
+
+    try {
+      const upload$ = await this.templatesService.uploadTemplateLoad(templateId, file);
+      const subscription = upload$.subscribe({
+        next: (event) => {
+          if (!event) {
+            return;
+          }
+
+          if (event.type === HttpEventType.UploadProgress) {
+            if (event.total && event.total > 0) {
+              const progress = Math.round((event.loaded / event.total) * 100);
+              this.uploadProgress[templateId] = Math.min(progress, 100);
+            } else {
+              const current = this.uploadProgress[templateId] ?? 0;
+              this.uploadProgress[templateId] = Math.min(current + 5, 95);
+            }
+            return;
+          }
+
+          if (event.type === HttpEventType.Response) {
+            const message = event.body?.message ?? 'Archivo enviado correctamente.';
+            const fileName = event.body?.load?.file_name ?? file.name;
+
+            this.uploadSuccess[templateId] = message;
+            this.uploadState[templateId] = fileName;
+            this.uploadInProgress[templateId] = false;
+            this.uploadProgress[templateId] = 100;
+            this.uploadFiles[templateId] = null;
+            this.resetFileInput(templateId);
+          }
+        },
+        error: (error) => {
+          console.error('[TemplateManagement] Error al cargar el archivo de plantilla:', error);
+          this.uploadErrors[templateId] = this.getErrorMessage(error);
+          this.uploadInProgress[templateId] = false;
+          this.uploadProgress[templateId] = null;
+          this.uploadFiles[templateId] = null;
+          this.uploadState[templateId] = null;
+          this.resetFileInput(templateId);
+          delete this.uploadSubscriptions[templateId];
+        },
+        complete: () => {
+          if (this.uploadInProgress[templateId]) {
+            this.uploadInProgress[templateId] = false;
+          }
+          delete this.uploadSubscriptions[templateId];
+        },
+      });
+
+      this.uploadSubscriptions[templateId] = subscription;
+    } catch (error) {
+      console.error('[TemplateManagement] No se pudo iniciar la carga del archivo:', error);
+      this.uploadErrors[templateId] = this.getErrorMessage(error);
+      this.uploadInProgress[templateId] = false;
+      this.uploadProgress[templateId] = null;
+    }
+  }
+
+  protected cancelUploadSelection(templateId: string): void {
+    const subscription = this.uploadSubscriptions[templateId];
+    subscription?.unsubscribe();
+    delete this.uploadSubscriptions[templateId];
+
+    this.uploadInProgress[templateId] = false;
+    this.uploadProgress[templateId] = null;
+    this.uploadFiles[templateId] = null;
+    this.uploadState[templateId] = null;
+    this.uploadErrors[templateId] = null;
+    this.uploadSuccess[templateId] = null;
+    this.resetFileInput(templateId);
   }
 
   protected onDragOver(event: DragEvent, templateId: string): void {
@@ -1077,5 +1193,12 @@ export class TemplateManagementComponent implements OnInit {
   private isExcelFile(file: File): boolean {
     const extension = file.name.split('.').pop()?.toLowerCase();
     return extension === 'xlsx' || extension === 'xls';
+  }
+
+  private resetFileInput(templateId: string): void {
+    const input = document.getElementById(`upload-${templateId}`) as HTMLInputElement | null;
+    if (input) {
+      input.value = '';
+    }
   }
 }

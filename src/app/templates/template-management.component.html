@@ -301,8 +301,46 @@
             <p *ngIf="uploadState[template.id]" class="client-template-card__upload-file">
               {{ uploadState[template.id] }}
             </p>
+            <div
+              *ngIf="uploadFiles[template.id] || uploadInProgress[template.id]"
+              class="client-template-card__upload-actions"
+            >
+              <button
+                type="button"
+                class="client-template-card__upload-confirm"
+                (click)="confirmUpload(template.id)"
+                [disabled]="!uploadFiles[template.id] || uploadInProgress[template.id]"
+              >
+                <span class="material-symbols-rounded" aria-hidden="true">
+                  {{ uploadInProgress[template.id] ? 'hourglass_top' : 'cloud_done' }}
+                </span>
+                {{ uploadInProgress[template.id] ? 'Cargando...' : 'Confirmar carga' }}
+              </button>
+              <button
+                type="button"
+                class="client-template-card__upload-cancel"
+                (click)="cancelUploadSelection(template.id)"
+                [disabled]="uploadInProgress[template.id]"
+              >
+                Cancelar
+              </button>
+            </div>
+            <div *ngIf="uploadInProgress[template.id]" class="client-template-card__upload-progress">
+              <div class="client-template-card__upload-progress-bar">
+                <div
+                  class="client-template-card__upload-progress-bar-fill"
+                  [style.width.%]="uploadProgress[template.id] ?? 0"
+                ></div>
+              </div>
+              <span class="client-template-card__upload-progress-label">
+                {{ (uploadProgress[template.id] ?? 0) | number: '1.0-0' }}%
+              </span>
+            </div>
             <p *ngIf="uploadErrors[template.id]" class="client-template-card__upload-error">
               {{ uploadErrors[template.id] }}
+            </p>
+            <p *ngIf="uploadSuccess[template.id]" class="client-template-card__upload-success">
+              {{ uploadSuccess[template.id] }}
             </p>
           </div>
         </footer>

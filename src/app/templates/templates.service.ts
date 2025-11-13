@@ -1,7 +1,7 @@
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpEvent, HttpHeaders } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Store } from '@ngrx/store';
-import { firstValueFrom } from 'rxjs';
+import { Observable, firstValueFrom } from 'rxjs';
 
 import { environment } from '../../environments/environment';
 import { selectSessionState } from '../core/store/session/session.reducer';
@@ -79,6 +79,25 @@ export interface TemplateColumnResponse extends TemplateColumnPayload {
   deleted?: boolean;
   deleted_by?: number;
   deleted_at?: string;
+}
+
+export interface TemplateLoad {
+  id: number;
+  template_id: number;
+  user_id: number;
+  status: string;
+  file_name: string;
+  total_rows: number;
+  error_rows: number;
+  report_path: string | null;
+  created_at: string;
+  started_at: string | null;
+  finished_at: string | null;
+}
+
+export interface TemplateLoadResponse {
+  message: string;
+  load: TemplateLoad;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -167,6 +186,26 @@ export class TemplatesService {
         headers: sanitizedHeaders,
         responseType: 'blob' as 'json',
       })
+    );
+  }
+
+  async uploadTemplateLoad(
+    templateId: number | string,
+    file: File
+  ): Promise<Observable<HttpEvent<TemplateLoadResponse>>> {
+    const headers = await this.buildAuthHeaders({ contentType: null });
+    const encodedId = encodeURIComponent(String(templateId));
+    const formData = new FormData();
+    formData.append('file', file);
+
+    return this.http.post<TemplateLoadResponse>(
+      `${this.baseUrl}/templates/${encodedId}/loads`,
+      formData,
+      {
+        headers,
+        reportProgress: true,
+        observe: 'events' as const,
+      }
     );
   }
 
@@ -498,7 +537,7 @@ export class TemplatesService {
     };
   }
 
-  private async buildAuthHeaders(): Promise<HttpHeaders> {
+  private async buildAuthHeaders(options?: { contentType?: string | null }): Promise<HttpHeaders> {
     const session = await firstValueFrom(this.store.select(selectSessionState));
 
     if (!session?.accessToken) {
@@ -506,11 +545,16 @@ export class TemplatesService {
     }
 
     const tokenType = session.tokenType ?? 'Bearer';
+    const headers: Record<string, string> = {
+      Authorization: `${tokenType} ${session.accessToken}`,
+    };
+    const contentType = options?.contentType ?? 'application/json';
 
-    return new HttpHeaders({
-      'Content-Type': 'application/json',
-      Authorization: `${tokenType} ${session.accessToken}`
-    });
+    if (contentType) {
+      headers['Content-Type'] = contentType;
+    }
+
+    return new HttpHeaders(headers);
   }
 
   private isTemplateColumnResponse(entry: unknown): entry is TemplateColumnResponse {

@@ -435,10 +435,102 @@
   color: #1f2937;
 }
 
+.client-template-card__upload-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.client-template-card__upload-confirm {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 0.9rem;
+  padding: 0.55rem 1.35rem;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 10px 24px rgba(99, 102, 241, 0.25);
+}
+
+.client-template-card__upload-confirm .material-symbols-rounded {
+  font-size: 1.2rem;
+}
+
+.client-template-card__upload-confirm:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 16px 28px rgba(99, 102, 241, 0.32);
+}
+
+.client-template-card__upload-confirm:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+  box-shadow: none;
+}
+
+.client-template-card__upload-cancel {
+  border: 1px solid rgba(148, 163, 184, 0.55);
+  background: rgba(248, 250, 252, 0.6);
+  color: #475569;
+  font-weight: 600;
+  border-radius: 999px;
+  padding: 0.5rem 1.25rem;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.client-template-card__upload-cancel:hover:not(:disabled) {
+  background: rgba(241, 245, 249, 0.95);
+  color: #1f2937;
+  border-color: rgba(99, 102, 241, 0.45);
+}
+
+.client-template-card__upload-cancel:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.client-template-card__upload-progress {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.client-template-card__upload-progress-bar {
+  height: 0.55rem;
+  border-radius: 999px;
+  background: rgba(99, 102, 241, 0.16);
+  overflow: hidden;
+}
+
+.client-template-card__upload-progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4f46e5, #a855f7);
+  transition: width 0.25s ease;
+}
+
+.client-template-card__upload-progress-label {
+  justify-self: end;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #4338ca;
+}
+
 .client-template-card__upload-error {
   margin: 0;
   font-size: 0.85rem;
   color: #b91c1c;
+  font-weight: 600;
+}
+
+.client-template-card__upload-success {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #047857;
   font-weight: 600;
 }
 
