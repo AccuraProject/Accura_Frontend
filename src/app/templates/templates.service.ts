@@ -135,6 +135,23 @@ export class TemplatesService {
     return this.parseTemplateResponse(data);
   }
 
+  async fetchTemplateDetail(templateId: number | string): Promise<TemplateResponse | null> {
+    const headers = await this.buildAuthHeaders();
+    const encodedId = encodeURIComponent(String(templateId));
+    const data = await firstValueFrom(
+      this.http.get<TemplateResponse | Record<string, unknown> | null>(
+        `${this.baseUrl}/templates/${encodedId}/detail`,
+        { headers }
+      )
+    );
+
+    if (!data) {
+      return null;
+    }
+
+    return this.parseTemplateResponse(data);
+  }
+
   async createTemplateColumns(
     templateId: number | string,
     payload: TemplateColumnPayload[]

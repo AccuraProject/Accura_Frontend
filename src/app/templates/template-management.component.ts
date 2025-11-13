@@ -30,6 +30,7 @@ import {
   TemplateResponse,
   TemplatesService,
 } from './templates.service';
+import { normalizeAiPayload, RulePayload } from '../validation-rules/validation-rule-ai.utils';
 
 type ManagementTemplateStatus = 'Publicado' | 'Borrador' | 'Inactivo';
 type ClientTemplateStatus = 'Activo' | 'En Revisión';
@@ -295,7 +296,41 @@ export class TemplateManagementComponent implements OnInit {
     );
   }
 
-  protected openClientDetailDialog(template: ClientTemplate): void {
+  protected async openClientDetailDialog(template: ClientTemplate): Promise<void> {
+    const templateId = template.id;
+    this.assignedTemplatesError = null;
+
+    try {
+      const detail = await this.templatesService.fetchTemplateDetail(templateId);
+      if (detail) {
+        const columns = Array.isArray(detail.columns) ? detail.columns : [];
+        const mappedTemplate = this.mapTemplateResponseToClient(detail, columns);
+
+        this.dialog.open<TemplateDetailDialogComponent, TemplateDetailDialogData, void>(
+          TemplateDetailDialogComponent,
+          {
+            data: {
+              name: mappedTemplate.name,
+              description: mappedTemplate.description,
+              version: mappedTemplate.version,
+              status: mappedTemplate.status,
+              statusClass: mappedTemplate.statusClass,
+              lastUpdated: mappedTemplate.lastUpdated,
+              createdAt: mappedTemplate.createdAt,
+              columnsCount: mappedTemplate.columnsCount,
+              owner: mappedTemplate.owner,
+              tags: mappedTemplate.tags,
+              columnsDetail: mappedTemplate.columnsDetail,
+            },
+          }
+        );
+        return;
+      }
+    } catch (error) {
+      console.error('[TemplateManagement] Error al obtener detalle de plantilla:', error);
+      this.assignedTemplatesError = this.getErrorMessage(error);
+    }
+
     this.dialog.open<TemplateDetailDialogComponent, TemplateDetailDialogData, void>(
       TemplateDetailDialogComponent,
       {
@@ -593,19 +628,33 @@ export class TemplateManagementComponent implements OnInit {
 
   private mapColumnsToDetail(columns: TemplateColumnResponse[]): TemplateColumnDetail[] {
     return columns.map((column) => {
-      const rules = Array.isArray(column.rules)
-        ? column.rules
-            .map((rule) => this.mapRuleToDetail(rule))
-            .filter((rule): rule is TemplateColumnRuleDetail => rule !== null)
-        : [];
+      const rawRules = Array.isArray(column.rules) ? column.rules : [];
+      const mappedRules: TemplateColumnRuleDetail[] = [];
+      let isRequired = false;
 
-      const required = rules.length > 0;
+      for (const rawRule of rawRules) {
+        const mapped = this.mapRuleToDetail(rawRule);
+        if (mapped) {
+          mappedRules.push(mapped.detail);
+          if (mapped.mandatory) {
+            isRequired = true;
+          }
+        }
+      }
+
+      if (!isRequired) {
+        isRequired = rawRules.some((rule) => this.isRuleMandatory(rule));
+      }
+
+      if (!isRequired) {
+        isRequired = mappedRules.length > 0;
+      }
 
       return {
         name: column.name,
         type: column.data_type ?? 'Dato',
-        required,
-        rules,
+        required: isRequired,
+        rules: mappedRules,
         example:
           column.description && column.description.length > 0 ? column.description : undefined,
       };
@@ -633,17 +682,192 @@ export class TemplateManagementComponent implements OnInit {
     }
   }
 
-  private mapRuleToDetail(rule: TemplateColumnRulePayload): TemplateColumnRuleDetail | null {
+  private mapRuleToDetail(
+    rule: TemplateColumnRulePayload
+  ): { detail: TemplateColumnRuleDetail; mandatory: boolean } | null {
     const id = this.extractRuleId(rule.id);
+    const payload = this.extractRulePayload(rule);
+    const normalizedPayload = normalizeAiPayload(payload);
+    const mandatory = this.toBoolean(
+      normalizedPayload?.['Campo obligatorio'] ?? this.extractMandatoryFlag(rule, payload)
+    );
+
+    if (normalizedPayload) {
+      const summaryDisplay = this.buildRuleDisplayFromPayload(normalizedPayload, id);
+      const summary = this.buildRuleSummaryText(summaryDisplay);
+
+      return {
+        detail: {
+          id: id ?? undefined,
+          requiresLookup: false,
+          loading: false,
+          summary,
+          summaryDisplay,
+        },
+        mandatory,
+      };
+    }
+
     if (!id) {
       return null;
     }
 
     return {
-      id,
-      requiresLookup: true,
-      loading: true,
+      detail: {
+        id,
+        requiresLookup: true,
+        loading: true,
+      },
+      mandatory,
     };
+  }
+
+  private isRuleMandatory(rule: TemplateColumnRulePayload): boolean {
+    const payload = this.extractRulePayload(rule);
+    const normalizedPayload = normalizeAiPayload(payload);
+    if (normalizedPayload) {
+      return this.toBoolean(normalizedPayload['Campo obligatorio']);
+    }
+
+    return this.toBoolean(this.extractMandatoryFlag(rule, payload));
+  }
+
+  private extractRulePayload(rule: TemplateColumnRulePayload): unknown {
+    if (!rule || typeof rule !== 'object') {
+      return null;
+    }
+
+    const record = rule as Record<string, unknown>;
+
+    if ('rule' in record) {
+      return record['rule'];
+    }
+
+    if ('payload' in record) {
+      return record['payload'];
+    }
+
+    if ('data' in record) {
+      return record['data'];
+    }
+
+    return record;
+  }
+
+  private extractMandatoryFlag(rule: TemplateColumnRulePayload, payload: unknown): unknown {
+    if (payload && typeof payload === 'object' && !Array.isArray(payload)) {
+      const record = payload as Record<string, unknown>;
+      if ('Campo obligatorio' in record) {
+        return record['Campo obligatorio'];
+      }
+    }
+
+    if (rule && typeof rule === 'object') {
+      const record = rule as Record<string, unknown>;
+      if ('Campo obligatorio' in record) {
+        return record['Campo obligatorio'];
+      }
+    }
+
+    return undefined;
+  }
+
+  private buildRuleDisplayFromPayload(
+    payload: RulePayload,
+    ruleId: string | null
+  ): { title: string; description?: string; conditions?: string[] } {
+    const titleParts: string[] = [];
+    const name = this.sanitizeString(payload['Nombre de la regla']);
+    const dataType = this.sanitizeString(payload['Tipo de dato']);
+
+    if (name) {
+      titleParts.push(name);
+    }
+
+    if (dataType) {
+      titleParts.push(`(${dataType})`);
+    }
+
+    const title = titleParts.join(' ').trim() || (ruleId ? `Regla ${ruleId}` : 'Resumen de la regla');
+    const description = this.sanitizeString(payload['Descripción']) ?? undefined;
+    const conditions = this.sanitizeStringArray(payload['Header rule']);
+
+    return {
+      title,
+      description,
+      conditions,
+    };
+  }
+
+  private buildRuleSummaryText(display: { title: string; description?: string; conditions?: string[] }): string {
+    const segments: string[] = [];
+
+    const title = this.sanitizeString(display.title) ?? '';
+    if (title) {
+      segments.push(title);
+    }
+
+    const description = this.sanitizeString(display.description);
+    if (description && description !== title) {
+      segments.push(description);
+    }
+
+    if (display.conditions?.length) {
+      segments.push(`Condiciones: ${display.conditions.join(', ')}`);
+    }
+
+    return segments.join('. ');
+  }
+
+  private sanitizeString(value: unknown): string | null {
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      return trimmed.length > 0 ? trimmed : null;
+    }
+
+    return null;
+  }
+
+  private sanitizeStringArray(value: unknown): string[] {
+    if (!value) {
+      return [];
+    }
+
+    if (Array.isArray(value)) {
+      return value
+        .map((item) => this.sanitizeString(item))
+        .filter((item): item is string => !!item);
+    }
+
+    if (typeof value === 'string') {
+      return value
+        .split(',')
+        .map((item) => item.trim())
+        .filter((item) => item.length > 0);
+    }
+
+    return [];
+  }
+
+  private toBoolean(value: unknown): boolean {
+    if (typeof value === 'boolean') {
+      return value;
+    }
+
+    if (typeof value === 'string') {
+      const normalized = value.trim().toLowerCase();
+      if (!normalized) {
+        return false;
+      }
+
+      return ['true', '1', 'si', 'sí', 'yes'].includes(normalized);
+    }
+
+    if (typeof value === 'number') {
+      return value !== 0;
+    }
+
+    return false;
   }
 
   private toDisplayStatus(status: string | undefined): TemplateStatus {
