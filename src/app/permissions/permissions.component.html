@@ -1,34 +1,22 @@
-<section class="page-header">
-  <div>
-    <p class="page-header__pretitle">Control de Acceso</p>
-    <h1 class="page-header__title">Gestiona los permisos por usuario</h1>
-    <p class="page-header__subtitle">
-      Asigna plantillas específicas a usuarios para controlar su acceso a módulos claves de la
-      plataforma.
-    </p>
-  </div>
-</section>
-
 <section class="permissions-panel">
   <header class="permissions-panel__header">
     <div>
-      <h2>Permisos de Usuarios</h2>
-      <p>Asigna plantillas a usuarios específicos para controlar su acceso</p>
+      <h2>Gestión de Permisos</h2>
+      <p>Administra el acceso de los usuarios a las plantillas disponibles.</p>
     </div>
     <label class="permissions-panel__search">
       <span class="material-symbols-rounded" aria-hidden="true">search</span>
       <input
         type="search"
-        placeholder="Buscar por nombre o correo..."
-        [(ngModel)]="searchTerm"
         name="search"
+        placeholder="Buscar usuario por nombre o correo electrónico"
+        [(ngModel)]="searchTerm"
       />
     </label>
   </header>
 
   <p class="permissions-panel__hint">
-    Selecciona un usuario para activar o desactivar las plantillas disponibles. Los cambios se
-    aplicarán inmediatamente al guardar.
+    Selecciona un usuario para gestionar las plantillas a las que tiene acceso.
   </p>
 
   <div class="permissions-table__wrapper" *ngIf="filteredUsers as items">
@@ -43,7 +31,19 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let user of items; trackBy: trackByEmail">
+        <tr *ngIf="isLoading">
+          <td colspan="5" class="permissions-table__empty-row">
+            <span class="material-symbols-rounded" aria-hidden="true">hourglass_top</span>
+            <p>Cargando usuarios...</p>
+          </td>
+        </tr>
+        <tr *ngIf="!isLoading && loadError && items.length === 0">
+          <td colspan="5" class="permissions-table__empty-row">
+            <span class="material-symbols-rounded" aria-hidden="true">warning</span>
+            <p>{{ loadError }}</p>
+          </td>
+        </tr>
+        <tr *ngFor="let user of items; trackBy: trackByUserId">
           <td>
             <div class="permissions-table__identity">
               <span class="permissions-table__avatar" aria-hidden="true">
@@ -59,21 +59,21 @@
             <span class="permissions-table__email--main">{{ user.email }}</span>
           </td>
           <td>
-            <ng-container *ngIf="getAssignedTemplates(user) as assigned">
+            <ng-container *ngIf="user.templates as assigned">
               <ng-container *ngIf="assigned.length; else noTemplates">
                 <div class="permissions-table__templates">
                   <span
                     class="template-chip"
-                    *ngFor="let template of getVisibleTemplates(assigned); trackBy: trackByTemplateId"
+                    *ngFor="let template of getVisibleTemplates(user); trackBy: trackByTemplateId"
                   >
                     <span class="template-chip__code">{{ template.code }}</span>
                     <span class="template-chip__name">{{ template.name }}</span>
                   </span>
                   <span
                     class="template-chip template-chip--counter"
-                    *ngIf="getRemainingCount(assigned) > 0"
+                    *ngIf="getRemainingCount(user) > 0"
                   >
-                    +{{ getRemainingCount(assigned) }} más
+                    +{{ getRemainingCount(user) }} más
                   </span>
                 </div>
               </ng-container>
@@ -91,7 +91,7 @@
             </button>
           </td>
         </tr>
-        <tr *ngIf="items.length === 0">
+        <tr *ngIf="!isLoading && !loadError && items.length === 0">
           <td colspan="5" class="permissions-table__empty-row">
             <span class="material-symbols-rounded" aria-hidden="true">search_off</span>
             <p>No se encontraron usuarios para la búsqueda realizada.</p>

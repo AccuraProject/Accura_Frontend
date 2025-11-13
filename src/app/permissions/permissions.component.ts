@@ -1,26 +1,30 @@
-import { Component } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { firstValueFrom, Subject, takeUntil } from 'rxjs';
+
 import {
   PermissionManageDialogComponent,
   PermissionManageDialogData,
   PermissionManageDialogResult
 } from './permission-manage-dialog.component';
-
-interface TemplateDefinition {
-  id: string;
-  name: string;
-  code: string;
-  description: string;
-}
+import { UserService } from '../core/services/user.service';
+import { TemplatesService, TemplateResponse } from '../templates/templates.service';
+import { UserResponse } from '../core/models/user.model';
 
 interface PermissionUser {
   id: number;
   name: string;
   email: string;
-  assignedTemplateIds: string[];
   lastUpdated: string;
+  templates: TemplatePreview[];
+}
+
+interface TemplatePreview {
+  id: number;
+  name: string;
+  code: string;
 }
 
 @Component({
@@ -30,68 +34,28 @@ interface PermissionUser {
   templateUrl: './permissions.component.html',
   styleUrl: './permissions.component.scss'
 })
-export class PermissionsComponent {
+export class PermissionsComponent implements OnInit, OnDestroy {
   protected searchTerm = '';
+  protected users: PermissionUser[] = [];
+  protected isLoading = false;
+  protected loadError: string | null = null;
 
-  protected readonly templates: TemplateDefinition[] = [
-    {
-      id: 'sales',
-      name: 'Plantilla de Ventas',
-      code: 'VD',
-      description: 'Plantilla para cargar datos de ventas mensuales o columnas.'
-    },
-    {
-      id: 'claims',
-      name: 'Plantilla de Siniestros',
-      code: 'ST',
-      description: 'Plantilla para gestión de siniestros o columnas.'
-    },
-    {
-      id: 'onboarding',
-      name: 'Plantilla de Ingreso',
-      code: 'NG',
-      description: 'Plantilla para registro de nuevos clientes y documentación.'
-    },
-    {
-      id: 'collections',
-      name: 'Plantilla de Cobranza',
-      code: 'CB',
-      description: 'Plantilla para control de cuentas por cobrar y seguimiento.'
-    }
-  ];
+  private readonly destroy$ = new Subject<void>();
 
-  protected users: PermissionUser[] = [
-    {
-      id: 1,
-      name: 'María García',
-      email: 'maria@example.com',
-      assignedTemplateIds: ['sales', 'claims'],
-      lastUpdated: '2025-01-06'
-    },
-    {
-      id: 2,
-      name: 'Carlos López',
-      email: 'carlos@example.com',
-      assignedTemplateIds: ['sales'],
-      lastUpdated: '2025-01-04'
-    },
-    {
-      id: 3,
-      name: 'Ana Martínez',
-      email: 'ana@example.com',
-      assignedTemplateIds: [],
-      lastUpdated: '2025-01-02'
-    },
-    {
-      id: 4,
-      name: 'Luis Hernández',
-      email: 'luis@example.com',
-      assignedTemplateIds: ['claims', 'collections'],
-      lastUpdated: '2025-01-05'
-    }
-  ];
+  constructor(
+    private readonly dialog: MatDialog,
+    private readonly userService: UserService,
+    private readonly templatesService: TemplatesService
+  ) {}
 
-  constructor(private readonly dialog: MatDialog) {}
+  async ngOnInit(): Promise<void> {
+    await this.loadUsers();
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
 
   protected get filteredUsers(): PermissionUser[] {
     const term = this.searchTerm.trim().toLowerCase();
@@ -107,8 +71,8 @@ export class PermissionsComponent {
     });
   }
 
-  protected trackByEmail(_: number, user: PermissionUser): string {
-    return user.email;
+  protected trackByUserId(_: number, user: PermissionUser): number {
+    return user.id;
   }
 
   protected getInitials(name: string): string {
@@ -120,21 +84,15 @@ export class PermissionsComponent {
       .join('');
   }
 
-  protected getAssignedTemplates(user: PermissionUser): TemplateDefinition[] {
-    return this.templates.filter((template) =>
-      user.assignedTemplateIds.includes(template.id)
-    );
+  protected getVisibleTemplates(user: PermissionUser): TemplatePreview[] {
+    return user.templates.slice(0, 2);
   }
 
-  protected getVisibleTemplates(templates: TemplateDefinition[]): TemplateDefinition[] {
-    return templates.slice(0, 2);
+  protected getRemainingCount(user: PermissionUser): number {
+    return user.templates.length > 2 ? user.templates.length - 2 : 0;
   }
 
-  protected getRemainingCount(templates: TemplateDefinition[]): number {
-    return templates.length > 2 ? templates.length - 2 : 0;
-  }
-
-  protected trackByTemplateId(_: number, template: TemplateDefinition): string {
+  protected trackByTemplateId(_: number, template: TemplatePreview): number {
     return template.id;
   }
 
@@ -154,24 +112,96 @@ export class PermissionsComponent {
       }
     });
 
-    dialogRef.afterClosed().subscribe((result: PermissionManageDialogResult | undefined) => {
-      if (!result?.refresh) {
-        return;
-      }
+    dialogRef
+      .afterClosed()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((result: PermissionManageDialogResult | undefined) => {
+        if (!result?.refresh) {
+          return;
+        }
 
-      this.markUserAsUpdated(user.email);
-    });
+        void this.loadUsers();
+      });
   }
 
-  private markUserAsUpdated(email: string): void {
-    const today = new Date().toISOString().slice(0, 10);
-    this.users = this.users.map((user) =>
-      user.email === email
-        ? {
-            ...user,
-            lastUpdated: today
-          }
-        : user
-    );
+  private async loadUsers(): Promise<void> {
+    if (this.isLoading) {
+      return;
+    }
+
+    this.isLoading = true;
+    this.loadError = null;
+
+    try {
+      const users = await firstValueFrom(this.userService.getUsers());
+      const enrichedUsers = await Promise.all(
+        users.map((user) => this.buildPermissionUser(user))
+      );
+      this.users = enrichedUsers;
+    } catch (error) {
+      console.error('Error al cargar los usuarios con sus plantillas.', error);
+      this.loadError = 'No fue posible cargar los usuarios. Inténtalo nuevamente.';
+    } finally {
+      this.isLoading = false;
+    }
+  }
+
+  private async buildPermissionUser(user: UserResponse): Promise<PermissionUser> {
+    const templates = await this.fetchTemplatesForUser(user.id);
+
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      lastUpdated: this.formatDate(user.updated_at ?? user.created_at),
+      templates
+    };
+  }
+
+  private async fetchTemplatesForUser(userId: number): Promise<TemplatePreview[]> {
+    try {
+      const templates = await this.templatesService.fetchTemplatesForUser(userId);
+      return templates.map((template) => this.toTemplatePreview(template));
+    } catch (error) {
+      console.error(`Error al obtener las plantillas del usuario ${userId}.`, error);
+      return [];
+    }
+  }
+
+  private toTemplatePreview(template: TemplateResponse): TemplatePreview {
+    return {
+      id: template.id,
+      name: template.name,
+      code: this.buildTemplateCode(template)
+    };
+  }
+
+  private buildTemplateCode(template: TemplateResponse): string {
+    const tableName = template.table_name?.trim();
+    if (tableName) {
+      return tableName.toUpperCase();
+    }
+
+    const initials = template.name
+      .split(' ')
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part.charAt(0).toUpperCase())
+      .join('');
+
+    return initials || `#${template.id}`;
+  }
+
+  private formatDate(value: string | null | undefined): string {
+    if (!value) {
+      return '—';
+    }
+
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) {
+      return value.slice(0, 10);
+    }
+
+    return parsed.toISOString().slice(0, 10);
   }
 }
