@@ -4,8 +4,10 @@ export interface DashboardKpis {
     previous_month: number;
   };
   templates: {
+    total?: number;
     published: number;
     unpublished: number;
+    active?: number;
   };
   loads: {
     current_month: number;
