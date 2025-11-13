@@ -281,6 +281,33 @@
   }
 }
 
+.client-templates__state {
+  margin: 1rem 0 0;
+  border: 1px dashed rgba(148, 163, 184, 0.35);
+  border-radius: 1.5rem;
+  padding: 2rem 1.5rem;
+  display: grid;
+  justify-items: center;
+  gap: 0.75rem;
+  color: #475569;
+  background: rgba(248, 250, 252, 0.85);
+
+  .material-symbols-rounded {
+    font-size: 2rem;
+    color: #6366f1;
+  }
+
+  &--error {
+    border-color: rgba(239, 68, 68, 0.35);
+    color: #b91c1c;
+    background: rgba(254, 226, 226, 0.45);
+
+    .material-symbols-rounded {
+      color: #ef4444;
+    }
+  }
+}
+
 .client-templates__grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));

@@ -197,7 +197,22 @@
       </label>
     </header>
 
-    <section class="client-templates__grid" *ngIf="filteredAssignedTemplates as templates">
+    <div class="client-templates__state" *ngIf="assignedTemplatesLoading">
+      <span class="material-symbols-rounded" aria-hidden="true">hourglass_top</span>
+      <p>Cargando plantillas asignadas...</p>
+    </div>
+    <div
+      class="client-templates__state client-templates__state--error"
+      *ngIf="!assignedTemplatesLoading && assignedTemplatesError"
+    >
+      <span class="material-symbols-rounded" aria-hidden="true">error</span>
+      <p>{{ assignedTemplatesError }}</p>
+    </div>
+
+    <section
+      class="client-templates__grid"
+      *ngIf="!assignedTemplatesLoading && !assignedTemplatesError && filteredAssignedTemplates as templates"
+    >
       <article
         class="client-template-card"
         *ngFor="let template of templates; trackBy: trackByAssignedTemplateId"
@@ -284,7 +299,13 @@
 
       <div *ngIf="templates.length === 0" class="client-templates__empty">
         <span class="material-symbols-rounded" aria-hidden="true">search_off</span>
-        <p>No tienes plantillas asignadas con los criterios de búsqueda.</p>
+        <p>
+          {{
+            searchTerm
+              ? 'No se encontraron plantillas con los criterios de búsqueda.'
+              : 'No tienes plantillas asignadas por el momento.'
+          }}
+        </p>
       </div>
     </section>
   </section>

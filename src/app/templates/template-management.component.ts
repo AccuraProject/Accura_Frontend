@@ -4,7 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatMenuModule } from '@angular/material/menu';
 import { Store } from '@ngrx/store';
-import { Observable } from 'rxjs';
+import { Observable, firstValueFrom } from 'rxjs';
+import { filter } from 'rxjs/operators';
 
 import {
   TemplateCreateDialogComponent,
@@ -21,7 +22,8 @@ import {
   TemplateDeleteDialogComponent,
   TemplateDeleteDialogData,
 } from './template-delete-dialog.component';
-import { selectIsAdmin } from '../core/store/session/session.selectors';
+import { CurrentUserResponse } from '../core/models/user.model';
+import { selectIsAdmin, selectSessionUser } from '../core/store/session/session.selectors';
 import {
   TemplateColumnResponse,
   TemplateColumnRulePayload,
@@ -73,6 +75,7 @@ export class TemplateManagementComponent implements OnInit {
   private readonly dialog = inject(MatDialog);
   private readonly store = inject(Store);
   private readonly templatesService = inject(TemplatesService);
+  private readonly sessionUser$ = this.store.select(selectSessionUser);
 
   protected searchTerm = '';
   protected statusFilter: ManagementTemplateStatus | 'Todos' = 'Todos';
@@ -95,147 +98,24 @@ export class TemplateManagementComponent implements OnInit {
   protected templates: TemplateRow[] = [];
   protected templatesLoading = false;
   protected templatesError: string | null = null;
+  protected assignedTemplates: ClientTemplate[] = [];
+  protected assignedTemplatesLoading = false;
+  protected assignedTemplatesError: string | null = null;
 
   ngOnInit(): void {
-    void this.loadTemplates();
+    void this.initializeTemplates();
   }
 
-  protected readonly assignedTemplates: ClientTemplate[] = [
-    {
-      id: 'policy-template',
-      name: 'Plantilla de Pólizas',
-      description: 'Plantilla para registrar pólizas emitidas mensualmente.',
-      version: 'v1.0',
-      status: 'Activo',
-      statusClass: 'badge--active',
-      lastUpdated: '2025-04-01',
-      createdAt: '2024-11-12',
-      columnsCount: 14,
-      owner: 'María Hernández',
-      tags: ['Mensual', 'Carga Masiva'],
-      columnsDetail: [
-        {
-          name: 'Número de Póliza',
-          type: 'Texto',
-          required: true,
-          rules: [
-            {
-              summary: 'Formato alfanumérico de 12 caracteres',
-              requiresLookup: false,
-              loading: false,
-            },
-          ],
-          example: 'POL-2025-001',
-        },
-        {
-          name: 'Fecha de Emisión',
-          type: 'Fecha',
-          required: true,
-          rules: [
-            {
-              summary: 'Debe coincidir con el periodo reportado',
-              requiresLookup: false,
-              loading: false,
-            },
-          ],
-          example: '2025-04-01',
-        },
-        {
-          name: 'Tipo de Seguro',
-          type: 'Catálogo',
-          required: true,
-          rules: [
-            {
-              summary: 'Seleccionar entre los valores definidos',
-              requiresLookup: false,
-              loading: false,
-            },
-          ],
-          example: 'Vida',
-        },
-        {
-          name: 'Prima Total',
-          type: 'Numérico',
-          required: true,
-          rules: [
-            {
-              summary: 'Mayor a 0, separador decimal con punto',
-              requiresLookup: false,
-              loading: false,
-            },
-          ],
-          example: '120000.00',
-        },
-      ],
-    },
-    {
-      id: 'claims-template',
-      name: 'Plantilla de Siniestros',
-      description: 'Plantilla para registrar siniestros reportados por los asegurados.',
-      version: 'v1.3',
-      status: 'En Revisión',
-      statusClass: 'badge--review',
-      lastUpdated: '2025-03-15',
-      createdAt: '2024-10-03',
-      columnsCount: 12,
-      owner: 'Equipo de Riesgos',
-      tags: ['Seguimiento', 'Reportes'],
-      columnsDetail: [
-        {
-          name: 'Número de Siniestro',
-          type: 'Texto',
-          required: true,
-          rules: [
-            {
-              summary: 'Formato consecutivo SIN-XXX-YYYY',
-              requiresLookup: false,
-              loading: false,
-            },
-          ],
-          example: 'SIN-021-2025',
-        },
-        {
-          name: 'Fecha del Evento',
-          type: 'Fecha',
-          required: true,
-          rules: [
-            {
-              summary: 'Debe ser anterior o igual a la fecha de carga',
-              requiresLookup: false,
-              loading: false,
-            },
-          ],
-          example: '2025-03-10',
-        },
-        {
-          name: 'Estado del Siniestro',
-          type: 'Catálogo',
-          required: true,
-          rules: [
-            {
-              summary: 'Valores permitidos: Abierto, En proceso, Cerrado',
-              requiresLookup: false,
-              loading: false,
-            },
-          ],
-          example: 'En proceso',
-        },
-        {
-          name: 'Monto Estimado',
-          type: 'Numérico',
-          required: false,
-          rules: [
-            {
-              summary: 'Opcional, máximo 2 decimales',
-              requiresLookup: false,
-              loading: false,
-            },
-          ],
-          example: '45000.50',
-        },
-      ],
-    },
-  ];
+  private async initializeTemplates(): Promise<void> {
+    const isAdmin = await firstValueFrom(this.isAdmin$);
+
+    if (isAdmin) {
+      await this.loadTemplates();
+      return;
+    }
+
+    await this.loadAssignedTemplates();
+  }
 
   protected get filteredTemplates(): TemplateRow[] {
     const term = this.searchTerm.trim().toLowerCase();
@@ -561,6 +441,37 @@ export class TemplateManagementComponent implements OnInit {
     });
   }
 
+  private async loadAssignedTemplates(): Promise<void> {
+    if (this.assignedTemplatesLoading) {
+      return;
+    }
+
+    this.assignedTemplatesLoading = true;
+    this.assignedTemplatesError = null;
+
+    try {
+      const user = await firstValueFrom(
+        this.sessionUser$.pipe(
+          filter((value): value is CurrentUserResponse => value !== null)
+        )
+      );
+
+      const templates = await this.templatesService.fetchTemplatesForUser(user.id);
+      this.assignedTemplates = templates.map((template) =>
+        this.mapTemplateResponseToClient(
+          template,
+          Array.isArray(template.columns) ? template.columns : []
+        )
+      );
+    } catch (error) {
+      console.error('[TemplateManagement] Error al obtener plantillas asignadas:', error);
+      this.assignedTemplatesError = this.getErrorMessage(error);
+      this.assignedTemplates = [];
+    } finally {
+      this.assignedTemplatesLoading = false;
+    }
+  }
+
   private async loadTemplates(): Promise<void> {
     if (this.templatesLoading) {
       return;
@@ -649,6 +560,37 @@ export class TemplateManagementComponent implements OnInit {
     };
   }
 
+  private mapTemplateResponseToClient(
+    template: TemplateResponse,
+    columns: TemplateColumnResponse[] = []
+  ): ClientTemplate {
+    const id = this.normalizeId(template.id);
+    const name = template.name ?? 'Plantilla sin nombre';
+    const description = template.description ?? '';
+    const version = template.table_name?.trim().length ? template.table_name : '—';
+    const lastUpdated = this.toIsoDate(template.updated_at ?? template.created_at);
+    const createdAt = this.toIsoDate(template.created_at);
+    const columnsDetail = this.mapColumnsToDetail(columns);
+    const columnsCount = columns.length;
+    const { status, statusClass } = this.toClientStatus(template.status);
+    const owner = template.user_id ? `Usuario #${template.user_id}` : 'Equipo de Administración';
+
+    return {
+      id,
+      name,
+      description,
+      version,
+      status,
+      statusClass,
+      lastUpdated,
+      createdAt,
+      columnsCount,
+      owner,
+      tags: [],
+      columnsDetail,
+    };
+  }
+
   private mapColumnsToDetail(columns: TemplateColumnResponse[]): TemplateColumnDetail[] {
     return columns.map((column) => {
       const rules = Array.isArray(column.rules)
@@ -668,6 +610,27 @@ export class TemplateManagementComponent implements OnInit {
           column.description && column.description.length > 0 ? column.description : undefined,
       };
     });
+  }
+
+  private toClientStatus(
+    status: string | undefined
+  ): { status: ClientTemplateStatus; statusClass: string } {
+    if (!status) {
+      return { status: 'En Revisión', statusClass: 'badge--draft' };
+    }
+
+    const normalized = status.trim().toLowerCase();
+
+    switch (normalized) {
+      case 'published':
+      case 'publicado':
+        return { status: 'Activo', statusClass: 'badge--active' };
+      case 'inactive':
+      case 'inactivo':
+        return { status: 'En Revisión', statusClass: 'badge--inactive' };
+      default:
+        return { status: 'En Revisión', statusClass: 'badge--draft' };
+    }
   }
 
   private mapRuleToDetail(rule: TemplateColumnRulePayload): TemplateColumnRuleDetail | null {
