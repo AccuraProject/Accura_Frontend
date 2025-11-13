@@ -263,10 +263,17 @@ export class TemplatesService {
       )
     );
 
+    const session = await firstValueFrom(this.store.select(selectSessionState));
+    const isAdmin = session?.role === 'admin';
+
     const templates = await Promise.all(
       templateIds.map(async (templateId) => {
         try {
-          return await this.fetchTemplate(templateId);
+          if (isAdmin) {
+            return await this.fetchTemplate(templateId);
+          }
+
+          return await this.fetchTemplateDetail(templateId);
         } catch (error) {
           console.error(
             `[TemplatesService] Error al obtener la plantilla ${templateId} para el usuario ${userId}.`,
