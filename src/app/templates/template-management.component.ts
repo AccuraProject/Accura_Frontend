@@ -309,6 +309,8 @@ export class TemplateManagementComponent implements OnInit {
         this.dialog.open<TemplateDetailDialogComponent, TemplateDetailDialogData, void>(
           TemplateDetailDialogComponent,
           {
+            width: '70vw',
+            maxWidth: '1240px',
             data: {
               name: mappedTemplate.name,
               description: mappedTemplate.description,
@@ -486,9 +488,7 @@ export class TemplateManagementComponent implements OnInit {
 
     try {
       const user = await firstValueFrom(
-        this.sessionUser$.pipe(
-          filter((value): value is CurrentUserResponse => value !== null)
-        )
+        this.sessionUser$.pipe(filter((value): value is CurrentUserResponse => value !== null))
       );
 
       const templates = await this.templatesService.fetchTemplatesForUser(user.id);
@@ -661,9 +661,10 @@ export class TemplateManagementComponent implements OnInit {
     });
   }
 
-  private toClientStatus(
-    status: string | undefined
-  ): { status: ClientTemplateStatus; statusClass: string } {
+  private toClientStatus(status: string | undefined): {
+    status: ClientTemplateStatus;
+    statusClass: string;
+  } {
     if (!status) {
       return { status: 'En Revisión', statusClass: 'badge--draft' };
     }
@@ -788,7 +789,8 @@ export class TemplateManagementComponent implements OnInit {
       titleParts.push(`(${dataType})`);
     }
 
-    const title = titleParts.join(' ').trim() || (ruleId ? `Regla ${ruleId}` : 'Resumen de la regla');
+    const title =
+      titleParts.join(' ').trim() || (ruleId ? `Regla ${ruleId}` : 'Resumen de la regla');
     const description = this.sanitizeString(payload['Descripción']) ?? undefined;
     const conditions = this.sanitizeStringArray(payload['Header rule']);
 
@@ -799,7 +801,11 @@ export class TemplateManagementComponent implements OnInit {
     };
   }
 
-  private buildRuleSummaryText(display: { title: string; description?: string; conditions?: string[] }): string {
+  private buildRuleSummaryText(display: {
+    title: string;
+    description?: string;
+    conditions?: string[];
+  }): string {
     const segments: string[] = [];
 
     const title = this.sanitizeString(display.title) ?? '';
