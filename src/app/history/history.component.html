@@ -51,7 +51,17 @@
     </div>
   </header>
 
-  <div class="history-table__wrapper" *ngIf="filteredRecords as records">
+  <div *ngIf="isLoading" class="history-table__state">
+    <span class="material-symbols-rounded" aria-hidden="true">hourglass_empty</span>
+    <p>Cargando historial de cargas...</p>
+  </div>
+
+  <div *ngIf="hasError" class="history-table__state history-table__state--error">
+    <span class="material-symbols-rounded" aria-hidden="true">error</span>
+    <p>No se pudieron obtener los registros. Intenta nuevamente más tarde.</p>
+  </div>
+
+  <div class="history-table__wrapper" *ngIf="!isLoading && !hasError && filteredRecords as records">
     <table class="history-table">
       <thead>
         <tr>
@@ -83,7 +93,7 @@
           </td>
           <td>
             <div class="history-table__user">
-              <span class="history-table__avatar" aria-hidden="true">{{ record.uploadedBy[0] }}</span>
+              <span class="history-table__avatar" aria-hidden="true">{{ record.uploadedByInitials }}</span>
               <span>{{ record.uploadedBy }}</span>
             </div>
           </td>

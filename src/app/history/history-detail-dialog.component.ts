@@ -2,7 +2,11 @@ import { Component, Inject } from '@angular/core';
 import { CommonModule, DatePipe, DecimalPipe, PercentPipe } from '@angular/common';
 import { MatDialogModule, MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 
-type HistoryStatus = 'Éxito' | 'Con Errores' | 'En Proceso';
+type HistoryStatus =
+  | 'Procesando'
+  | 'Validado exitosamente'
+  | 'Validado con errores'
+  | 'Fallido';
 
 export interface HistoryDetailDialogData {
   fileName: string;
@@ -33,12 +37,14 @@ export class HistoryDetailDialogComponent {
 
   protected get statusIcon(): string {
     switch (this.data.status) {
-      case 'Éxito':
+      case 'Validado exitosamente':
         return 'task_alt';
-      case 'Con Errores':
+      case 'Validado con errores':
         return 'error';
-      case 'En Proceso':
+      case 'Procesando':
         return 'autorenew';
+      case 'Fallido':
+        return 'block';
       default:
         return 'info';
     }
@@ -46,12 +52,14 @@ export class HistoryDetailDialogComponent {
 
   protected get statusBadgeClass(): string {
     switch (this.data.status) {
-      case 'Éxito':
+      case 'Validado exitosamente':
         return 'badge badge--success';
-      case 'Con Errores':
+      case 'Validado con errores':
         return 'badge badge--warning';
-      case 'En Proceso':
+      case 'Procesando':
         return 'badge badge--info';
+      case 'Fallido':
+        return 'badge badge--danger';
       default:
         return 'badge';
     }
@@ -59,12 +67,14 @@ export class HistoryDetailDialogComponent {
 
   protected get statusIconClass(): string {
     switch (this.data.status) {
-      case 'Éxito':
+      case 'Validado exitosamente':
         return 'history-detail__icon history-detail__icon--success';
-      case 'Con Errores':
+      case 'Validado con errores':
         return 'history-detail__icon history-detail__icon--warning';
-      case 'En Proceso':
+      case 'Procesando':
         return 'history-detail__icon history-detail__icon--info';
+      case 'Fallido':
+        return 'history-detail__icon history-detail__icon--danger';
       default:
         return 'history-detail__icon';
     }

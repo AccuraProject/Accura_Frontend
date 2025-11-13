@@ -1,20 +1,30 @@
-import { Component } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { HistoryDetailDialogComponent, HistoryDetailDialogData } from './history-detail-dialog.component';
+import { LoadsService } from '../core/services/loads.service';
+import { LoadDetailResponseItem } from '../core/models/load-detail.model';
 
-type HistoryStatus = 'Éxito' | 'Con Errores' | 'En Proceso';
+type HistoryStatus =
+  | 'Procesando'
+  | 'Validado exitosamente'
+  | 'Validado con errores'
+  | 'Fallido';
 
 type HistoryFilter = 'Todos los estados' | HistoryStatus;
 
 type TemplateFilter = 'Todas las plantillas' | string;
+
+const NAME_CONNECTORS = new Set(['de', 'del', 'la', 'las', 'los', 'y']);
 
 interface HistoryRecord {
   id: string;
   fileName: string;
   templateName: string;
   uploadedBy: string;
+  uploadedByInitials: string;
   uploadedAt: string;
   status: HistoryStatus;
   totalRows: number;
@@ -41,121 +51,59 @@ interface MetricSummary {
   templateUrl: './history.component.html',
   styleUrl: './history.component.scss'
 })
-export class HistoryComponent {
+export class HistoryComponent implements OnInit {
+  private readonly dialog = inject(MatDialog);
+  private readonly loadsService = inject(LoadsService);
+  private readonly destroyRef = inject(DestroyRef);
+
   protected searchTerm = '';
   protected statusFilter: HistoryFilter = 'Todos los estados';
   protected templateFilter: TemplateFilter = 'Todas las plantillas';
 
-  protected readonly statusOptions: HistoryFilter[] = ['Todos los estados', 'Éxito', 'Con Errores', 'En Proceso'];
-
-  protected readonly templateOptions: TemplateFilter[] = [
-    'Todas las plantillas',
-    'Plantilla de Pólizas Emitidas',
-    'Plantilla de Siniestros Reportados',
-    'Plantilla de Clientes Activos'
+  protected readonly statusOptions: HistoryFilter[] = [
+    'Todos los estados',
+    'Procesando',
+    'Validado exitosamente',
+    'Validado con errores',
+    'Fallido'
   ];
 
-  protected readonly metrics: MetricSummary[] = [
+  protected templateOptions: TemplateFilter[] = ['Todas las plantillas'];
+
+  protected metrics: MetricSummary[] = [
     {
       label: 'Total de Cargas',
-      value: '5',
+      value: '0',
       description: 'Archivos procesados este mes',
-      trend: '+15% este mes',
-      isPositive: true,
+      trend: 'Sin registros',
+      isPositive: false,
       icon: 'upload_file'
     },
     {
       label: 'Usuarios Activos',
-      value: '3',
+      value: '0',
       description: 'Usuarios cargando archivos',
-      trend: '+2% este mes',
-      isPositive: true,
+      trend: 'Sin registros',
+      isPositive: false,
       icon: 'group'
     },
     {
       label: 'Filas Procesadas',
-      value: '835',
+      value: '0',
       description: 'Volumen de filas validadas',
-      trend: '+22% este mes',
-      isPositive: true,
+      trend: 'Sin registros',
+      isPositive: false,
       icon: 'table_rows'
     }
   ];
 
-  protected historyRecords: HistoryRecord[] = [
-    {
-      id: 'HX-2045',
-      fileName: 'polizas_enero_2025.xlsx',
-      templateName: 'Plantilla de Pólizas Emitidas',
-      uploadedBy: 'María García',
-      uploadedAt: '2025-01-16T10:45:00Z',
-      status: 'Éxito',
-      totalRows: 150,
-      validatedRows: 150,
-      errorRows: 0,
-      successRate: 1,
-      processingTime: '2m 15s',
-      validationStartedAt: '2025-01-16T10:46:30Z'
-    },
-    {
-      id: 'HX-2044',
-      fileName: 'sinestros_q4.csv',
-      templateName: 'Plantilla de Siniestros Reportados',
-      uploadedBy: 'Carlos López',
-      uploadedAt: '2025-01-14T14:20:00Z',
-      status: 'Con Errores',
-      totalRows: 210,
-      validatedRows: 198,
-      errorRows: 12,
-      successRate: 0.94,
-      processingTime: '3m 40s',
-      validationStartedAt: '2025-01-14T14:21:10Z'
-    },
-    {
-      id: 'HX-2043',
-      fileName: 'clientes_activos.json',
-      templateName: 'Plantilla de Clientes Activos',
-      uploadedBy: 'Ana Gómez',
-      uploadedAt: '2025-01-12T08:15:00Z',
-      status: 'Éxito',
-      totalRows: 320,
-      validatedRows: 320,
-      errorRows: 0,
-      successRate: 1,
-      processingTime: '4m 05s',
-      validationStartedAt: '2025-01-12T08:16:20Z'
-    },
-    {
-      id: 'HX-2042',
-      fileName: 'polizas_diciembre_2024.xlsx',
-      templateName: 'Plantilla de Pólizas Emitidas',
-      uploadedBy: 'María García',
-      uploadedAt: '2025-01-08T17:05:00Z',
-      status: 'Éxito',
-      totalRows: 155,
-      validatedRows: 155,
-      errorRows: 0,
-      successRate: 1,
-      processingTime: '2m 05s',
-      validationStartedAt: '2025-01-08T17:06:10Z'
-    },
-    {
-      id: 'HX-2041',
-      fileName: 'sinestros_octubre.csv',
-      templateName: 'Plantilla de Siniestros Reportados',
-      uploadedBy: 'Carlos López',
-      uploadedAt: '2025-01-04T11:32:00Z',
-      status: 'En Proceso',
-      totalRows: 180,
-      validatedRows: 0,
-      errorRows: 0,
-      successRate: 0,
-      processingTime: '-',
-      validationStartedAt: '2025-01-04T11:33:10Z'
-    }
-  ];
+  protected historyRecords: HistoryRecord[] = [];
+  protected isLoading = false;
+  protected hasError = false;
 
-  constructor(private readonly dialog: MatDialog) {}
+  ngOnInit(): void {
+    this.fetchHistoryRecords();
+  }
 
   protected get filteredRecords(): HistoryRecord[] {
     const term = this.searchTerm.trim().toLowerCase();
@@ -182,12 +130,14 @@ export class HistoryComponent {
 
   protected statusBadgeClass(status: HistoryStatus): string {
     switch (status) {
-      case 'Éxito':
+      case 'Validado exitosamente':
         return 'badge badge--success';
-      case 'Con Errores':
+      case 'Validado con errores':
         return 'badge badge--warning';
-      case 'En Proceso':
+      case 'Procesando':
         return 'badge badge--info';
+      case 'Fallido':
+        return 'badge badge--danger';
       default:
         return 'badge';
     }
@@ -215,5 +165,214 @@ export class HistoryComponent {
         panelClass: 'history-detail-dialog'
       }
     );
+  }
+
+  private fetchHistoryRecords(): void {
+    this.isLoading = true;
+    this.hasError = false;
+
+    this.loadsService
+      .fetchLoadDetails()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (details) => {
+          const records = details
+            .map((detail) => this.mapToHistoryRecord(detail))
+            .sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime());
+
+          this.historyRecords = records;
+          this.updateTemplateOptions(records);
+          this.updateMetrics(records);
+          this.isLoading = false;
+        },
+        error: () => {
+          this.hasError = true;
+          this.isLoading = false;
+        }
+      });
+  }
+
+  private mapToHistoryRecord(detail: LoadDetailResponseItem): HistoryRecord {
+    const { load, template, user } = detail;
+    const totalRows = load.total_rows ?? 0;
+    const errorRows = load.error_rows ?? 0;
+    const validatedRows = Math.max(totalRows - errorRows, 0);
+    const successRate = totalRows > 0 ? validatedRows / totalRows : 0;
+
+    const { displayName, initials } = this.resolveUserInfo(user);
+
+    return {
+      id: load.id !== undefined && load.id !== null ? String(load.id) : load.file_name,
+      fileName: load.file_name,
+      templateName: template?.name ?? 'Plantilla desconocida',
+      uploadedBy: displayName,
+      uploadedByInitials: initials,
+      uploadedAt: load.created_at,
+      status: this.mapStatus(load.status),
+      totalRows,
+      validatedRows,
+      errorRows,
+      successRate,
+      processingTime: this.formatProcessingTime(load.started_at, load.finished_at),
+      validationStartedAt: load.started_at ?? load.created_at
+    };
+  }
+
+  private resolveUserInfo(user: LoadDetailResponseItem['user']): { displayName: string; initials: string } {
+    if (!user) {
+      return { displayName: 'Desconocido', initials: '?' };
+    }
+
+    const trimmedName = user.name?.trim();
+
+    if (trimmedName) {
+      const nameParts = trimmedName
+        .split(/\s+/)
+        .map((part) => part.trim())
+        .filter((part) => part.length > 0);
+
+      const firstName = nameParts[0] ?? '';
+      const surname = nameParts.slice(1).find((part) => !NAME_CONNECTORS.has(part.toLowerCase())) ?? '';
+
+      const firstInitial = firstName.charAt(0).toUpperCase();
+      const secondInitial = surname.charAt(0).toUpperCase();
+      const initials = `${firstInitial}${secondInitial}`.trim() || firstInitial || '?';
+
+      return {
+        displayName: trimmedName,
+        initials
+      };
+    }
+
+    if (user.email) {
+      const emailLocalPart = user.email.split('@')[0] ?? '';
+      const firstInitial = emailLocalPart.charAt(0).toUpperCase();
+
+      return {
+        displayName: user.email,
+        initials: firstInitial || '?'
+      };
+    }
+
+    return { displayName: 'Desconocido', initials: '?' };
+  }
+
+  private mapStatus(status: string | null | undefined): HistoryStatus {
+    const normalized = status
+      ? status
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .toLowerCase()
+          .replace(/_/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim()
+      : '';
+
+    switch (normalized) {
+      case 'validado exitosamente':
+      case 'validado exitoso':
+      case 'validado correctamente':
+      case 'success':
+      case 'successful':
+      case 'completed':
+      case 'completed successfully':
+      case 'finished':
+      case 'completado':
+        return 'Validado exitosamente';
+      case 'validado con errores':
+      case 'con errores':
+      case 'with errors':
+      case 'completed with errors':
+      case 'partial success':
+      case 'partial':
+      case 'completado con errores':
+        return 'Validado con errores';
+      case 'fallido':
+      case 'failed':
+      case 'error':
+      case 'errores criticos':
+      case 'cancelado':
+      case 'cancelled':
+      case 'canceled':
+      case 'aborted':
+      case 'stopped':
+        return 'Fallido';
+      case 'procesando':
+      case 'en proceso':
+      case 'processing':
+      case 'in progress':
+      case 'in_progress':
+      case 'pending':
+      case 'queued':
+      case 'validando':
+      case 'validating':
+      default:
+        return 'Procesando';
+    }
+  }
+
+  private formatProcessingTime(startedAt: string | null, finishedAt: string | null): string {
+    if (!startedAt || !finishedAt) {
+      return '-';
+    }
+
+    const start = new Date(startedAt).getTime();
+    const end = new Date(finishedAt).getTime();
+
+    if (Number.isNaN(start) || Number.isNaN(end) || end <= start) {
+      return '-';
+    }
+
+    const totalSeconds = Math.floor((end - start) / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+
+    if (minutes === 0) {
+      return `${seconds}s`;
+    }
+
+    return `${minutes}m ${seconds.toString().padStart(2, '0')}s`;
+  }
+
+  private updateTemplateOptions(records: HistoryRecord[]): void {
+    const templateNames = Array.from(new Set(records.map((record) => record.templateName))).sort();
+    this.templateOptions = ['Todas las plantillas', ...templateNames];
+
+    if (!templateNames.includes(this.templateFilter) && this.templateFilter !== 'Todas las plantillas') {
+      this.templateFilter = 'Todas las plantillas';
+    }
+  }
+
+  private updateMetrics(records: HistoryRecord[]): void {
+    const totalLoads = records.length;
+    const activeUsers = new Set(records.map((record) => record.uploadedBy)).size;
+    const totalRows = records.reduce((sum, record) => sum + record.totalRows, 0);
+
+    this.metrics = [
+      {
+        label: 'Total de Cargas',
+        value: totalLoads.toLocaleString('es-ES'),
+        description: 'Archivos procesados este mes',
+        trend: totalLoads > 0 ? 'Actividad reciente' : 'Sin registros',
+        isPositive: totalLoads > 0,
+        icon: 'upload_file'
+      },
+      {
+        label: 'Usuarios Activos',
+        value: activeUsers.toLocaleString('es-ES'),
+        description: 'Usuarios cargando archivos',
+        trend: activeUsers > 0 ? 'Usuarios activos' : 'Sin registros',
+        isPositive: activeUsers > 0,
+        icon: 'group'
+      },
+      {
+        label: 'Filas Procesadas',
+        value: totalRows.toLocaleString('es-ES'),
+        description: 'Volumen de filas validadas',
+        trend: totalRows > 0 ? 'Validaciones completadas' : 'Sin registros',
+        isPositive: totalRows > 0,
+        icon: 'table_rows'
+      }
+    ];
   }
 }
