@@ -1,7 +1,8 @@
 import { HttpClient, HttpEvent, HttpHeaders } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Store } from '@ngrx/store';
-import { Observable, firstValueFrom } from 'rxjs';
+import { Observable, firstValueFrom, from } from 'rxjs';
+import { switchMap } from 'rxjs/operators';
 
 import { environment } from '../../environments/environment';
 import { selectSessionState } from '../core/store/session/session.reducer';
@@ -189,23 +190,26 @@ export class TemplatesService {
     );
   }
 
-  async uploadTemplateLoad(
+  uploadTemplateLoad(
     templateId: number | string,
     file: File
-  ): Promise<Observable<HttpEvent<TemplateLoadResponse>>> {
-    const headers = await this.buildAuthHeaders({ contentType: null });
-    const encodedId = encodeURIComponent(String(templateId));
-    const formData = new FormData();
-    formData.append('file', file);
+  ): Observable<HttpEvent<TemplateLoadResponse>> {
+    return from(this.buildAuthHeaders({ contentType: null })).pipe(
+      switchMap((headers) => {
+        const encodedId = encodeURIComponent(String(templateId));
+        const formData = new FormData();
+        formData.append('file', file, file.name);
 
-    return this.http.post<TemplateLoadResponse>(
-      `${this.baseUrl}/templates/${encodedId}/loads`,
-      formData,
-      {
-        headers,
-        reportProgress: true,
-        observe: 'events' as const,
-      }
+        return this.http.post<TemplateLoadResponse>(
+          `${this.baseUrl}/templates/${encodedId}/loads`,
+          formData,
+          {
+            headers,
+            reportProgress: true,
+            observe: 'events' as const,
+          }
+        );
+      })
     );
   }
 

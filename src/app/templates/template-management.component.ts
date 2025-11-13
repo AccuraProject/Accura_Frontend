@@ -508,7 +508,7 @@ export class TemplateManagementComponent implements OnInit, OnDestroy {
     this.uploadProgress[templateId] = null;
   }
 
-  protected async confirmUpload(templateId: string): Promise<void> {
+  protected confirmUpload(templateId: string): void {
     const file = this.uploadFiles[templateId];
     if (!file || this.uploadInProgress[templateId]) {
       return;
@@ -520,7 +520,7 @@ export class TemplateManagementComponent implements OnInit, OnDestroy {
     this.uploadProgress[templateId] = 0;
 
     try {
-      const upload$ = await this.templatesService.uploadTemplateLoad(templateId, file);
+      const upload$ = this.templatesService.uploadTemplateLoad(templateId, file);
       const subscription = upload$.subscribe({
         next: (event) => {
           if (!event) {
