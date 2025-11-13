@@ -40,6 +40,18 @@ export interface TemplateAccessRevokePayload {
   user_id: number;
 }
 
+export interface TemplateAccessResponse {
+  id: number;
+  template_id: number;
+  user_id: number;
+  start_date?: string;
+  end_date?: string;
+  revoked_at?: string;
+  revoked_by?: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface TemplateColumnRulePayload {
   id: number | string;
   'header rule'?: string[];
@@ -179,23 +191,63 @@ export class TemplatesService {
     const headers = await this.buildAuthHeaders();
     const encodedId = encodeURIComponent(String(userId));
     const data = await firstValueFrom(
-      this.http.get<TemplateResponse[] | Record<string, unknown>>(
-        `${this.baseUrl}/templates/users/${encodedId}`,
+      this.http.get<TemplateAccessResponse[] | Record<string, unknown>>(
+        `${this.baseUrl}/templates/users/${encodedId}/access`,
         { headers }
       )
     );
+
+    const accessEntries = this.normalizeTemplateAccessCollection(data);
+    if (!accessEntries.length) {
+      return [];
+    }
+
+    const templateIds = Array.from(
+      new Set(
+        accessEntries
+          .map((entry) => entry.template_id)
+          .filter((templateId) => typeof templateId === 'number' && !Number.isNaN(templateId))
+      )
+    );
+
+    const templates = await Promise.all(
+      templateIds.map(async (templateId) => {
+        try {
+          return await this.fetchTemplate(templateId);
+        } catch (error) {
+          console.error(
+            `[TemplatesService] Error al obtener la plantilla ${templateId} para el usuario ${userId}.`,
+            error
+          );
+          return null;
+        }
+      })
+    );
+
+    return templates.filter((template): template is TemplateResponse => template !== null);
+  }
+
+  private normalizeTemplateAccessCollection(
+    data: TemplateAccessResponse[] | Record<string, unknown> | null | undefined
+  ): TemplateAccessResponse[] {
+    if (!data) {
+      return [];
+    }
 
     if (Array.isArray(data)) {
       return data;
     }
 
-    if (data && typeof data === 'object') {
-      const collectionKeys = ['items', 'templates', 'data'];
-      for (const key of collectionKeys) {
-        const value = data[key as keyof typeof data];
-        if (Array.isArray(value)) {
-          return value as TemplateResponse[];
-        }
+    if (typeof data !== 'object') {
+      return [];
+    }
+
+    const record = data as Record<string, unknown>;
+    const collectionKeys = ['items', 'access', 'data', 'results'];
+    for (const key of collectionKeys) {
+      const value = record[key];
+      if (Array.isArray(value)) {
+        return value as TemplateAccessResponse[];
       }
     }
 
