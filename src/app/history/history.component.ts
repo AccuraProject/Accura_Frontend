@@ -7,7 +7,11 @@ import { HistoryDetailDialogComponent, HistoryDetailDialogData } from './history
 import { LoadsService } from '../core/services/loads.service';
 import { LoadDetailResponseItem } from '../core/models/load-detail.model';
 
-type HistoryStatus = 'Éxito' | 'Con Errores' | 'En Proceso';
+type HistoryStatus =
+  | 'Procesando'
+  | 'Validado exitosamente'
+  | 'Validado con errores'
+  | 'Fallido';
 
 type HistoryFilter = 'Todos los estados' | HistoryStatus;
 
@@ -53,7 +57,13 @@ export class HistoryComponent implements OnInit {
   protected statusFilter: HistoryFilter = 'Todos los estados';
   protected templateFilter: TemplateFilter = 'Todas las plantillas';
 
-  protected readonly statusOptions: HistoryFilter[] = ['Todos los estados', 'Éxito', 'Con Errores', 'En Proceso'];
+  protected readonly statusOptions: HistoryFilter[] = [
+    'Todos los estados',
+    'Procesando',
+    'Validado exitosamente',
+    'Validado con errores',
+    'Fallido'
+  ];
 
   protected templateOptions: TemplateFilter[] = ['Todas las plantillas'];
 
@@ -117,12 +127,14 @@ export class HistoryComponent implements OnInit {
 
   protected statusBadgeClass(status: HistoryStatus): string {
     switch (status) {
-      case 'Éxito':
+      case 'Validado exitosamente':
         return 'badge badge--success';
-      case 'Con Errores':
+      case 'Validado con errores':
         return 'badge badge--warning';
-      case 'En Proceso':
+      case 'Procesando':
         return 'badge badge--info';
+      case 'Fallido':
+        return 'badge badge--danger';
       default:
         return 'badge';
     }
@@ -213,25 +225,56 @@ export class HistoryComponent implements OnInit {
   }
 
   private mapStatus(status: string | null | undefined): HistoryStatus {
-    const normalized = status?.toLowerCase().trim();
+    const normalized = status
+      ? status
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .toLowerCase()
+          .replace(/_/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim()
+      : '';
 
     switch (normalized) {
+      case 'validado exitosamente':
+      case 'validado exitoso':
+      case 'validado correctamente':
       case 'success':
       case 'successful':
       case 'completed':
+      case 'completed successfully':
       case 'finished':
-        return 'Éxito';
-      case 'error':
-      case 'failed':
-      case 'with_errors':
+      case 'completado':
+        return 'Validado exitosamente';
+      case 'validado con errores':
+      case 'con errores':
+      case 'with errors':
+      case 'completed with errors':
+      case 'partial success':
       case 'partial':
-        return 'Con Errores';
+      case 'completado con errores':
+        return 'Validado con errores';
+      case 'fallido':
+      case 'failed':
+      case 'error':
+      case 'errores criticos':
+      case 'cancelado':
+      case 'cancelled':
+      case 'canceled':
+      case 'aborted':
+      case 'stopped':
+        return 'Fallido';
+      case 'procesando':
+      case 'en proceso':
       case 'processing':
+      case 'in progress':
       case 'in_progress':
       case 'pending':
       case 'queued':
+      case 'validando':
+      case 'validating':
       default:
-        return 'En Proceso';
+        return 'Procesando';
     }
   }
 
