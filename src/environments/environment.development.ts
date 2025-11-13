@@ -1,5 +1,5 @@
 export const environment = {
   production: false,
   apiBaseUrl: 'http://localhost:8000',
-  notificationsWsUrl: 'ws://localhost:8000/ws/notifications/'
+  notificationsWsUrl: 'ws://localhost:8000/notifications/'
 };

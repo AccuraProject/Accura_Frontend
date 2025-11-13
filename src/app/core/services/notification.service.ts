@@ -68,9 +68,7 @@ export class NotificationService {
               return throwError(() => new Error('No hay un token de autenticación disponible.'));
             }
 
-            const tokenType = session.tokenType ?? 'Bearer';
-            const authorization = `${tokenType} ${session.accessToken}`;
-            const url = this.buildNotificationsWsUrl(authorization);
+            const url = this.buildNotificationsWsUrl(session.accessToken);
 
             return webSocket<NotificationEvent>({
               url,
@@ -84,15 +82,15 @@ export class NotificationService {
     return this.notificationUpdates$;
   }
 
-  private buildNotificationsWsUrl(authorization: string): string {
+  private buildNotificationsWsUrl(token: string): string {
     const base = this.notificationsWsUrl
       ? this.notificationsWsUrl.trim()
       : this.baseUrl.replace(/^http(s?):\/\//, (_match, protocol) =>
           protocol ? `ws${protocol === 's' ? 's' : ''}://` : 'ws://'
         );
-    const url = this.notificationsWsUrl ? base : `${base}/notifications/stream`;
+    const url = this.notificationsWsUrl ? base : `${base}/notifications/`;
     const separator = url.includes('?') ? '&' : '?';
 
-    return `${url}${separator}token=${encodeURIComponent(authorization)}`;
+    return `${url}${separator}token=${encodeURIComponent(token)}`;
   }
 }
