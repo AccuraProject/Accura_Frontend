@@ -157,6 +157,19 @@ export class TemplatesService {
     return this.parseTemplateResponse(data);
   }
 
+  async downloadTemplateExcel(templateId: number | string): Promise<Blob> {
+    const headers = await this.buildAuthHeaders();
+    const sanitizedHeaders = headers.delete('Content-Type');
+    const encodedId = encodeURIComponent(String(templateId));
+
+    return await firstValueFrom<Blob>(
+      this.http.get<Blob>(`${this.baseUrl}/templates/${encodedId}/excel`, {
+        headers: sanitizedHeaders,
+        responseType: 'blob' as 'json',
+      })
+    );
+  }
+
   async createTemplateColumns(
     templateId: number | string,
     payload: TemplateColumnPayload[]

@@ -84,6 +84,7 @@ export class TemplateManagementComponent implements OnInit {
   protected uploadState: Record<string, string | null> = {};
   protected uploadErrors: Record<string, string | null> = {};
   protected dragActiveId: string | null = null;
+  protected downloadingTemplates: Record<string, boolean> = {};
   protected statusUpdating: Record<string, boolean> = {};
   protected deletingTemplates: Record<string, boolean> = {};
 
@@ -172,6 +173,39 @@ export class TemplateManagementComponent implements OnInit {
 
   protected trackByAssignedTemplateId(_: number, template: ClientTemplate): string {
     return template.id;
+  }
+
+  protected async downloadTemplateExcel(template: ClientTemplate): Promise<void> {
+    const templateId = template.id;
+
+    if (!templateId) {
+      return;
+    }
+
+    this.assignedTemplatesError = null;
+    this.downloadingTemplates[templateId] = true;
+
+    try {
+      const blob = await this.templatesService.downloadTemplateExcel(templateId);
+
+      if (typeof window === 'undefined' || typeof document === 'undefined') {
+        return;
+      }
+
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = this.buildTemplateFilename(template);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('[TemplateManagement] Error al descargar formato de plantilla:', error);
+      this.assignedTemplatesError = this.getErrorMessage(error);
+    } finally {
+      this.downloadingTemplates[templateId] = false;
+    }
   }
 
   protected statusClass(status: TemplateStatus): string {
@@ -567,6 +601,22 @@ export class TemplateManagementComponent implements OnInit {
     const template = result.template;
     const columns = result.columns ?? [];
     return this.mapTemplateResponseToRow(template, columns);
+  }
+
+  private buildTemplateFilename(template: ClientTemplate): string {
+    const normalizeSegment = (value: string): string =>
+      value
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-zA-Z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        .toLowerCase();
+
+    const baseName = normalizeSegment(template.name) || 'plantilla';
+    const versionSegment =
+      template.version && template.version !== '—' ? normalizeSegment(template.version) : '';
+
+    return versionSegment ? `${baseName}-${versionSegment}.xlsx` : `${baseName}.xlsx`;
   }
 
   private mapTemplateResponseToRow(

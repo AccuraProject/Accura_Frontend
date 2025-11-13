@@ -256,6 +256,17 @@
             <button
               type="button"
               class="client-template-card__action--secondary"
+              (click)="downloadTemplateExcel(template)"
+              [disabled]="downloadingTemplates[template.id]"
+            >
+              <span class="material-symbols-rounded" aria-hidden="true">
+                {{ downloadingTemplates[template.id] ? 'downloading' : 'file_download' }}
+              </span>
+              {{ downloadingTemplates[template.id] ? 'Descargando...' : 'Descargar Formato' }}
+            </button>
+            <button
+              type="button"
+              class="client-template-card__action--secondary"
               (click)="openClientDetailDialog(template)"
             >
               <span class="material-symbols-rounded" aria-hidden="true">description</span>
