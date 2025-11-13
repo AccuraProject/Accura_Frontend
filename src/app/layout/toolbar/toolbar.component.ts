@@ -44,6 +44,7 @@ export class ToolbarComponent {
       });
 
     this.loadNotifications();
+    this.listenToNotificationUpdates();
   }
 
   protected onToggleMenu(): void {
@@ -154,6 +155,30 @@ export class ToolbarComponent {
         error: (error) => {
           this.notificationsError = error?.message ?? 'No fue posible cargar las notificaciones.';
           this.isLoadingNotifications = false;
+        }
+      });
+  }
+
+  private listenToNotificationUpdates(): void {
+    this.notificationService
+      .notificationUpdates()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (notification) => {
+          const existingIndex = this.notifications.findIndex((item) => item.id === notification.id);
+
+          if (existingIndex >= 0) {
+            this.notifications = this.notifications.map((item, index) =>
+              index === existingIndex ? notification : item
+            );
+          } else {
+            this.notifications = [notification, ...this.notifications];
+          }
+
+          this.unreadCount = this.notifications.filter((item) => !item.read_at).length;
+        },
+        error: (error) => {
+          this.notificationsError = error?.message ?? 'No fue posible recibir nuevas notificaciones.';
         }
       });
   }
