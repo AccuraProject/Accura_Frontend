@@ -124,7 +124,8 @@ export class TemplateDetailDialogComponent implements OnInit {
     const id = this.toRuleId(rule.id);
     const requiresLookup = rule.requiresLookup ?? (!!id && !rule.summary);
     const summary = this.toSummary(rule.summary);
-    const summaryDisplay = summary ? this.buildDisplayFromText(summary, id) : undefined;
+    const summaryDisplay =
+      rule.summaryDisplay ?? (summary ? this.buildDisplayFromText(summary, id) : undefined);
     const error = rule.error ?? null;
     const loading = requiresLookup && !summary && !error;
 
