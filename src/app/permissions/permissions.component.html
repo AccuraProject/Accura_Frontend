@@ -24,7 +24,6 @@
       <thead>
         <tr>
           <th>Usuario</th>
-          <th>Correo Electrónico</th>
           <th>Plantillas Asignadas</th>
           <th>Última Actualización</th>
           <th class="permissions-table__actions-column">Acciones</th>
@@ -56,9 +55,6 @@
             </div>
           </td>
           <td>
-            <span class="permissions-table__email--main">{{ user.email }}</span>
-          </td>
-          <td>
             <ng-container *ngIf="user.templates as assigned">
               <ng-container *ngIf="assigned.length; else noTemplates">
                 <div class="permissions-table__templates">
@@ -66,7 +62,6 @@
                     class="template-chip"
                     *ngFor="let template of getVisibleTemplates(user); trackBy: trackByTemplateId"
                   >
-                    <span class="template-chip__code">{{ template.code }}</span>
                     <span class="template-chip__name">{{ template.name }}</span>
                   </span>
                   <span
