@@ -123,7 +123,7 @@ export class ClientDashboardComponent {
       {
         label: 'Tasa de Éxito',
         value: `${this.formatPercentage(kpis.success_rate)}%`,
-        caption: `${this.formatNumber(kpis.successful_rows)} filas validadas correctamente`,
+        caption: '',
       },
     ];
   }
