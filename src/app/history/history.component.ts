@@ -21,6 +21,7 @@ const NAME_CONNECTORS = new Set(['de', 'del', 'la', 'las', 'los', 'y']);
 
 interface HistoryRecord {
   id: string;
+  loadId: string | null;
   fileName: string;
   templateName: string;
   uploadedBy: string;
@@ -145,6 +146,7 @@ export class HistoryComponent implements OnInit {
 
   protected openRecordDetail(record: HistoryRecord): void {
     const dialogData: HistoryDetailDialogData = {
+      loadId: record.loadId,
       fileName: record.fileName,
       templateName: record.templateName,
       status: record.status,
@@ -201,8 +203,11 @@ export class HistoryComponent implements OnInit {
 
     const { displayName, initials } = this.resolveUserInfo(user);
 
+    const loadId = load.id !== undefined && load.id !== null ? String(load.id) : null;
+
     return {
-      id: load.id !== undefined && load.id !== null ? String(load.id) : load.file_name,
+      id: loadId ?? load.file_name,
+      loadId,
       fileName: load.file_name,
       templateName: template?.name ?? 'Plantilla desconocida',
       uploadedBy: displayName,

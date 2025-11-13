@@ -192,6 +192,52 @@
   }
 }
 
+.history-detail__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
+.history-detail__action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: none;
+  border-radius: 9999px;
+  padding: 0.65rem 1.2rem;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #ffffff;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+
+  &:hover:not(:disabled) {
+    box-shadow: 0 12px 24px rgba(79, 70, 229, 0.3);
+    transform: translateY(-1px);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+    box-shadow: none;
+  }
+
+  .material-symbols-rounded {
+    font-size: 1.2rem;
+  }
+}
+
+.history-detail__action--secondary {
+  background: #e2e8f0;
+  color: #1f2937;
+
+  &:hover:not(:disabled) {
+    box-shadow: 0 10px 20px rgba(148, 163, 184, 0.35);
+  }
+}
+
 :host ::ng-deep .mat-mdc-dialog-surface {
   border-radius: 1.75rem;
   overflow: hidden;

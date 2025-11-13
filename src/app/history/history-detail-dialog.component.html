@@ -63,4 +63,26 @@
       </article>
     </div>
   </section>
+
+  <footer class="history-detail__actions">
+    <button
+      type="button"
+      class="history-detail__action"
+      (click)="downloadReport()"
+      [disabled]="!data.loadId"
+    >
+      <span class="material-symbols-rounded" aria-hidden="true">download</span>
+      Descargar reporte
+    </button>
+
+    <button
+      type="button"
+      class="history-detail__action history-detail__action--secondary"
+      (click)="downloadSource()"
+      [disabled]="!data.loadId"
+    >
+      <span class="material-symbols-rounded" aria-hidden="true">attach_file</span>
+      Descargar archivo
+    </button>
+  </footer>
 </section>
