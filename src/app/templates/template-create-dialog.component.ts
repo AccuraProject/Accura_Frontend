@@ -305,18 +305,18 @@ export class TemplateCreateDialogComponent {
               id: this.toNumericId(selection.id),
               'header rule': headerRule
             };
-          })
+          }),
+          is_active: true
         };
       });
 
-      const createdColumns = await this.templatesService.createTemplateColumns(
-        this.templateResponse.id,
-        payload
-      );
+      const columnsResponse = this.isEditMode
+        ? await this.templatesService.updateTemplateColumns(this.templateResponse.id, payload)
+        : await this.templatesService.createTemplateColumns(this.templateResponse.id, payload);
 
       this.dialogRef.close({
         template: this.templateResponse,
-        columns: createdColumns
+        columns: columnsResponse
       });
     } catch (error) {
       console.error('[TemplateCreateDialog] Error al crear columnas:', error);
