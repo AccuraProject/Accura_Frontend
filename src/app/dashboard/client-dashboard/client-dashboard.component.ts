@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 
 import { KpiService } from '../../core/services/kpi.service';
-import { DashboardKpis } from '../../core/models/dashboard-kpis.model';
+import { ClientDashboardKpis } from '../../core/models/client-dashboard-kpis.model';
 
 type UploadStatus = 'success' | 'warning' | 'error';
 
@@ -94,7 +94,7 @@ export class ClientDashboardComponent {
   };
 
   constructor() {
-    this.kpiService.fetchDashboardKpis().subscribe({
+    this.kpiService.fetchClientDashboardKpis().subscribe({
       next: (kpis) => {
         this.clientStats = this.mapKpisToStats(kpis);
       },
@@ -108,25 +108,22 @@ export class ClientDashboardComponent {
     this.router.navigateByUrl(route);
   }
 
-  private mapKpisToStats(kpis: DashboardKpis): ClientStatCard[] {
-    const totalTemplates = kpis.templates.total ??
-      ((kpis.templates.published ?? 0) + (kpis.templates.unpublished ?? 0));
-
+  private mapKpisToStats(kpis: ClientDashboardKpis): ClientStatCard[] {
     return [
       {
         label: 'Plantillas Disponibles',
-        value: this.formatNumber(totalTemplates),
-        caption: `${this.formatNumber(kpis.templates.published)} publicadas · ${this.formatNumber(kpis.templates.unpublished)} sin publicar`,
+        value: this.formatNumber(kpis.available_templates),
+        caption: `${this.formatNumber(kpis.total_loads)} cargas totales procesadas`,
       },
       {
         label: 'Cargas Este Mes',
-        value: this.formatNumber(kpis.loads.current_month),
-        caption: this.formatDelta(kpis.loads.current_month, kpis.loads.previous_month),
+        value: this.formatNumber(kpis.current_month_loads),
+        caption: `${this.formatNumber(kpis.successful_loads)} cargas exitosas acumuladas`,
       },
       {
         label: 'Tasa de Éxito',
-        value: `${this.formatPercentage(kpis.validations.effectiveness_percentage)}%`,
-        caption: `${this.formatNumber(kpis.validations.successful)} validaciones exitosas de ${this.formatNumber(kpis.validations.total)} totales`,
+        value: `${this.formatPercentage(kpis.success_rate)}%`,
+        caption: `${this.formatNumber(kpis.successful_rows)} filas validadas correctamente`,
       },
     ];
   }
@@ -136,20 +133,12 @@ export class ClientDashboardComponent {
   }
 
   private formatPercentage(value: number | undefined | null): string {
-    return this.percentageFormatter.format(value ?? 0);
-  }
-
-  private formatDelta(current: number | undefined | null, previous: number | undefined | null): string {
-    const currentValue = current ?? 0;
-    const previousValue = previous ?? 0;
-    const difference = currentValue - previousValue;
-
-    if (difference === 0) {
-      return 'Sin cambios vs mes anterior';
+    if (value === null || value === undefined) {
+      return this.percentageFormatter.format(0);
     }
 
-    const sign = difference > 0 ? '+' : '-';
-    return `${sign}${this.formatNumber(Math.abs(difference))} vs mes anterior`;
+    const percentageValue = value <= 1 ? value * 100 : value;
+    return this.percentageFormatter.format(percentageValue);
   }
 
   private createLoadingStats(): ClientStatCard[] {
