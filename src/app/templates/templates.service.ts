@@ -200,11 +200,13 @@ export class TemplatesService {
         const formData = new FormData();
         formData.append('file', file, file.name);
 
+        const safeHeaders = headers.delete('Content-Type');
+
         return this.http.post<TemplateLoadResponse>(
           `${this.baseUrl}/templates/${encodedId}/loads`,
           formData,
           {
-            headers,
+            headers: safeHeaders,
             reportProgress: true,
             observe: 'events' as const,
           }
