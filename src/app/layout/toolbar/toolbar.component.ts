@@ -165,7 +165,6 @@ export class ToolbarComponent {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (notification) => {
-          console.log(notification);
           const existingIndex = this.notifications.findIndex((item) => item.id === notification.id);
 
           if (existingIndex >= 0) {
@@ -177,8 +176,6 @@ export class ToolbarComponent {
           }
 
           this.unreadCount = this.notifications.filter((item) => !item.read_at).length;
-
-          console.log(this.notifications)
         },
         error: (error) => {
           this.notificationsError = error?.message ?? 'No fue posible recibir nuevas notificaciones.';

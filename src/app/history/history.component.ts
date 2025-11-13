@@ -17,11 +17,14 @@ type HistoryFilter = 'Todos los estados' | HistoryStatus;
 
 type TemplateFilter = 'Todas las plantillas' | string;
 
+const NAME_CONNECTORS = new Set(['de', 'del', 'la', 'las', 'los', 'y']);
+
 interface HistoryRecord {
   id: string;
   fileName: string;
   templateName: string;
   uploadedBy: string;
+  uploadedByInitials: string;
   uploadedAt: string;
   status: HistoryStatus;
   totalRows: number;
@@ -196,11 +199,14 @@ export class HistoryComponent implements OnInit {
     const validatedRows = Math.max(totalRows - errorRows, 0);
     const successRate = totalRows > 0 ? validatedRows / totalRows : 0;
 
+    const { displayName, initials } = this.resolveUserInfo(user);
+
     return {
       id: load.id !== undefined && load.id !== null ? String(load.id) : load.file_name,
       fileName: load.file_name,
       templateName: template?.name ?? 'Plantilla desconocida',
-      uploadedBy: this.resolveUploadedBy(user),
+      uploadedBy: displayName,
+      uploadedByInitials: initials,
       uploadedAt: load.created_at,
       status: this.mapStatus(load.status),
       totalRows,
@@ -212,16 +218,43 @@ export class HistoryComponent implements OnInit {
     };
   }
 
-  private resolveUploadedBy(user: LoadDetailResponseItem['user']): string {
+  private resolveUserInfo(user: LoadDetailResponseItem['user']): { displayName: string; initials: string } {
     if (!user) {
-      return 'Desconocido';
+      return { displayName: 'Desconocido', initials: '?' };
     }
 
-    if (user.name && user.name.trim().length > 0) {
-      return user.name;
+    const trimmedName = user.name?.trim();
+
+    if (trimmedName) {
+      const nameParts = trimmedName
+        .split(/\s+/)
+        .map((part) => part.trim())
+        .filter((part) => part.length > 0);
+
+      const firstName = nameParts[0] ?? '';
+      const surname = nameParts.slice(1).find((part) => !NAME_CONNECTORS.has(part.toLowerCase())) ?? '';
+
+      const firstInitial = firstName.charAt(0).toUpperCase();
+      const secondInitial = surname.charAt(0).toUpperCase();
+      const initials = `${firstInitial}${secondInitial}`.trim() || firstInitial || '?';
+
+      return {
+        displayName: trimmedName,
+        initials
+      };
     }
 
-    return user.email;
+    if (user.email) {
+      const emailLocalPart = user.email.split('@')[0] ?? '';
+      const firstInitial = emailLocalPart.charAt(0).toUpperCase();
+
+      return {
+        displayName: user.email,
+        initials: firstInitial || '?'
+      };
+    }
+
+    return { displayName: 'Desconocido', initials: '?' };
   }
 
   private mapStatus(status: string | null | undefined): HistoryStatus {
