@@ -55,6 +55,11 @@ export interface TemplateAccessResponse {
 export interface TemplateColumnRulePayload {
   id: number | string;
   'header rule'?: string[];
+  rule?: unknown;
+  payload?: unknown;
+  data?: unknown;
+  'Campo obligatorio'?: unknown;
+  [key: string]: unknown;
 }
 
 export interface TemplateColumnPayload {
