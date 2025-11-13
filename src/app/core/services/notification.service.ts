@@ -1,6 +1,6 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, defer, share, switchMap, take, throwError } from 'rxjs';
+import { Observable, defer, from, mergeMap, of, share, switchMap, take, throwError } from 'rxjs';
 import { Store } from '@ngrx/store';
 import { webSocket } from 'rxjs/webSocket';
 
@@ -9,7 +9,7 @@ import { NotificationEvent } from '../models/notification.model';
 import { selectSessionState } from '../store/session/session.reducer';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class NotificationService {
   private readonly http = inject(HttpClient);
@@ -28,7 +28,7 @@ export class NotificationService {
 
         const tokenType = session.tokenType ?? 'Bearer';
         const headers = new HttpHeaders({
-          Authorization: `${tokenType} ${session.accessToken}`
+          Authorization: `${tokenType} ${session.accessToken}`,
         });
 
         return this.http.get<NotificationEvent[]>(`${this.baseUrl}/notifications/`, { headers });
@@ -50,7 +50,7 @@ export class NotificationService {
 
         const tokenType = session.tokenType ?? 'Bearer';
         const headers = new HttpHeaders({
-          Authorization: `${tokenType} ${session.accessToken}`
+          Authorization: `${tokenType} ${session.accessToken}`,
         });
 
         return this.http.post(`${this.baseUrl}/notifications/mark-read`, { ids }, { headers });
@@ -70,13 +70,34 @@ export class NotificationService {
 
             const url = this.buildNotificationsWsUrl(session.accessToken);
 
-            return webSocket<NotificationEvent>({
+            return webSocket<unknown>({
               url,
-              deserializer: ({ data }) => JSON.parse(data) as NotificationEvent
+              deserializer: ({ data }) => JSON.parse(data), // solo parsear
             });
-          })
+          }),
+          mergeMap((raw: any) => {
+            // raw es algo como { type, data }
+
+            // Caso A: viene con type y data es un array
+            if (raw && Array.isArray(raw.data)) {
+              return from(raw.data as NotificationEvent[]);
+            }
+
+            // Caso B: viene con type y data es un objeto
+            if (raw && raw.data) {
+              return of(raw.data as NotificationEvent);
+            }
+
+            // Caso C: por si acaso, directo plano o array sin envoltura
+            if (Array.isArray(raw)) {
+              return from(raw as NotificationEvent[]);
+            }
+
+            return of(raw as NotificationEvent);
+          }),
+          share()
         )
-      ).pipe(share());
+      );
     }
 
     return this.notificationUpdates$;
@@ -88,7 +109,7 @@ export class NotificationService {
       : this.baseUrl.replace(/^http(s?):\/\//, (_match, protocol) =>
           protocol ? `ws${protocol === 's' ? 's' : ''}://` : 'ws://'
         );
-    const url = this.notificationsWsUrl ? base : `${base}/notifications/`;
+    const url = this.notificationsWsUrl ? base : `${base}/notifications/ws`;
     const separator = url.includes('?') ? '&' : '?';
 
     return `${url}${separator}token=${encodeURIComponent(token)}`;
