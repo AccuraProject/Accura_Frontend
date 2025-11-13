@@ -2,11 +2,11 @@
   <div>
     <h3>Gestionar Permisos</h3>
     <p>
-      Selecciona las plantillas que {{ data.user.name }} podrá utilizar. Las plantillas inactivas se
-      muestran como referencia.
+      Administra las plantillas disponibles para {{ data.user.name }}. Los cambios se aplican de forma
+      inmediata.
     </p>
   </div>
-  <button class="icon-button" type="button" (click)="cancel()" aria-label="Cerrar">
+  <button class="icon-button" type="button" (click)="close()" aria-label="Cerrar">
     <span class="material-symbols-rounded" aria-hidden="true">close</span>
   </button>
 </header>
@@ -20,97 +20,141 @@
     </div>
   </section>
 
-  <p class="manage-dialog__hint">
-    Solo las plantillas activas estarán disponibles para el usuario.
-  </p>
+  <ng-container *ngIf="isLoading; else dialogContent">
+    <div class="manage-dialog__loading">
+      <span class="material-symbols-rounded" aria-hidden="true">progress_activity</span>
+      <p>Cargando plantillas disponibles...</p>
+    </div>
+  </ng-container>
 
-  <section class="manage-dialog__section">
-    <header>
-      <div>
-        <h5>Plantillas Activas</h5>
-        <p>Plantillas actualmente asignadas al usuario</p>
-      </div>
-      <span class="manage-dialog__counter">{{ activeTemplates.length }}</span>
-    </header>
+  <ng-template #dialogContent>
+    <p class="manage-dialog__hint">{{ templateHint }}</p>
 
-    <ng-container *ngIf="activeTemplates.length; else emptyActive">
-      <ul class="template-list">
-        <li *ngFor="let template of activeTemplates; trackBy: trackByTemplateId">
-          <label class="template-option">
-            <input
-              type="checkbox"
-              [checked]="isTemplateSelected(template.id)"
-              (change)="toggleTemplate(template.id, $any($event.target).checked)"
-            />
-            <div class="template-option__content">
-              <div class="template-option__header">
-                <span class="template-option__code">{{ template.code }}</span>
-                <span class="template-option__name">{{ template.name }}</span>
+    <div *ngIf="errorMessage" class="manage-dialog__alert manage-dialog__alert--error">
+      {{ errorMessage }}
+    </div>
+
+    <div *ngIf="successMessage" class="manage-dialog__alert manage-dialog__alert--success">
+      {{ successMessage }}
+    </div>
+
+    <section class="manage-dialog__section">
+      <header>
+        <div>
+          <h5>Plantillas con acceso</h5>
+          <p>Plantillas actualmente habilitadas para el usuario</p>
+        </div>
+        <span class="manage-dialog__counter">{{ assignedTemplates.length }}</span>
+      </header>
+
+      <ng-container *ngIf="assignedTemplates.length; else emptyAssigned">
+        <ul class="template-list">
+          <li *ngFor="let template of assignedTemplates; trackBy: trackByTemplateId">
+            <article class="template-card">
+              <div class="template-card__header">
+                <div>
+                  <h6 class="template-card__name">{{ template.name }}</h6>
+                  <p class="template-card__meta">{{ getTableName(template) }}</p>
+                </div>
+                <span class="template-card__status">{{ getStatusLabel(template) }}</span>
               </div>
-              <p>{{ template.description }}</p>
-            </div>
-            <span class="template-option__action">Quitar</span>
-          </label>
-        </li>
-      </ul>
-    </ng-container>
-  </section>
-
-  <section class="manage-dialog__section">
-    <header>
-      <div>
-        <h5>Plantillas Inactivas</h5>
-        <p>Activa nuevas plantillas para otorgar acceso</p>
-      </div>
-      <span class="manage-dialog__counter manage-dialog__counter--secondary">
-        {{ inactiveTemplates.length }}
-      </span>
-    </header>
-
-    <ng-container *ngIf="inactiveTemplates.length; else emptyInactive">
-      <ul class="template-list">
-        <li *ngFor="let template of inactiveTemplates; trackBy: trackByTemplateId">
-          <label class="template-option template-option--inactive">
-            <input
-              type="checkbox"
-              [checked]="isTemplateSelected(template.id)"
-              (change)="toggleTemplate(template.id, $any($event.target).checked)"
-            />
-            <div class="template-option__content">
-              <div class="template-option__header">
-                <span class="template-option__code">{{ template.code }}</span>
-                <span class="template-option__name">{{ template.name }}</span>
+              <p class="template-card__description">
+                {{ template.description || 'Sin descripción disponible.' }}
+              </p>
+              <div class="template-card__actions">
+                <button
+                  type="button"
+                  class="template-card__action template-card__action--remove"
+                  (click)="revokeTemplate(template)"
+                  [disabled]="isPending(template.id)"
+                >
+                  Revocar acceso
+                </button>
               </div>
-              <p>{{ template.description }}</p>
-            </div>
-            <span class="template-option__action template-option__action--add">Asignar</span>
-          </label>
-        </li>
-      </ul>
-    </ng-container>
-  </section>
+            </article>
+          </li>
+        </ul>
+      </ng-container>
+    </section>
 
-  <ng-template #emptyActive>
+    <section class="manage-dialog__section">
+      <header>
+        <div>
+          <h5>Plantillas disponibles para asignar</h5>
+          <p>Solo las plantillas publicadas se pueden asignar</p>
+        </div>
+        <span class="manage-dialog__counter manage-dialog__counter--secondary">
+          {{ availableTemplates.length }}
+        </span>
+      </header>
+
+      <ng-container *ngIf="availableTemplates.length; else emptyAvailable">
+        <ul class="template-list">
+          <li *ngFor="let template of availableTemplates; trackBy: trackByTemplateId">
+            <article class="template-card template-card--available">
+              <div class="template-card__header">
+                <div>
+                  <h6 class="template-card__name">{{ template.name }}</h6>
+                  <p class="template-card__meta">{{ getTableName(template) }}</p>
+                </div>
+                <span class="template-card__status">{{ getStatusLabel(template) }}</span>
+              </div>
+              <p class="template-card__description">
+                {{ template.description || 'Sin descripción disponible.' }}
+              </p>
+              <div class="template-card__dates">
+                <label>
+                  Inicio del acceso
+                  <input
+                    type="date"
+                    [value]="getDateRange(template.id).startDate"
+                    (change)="setDateRange(template.id, 'startDate', $any($event.target).value)"
+                  />
+                </label>
+                <label>
+                  Fin del acceso
+                  <input
+                    type="date"
+                    [value]="getDateRange(template.id).endDate"
+                    (change)="setDateRange(template.id, 'endDate', $any($event.target).value)"
+                  />
+                </label>
+              </div>
+              <div class="template-card__actions">
+                <button
+                  type="button"
+                  class="template-card__action template-card__action--add"
+                  (click)="assignTemplate(template)"
+                  [disabled]="isPending(template.id) || !canAssign(template.id)"
+                >
+                  Otorgar acceso
+                </button>
+              </div>
+            </article>
+          </li>
+        </ul>
+      </ng-container>
+    </section>
+  </ng-template>
+
+  <ng-template #emptyAssigned>
     <div class="template-placeholder">
       <span class="material-symbols-rounded" aria-hidden="true">inbox</span>
-      <p>Este usuario no tiene plantillas activas.</p>
+      <p>El usuario aún no cuenta con plantillas asignadas.</p>
     </div>
   </ng-template>
 
-  <ng-template #emptyInactive>
+  <ng-template #emptyAvailable>
     <div class="template-placeholder template-placeholder--muted">
       <span class="material-symbols-rounded" aria-hidden="true">check_small</span>
-      <p>Todas las plantillas disponibles están activas.</p>
+      <p>No hay plantillas publicadas disponibles para asignar.</p>
     </div>
   </ng-template>
 </div>
 
 <footer mat-dialog-actions class="modal__actions">
-  <span class="manage-dialog__selected">Plantillas seleccionadas: {{ selectedCount }}</span>
-  <button class="modal__button modal__button--ghost" type="button" (click)="cancel()">
-    Cancelar
-  </button>
-  <button class="modal__button" type="button" (click)="submit()" [disabled]="!hasChanges">
-    Guardar Permisos
+  <span class="manage-dialog__note">Los cambios se guardan automáticamente.</span>
+  <button class="modal__button" type="button" (click)="close()">
+    Cerrar
   </button>
 </footer>

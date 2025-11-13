@@ -1,27 +1,32 @@
-import { Component, Inject } from '@angular/core';
+import { Component, Inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 
-interface TemplateDefinition {
-  id: string;
-  name: string;
-  code: string;
-  description: string;
-}
+import {
+  TemplateResponse,
+  TemplatesService,
+  TemplateAccessGrantPayload,
+  TemplateAccessRevokePayload
+} from '../templates/templates.service';
 
 interface PermissionDialogUser {
+  id: number;
   name: string;
   email: string;
 }
 
 export interface PermissionManageDialogData {
   user: PermissionDialogUser;
-  templates: TemplateDefinition[];
-  assignedTemplateIds: string[];
 }
 
 export interface PermissionManageDialogResult {
-  assignedTemplateIds: string[];
+  refresh?: boolean;
+}
+
+interface TemplateDateRange {
+  startDate: string;
+  endDate: string;
 }
 
 @Component({
@@ -31,43 +36,28 @@ export interface PermissionManageDialogResult {
   templateUrl: './permission-manage-dialog.component.html',
   styleUrl: './permission-manage-dialog.component.scss'
 })
-export class PermissionManageDialogComponent {
-  protected selectedTemplates: Set<string>;
-  private readonly originalSelection: Set<string>;
+export class PermissionManageDialogComponent implements OnInit {
+  protected isLoading = false;
+  protected assignedTemplates: TemplateResponse[] = [];
+  protected availableTemplates: TemplateResponse[] = [];
+  protected errorMessage: string | null = null;
+  protected successMessage: string | null = null;
+
+  private readonly dateRanges = new Map<number, TemplateDateRange>();
+  private readonly pendingTemplateIds = new Set<number>();
+  private hasUpdates = false;
 
   constructor(
     private readonly dialogRef: MatDialogRef<
       PermissionManageDialogComponent,
-      PermissionManageDialogResult
+      PermissionManageDialogResult | undefined
     >,
-    @Inject(MAT_DIALOG_DATA) public readonly data: PermissionManageDialogData
-  ) {
-    this.selectedTemplates = new Set(data.assignedTemplateIds);
-    this.originalSelection = new Set(data.assignedTemplateIds);
-  }
+    @Inject(MAT_DIALOG_DATA) public readonly data: PermissionManageDialogData,
+    private readonly templatesService: TemplatesService
+  ) {}
 
-  protected get activeTemplates(): TemplateDefinition[] {
-    return this.data.templates.filter((template) => this.selectedTemplates.has(template.id));
-  }
-
-  protected get inactiveTemplates(): TemplateDefinition[] {
-    return this.data.templates.filter((template) => !this.selectedTemplates.has(template.id));
-  }
-
-  protected toggleTemplate(templateId: string, checked: boolean): void {
-    const next = new Set(this.selectedTemplates);
-
-    if (checked) {
-      next.add(templateId);
-    } else {
-      next.delete(templateId);
-    }
-
-    this.selectedTemplates = next;
-  }
-
-  protected isTemplateSelected(templateId: string): boolean {
-    return this.selectedTemplates.has(templateId);
+  async ngOnInit(): Promise<void> {
+    await this.loadTemplates();
   }
 
   protected getInitials(name: string): string {
@@ -79,35 +69,209 @@ export class PermissionManageDialogComponent {
       .join('');
   }
 
-  protected trackByTemplateId(_: number, template: TemplateDefinition): string {
+  protected trackByTemplateId(_: number, template: TemplateResponse): number {
     return template.id;
   }
 
-  protected get selectedCount(): number {
-    return this.selectedTemplates.size;
+  protected get templateHint(): string {
+    return 'Solo se pueden asignar plantillas en estado publicado.';
   }
 
-  protected get hasChanges(): boolean {
-    if (this.selectedTemplates.size !== this.originalSelection.size) {
-      return true;
+  protected getStatusLabel(template: TemplateResponse): string {
+    if (!template.status) {
+      return 'Desconocido';
     }
 
-    for (const templateId of this.selectedTemplates) {
-      if (!this.originalSelection.has(templateId)) {
-        return true;
+    const normalized = template.status.toLowerCase();
+    return normalized.charAt(0).toUpperCase() + normalized.slice(1);
+  }
+
+  protected getTableName(template: TemplateResponse): string {
+    return template.table_name ?? 'Sin tabla asociada';
+  }
+
+  protected getDateRange(templateId: number): TemplateDateRange {
+    return this.dateRanges.get(templateId) ?? { startDate: '', endDate: '' };
+  }
+
+  protected setDateRange(templateId: number, field: keyof TemplateDateRange, value: string): void {
+    const current = this.getDateRange(templateId);
+    const trimmed = value?.trim() ?? '';
+    const next: TemplateDateRange = {
+      ...current,
+      [field]: trimmed
+    };
+
+    this.dateRanges.set(templateId, next);
+  }
+
+  protected canAssign(templateId: number): boolean {
+    const range = this.getDateRange(templateId);
+    if (!range.startDate || !range.endDate) {
+      return false;
+    }
+
+    return range.startDate <= range.endDate;
+  }
+
+  protected isPending(templateId: number): boolean {
+    return this.pendingTemplateIds.has(templateId);
+  }
+
+  protected async assignTemplate(template: TemplateResponse): Promise<void> {
+    const templateId = template.id;
+    const range = this.getDateRange(templateId);
+
+    this.successMessage = null;
+
+    if (!range.startDate || !range.endDate) {
+      this.errorMessage = 'Debes seleccionar las fechas de inicio y fin para otorgar acceso.';
+      return;
+    }
+
+    if (range.startDate > range.endDate) {
+      this.errorMessage = 'La fecha de inicio no puede ser posterior a la fecha de fin.';
+      return;
+    }
+
+    this.errorMessage = null;
+
+    const payload: TemplateAccessGrantPayload[] = [
+      {
+        template_id: templateId,
+        user_id: this.data.user.id,
+        start_date: range.startDate,
+        end_date: range.endDate
       }
+    ];
+
+    try {
+      await this.withPending(templateId, async () => {
+        await this.templatesService.grantTemplateAccess(payload);
+        this.hasUpdates = true;
+      });
+    } catch {
+      return;
     }
 
-    return false;
+    this.dateRanges.delete(templateId);
+
+    const successText = `Se otorgó acceso a "${template.name}".`;
+    await this.loadTemplates();
+
+    if (!this.errorMessage) {
+      this.successMessage = successText;
+    }
   }
 
-  protected cancel(): void {
+  protected async revokeTemplate(template: TemplateResponse): Promise<void> {
+    const templateId = template.id;
+    this.successMessage = null;
+    this.errorMessage = null;
+
+    const payload: TemplateAccessRevokePayload[] = [
+      {
+        template_id: templateId,
+        user_id: this.data.user.id
+      }
+    ];
+
+    try {
+      await this.withPending(templateId, async () => {
+        await this.templatesService.revokeTemplateAccess(payload);
+        this.hasUpdates = true;
+      });
+    } catch {
+      return;
+    }
+
+    const successText = `Se revocó el acceso a "${template.name}".`;
+    await this.loadTemplates();
+
+    if (!this.errorMessage) {
+      this.successMessage = successText;
+    }
+  }
+
+  protected close(): void {
+    if (this.hasUpdates) {
+      this.dialogRef.close({ refresh: true });
+      return;
+    }
+
     this.dialogRef.close();
   }
 
-  protected submit(): void {
-    this.dialogRef.close({
-      assignedTemplateIds: Array.from(this.selectedTemplates)
-    });
+  private async loadTemplates(): Promise<void> {
+    const userId = this.data.user?.id;
+    if (userId === undefined || userId === null) {
+      this.errorMessage = 'No fue posible determinar el usuario seleccionado.';
+      return;
+    }
+
+    this.isLoading = true;
+    this.errorMessage = null;
+
+    try {
+      const [allTemplates, userTemplates] = await Promise.all([
+        this.templatesService.fetchTemplates(),
+        this.templatesService.fetchTemplatesForUser(userId)
+      ]);
+
+      const uniqueAssigned = new Map<number, TemplateResponse>();
+      for (const template of userTemplates) {
+        uniqueAssigned.set(template.id, template);
+      }
+
+      this.assignedTemplates = Array.from(uniqueAssigned.values());
+
+      const assignedIds = new Set(this.assignedTemplates.map((template) => template.id));
+      this.availableTemplates = allTemplates.filter((template) => {
+        if (assignedIds.has(template.id)) {
+          return false;
+        }
+
+        const status = template.status?.toLowerCase() ?? '';
+        return status === 'published';
+      });
+    } catch (error) {
+      this.handleError(error);
+    } finally {
+      this.isLoading = false;
+    }
+  }
+
+  private async withPending(templateId: number, task: () => Promise<void>): Promise<void> {
+    this.pendingTemplateIds.add(templateId);
+
+    try {
+      await task();
+    } catch (error) {
+      this.handleError(error);
+      throw error;
+    } finally {
+      this.pendingTemplateIds.delete(templateId);
+    }
+  }
+
+  private handleError(error: unknown): void {
+    if (error instanceof HttpErrorResponse) {
+      const detail =
+        (typeof error.error === 'object' && error.error && 'detail' in error.error
+          ? String((error.error as Record<string, unknown>)['detail'])
+          : undefined) ?? error.message;
+      this.errorMessage = detail;
+      this.successMessage = null;
+      return;
+    }
+
+    if (error instanceof Error) {
+      this.errorMessage = error.message;
+      this.successMessage = null;
+      return;
+    }
+
+    this.errorMessage = 'Ocurrió un error inesperado al procesar la solicitud.';
+    this.successMessage = null;
   }
 }

@@ -16,6 +16,7 @@ interface TemplateDefinition {
 }
 
 interface PermissionUser {
+  id: number;
   name: string;
   email: string;
   assignedTemplateIds: string[];
@@ -61,24 +62,28 @@ export class PermissionsComponent {
 
   protected users: PermissionUser[] = [
     {
+      id: 1,
       name: 'María García',
       email: 'maria@example.com',
       assignedTemplateIds: ['sales', 'claims'],
       lastUpdated: '2025-01-06'
     },
     {
+      id: 2,
       name: 'Carlos López',
       email: 'carlos@example.com',
       assignedTemplateIds: ['sales'],
       lastUpdated: '2025-01-04'
     },
     {
+      id: 3,
       name: 'Ana Martínez',
       email: 'ana@example.com',
       assignedTemplateIds: [],
       lastUpdated: '2025-01-02'
     },
     {
+      id: 4,
       name: 'Luis Hernández',
       email: 'luis@example.com',
       assignedTemplateIds: ['claims', 'collections'],
@@ -142,35 +147,31 @@ export class PermissionsComponent {
       disableClose: true,
       data: {
         user: {
+          id: user.id,
           name: user.name,
           email: user.email
-        },
-        templates: this.templates,
-        assignedTemplateIds: user.assignedTemplateIds
+        }
       }
     });
 
     dialogRef.afterClosed().subscribe((result: PermissionManageDialogResult | undefined) => {
-      if (!result) {
+      if (!result?.refresh) {
         return;
       }
 
-      this.updateUserPermissions(user.email, result.assignedTemplateIds);
+      this.markUserAsUpdated(user.email);
     });
   }
 
-  private updateUserPermissions(email: string, assignedTemplateIds: string[]): void {
+  private markUserAsUpdated(email: string): void {
     const today = new Date().toISOString().slice(0, 10);
-    this.users = this.users.map((user) => {
-      if (user.email !== email) {
-        return user;
-      }
-
-      return {
-        ...user,
-        assignedTemplateIds: [...assignedTemplateIds],
-        lastUpdated: today
-      };
-    });
+    this.users = this.users.map((user) =>
+      user.email === email
+        ? {
+            ...user,
+            lastUpdated: today
+          }
+        : user
+    );
   }
 }

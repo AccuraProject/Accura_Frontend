@@ -28,6 +28,18 @@ export interface TemplateResponse {
   columns?: TemplateColumnResponse[];
 }
 
+export interface TemplateAccessGrantPayload {
+  template_id: number;
+  user_id: number;
+  start_date: string;
+  end_date: string;
+}
+
+export interface TemplateAccessRevokePayload {
+  template_id: number;
+  user_id: number;
+}
+
 export interface TemplateColumnRulePayload {
   id: number | string;
   'header rule'?: string[];
@@ -161,6 +173,55 @@ export class TemplatesService {
     }
 
     return [];
+  }
+
+  async fetchTemplatesForUser(userId: number | string): Promise<TemplateResponse[]> {
+    const headers = await this.buildAuthHeaders();
+    const encodedId = encodeURIComponent(String(userId));
+    const data = await firstValueFrom(
+      this.http.get<TemplateResponse[] | Record<string, unknown>>(
+        `${this.baseUrl}/templates/users/${encodedId}`,
+        { headers }
+      )
+    );
+
+    if (Array.isArray(data)) {
+      return data;
+    }
+
+    if (data && typeof data === 'object') {
+      const collectionKeys = ['items', 'templates', 'data'];
+      for (const key of collectionKeys) {
+        const value = data[key as keyof typeof data];
+        if (Array.isArray(value)) {
+          return value as TemplateResponse[];
+        }
+      }
+    }
+
+    return [];
+  }
+
+  async grantTemplateAccess(payload: TemplateAccessGrantPayload[]): Promise<void> {
+    if (!payload.length) {
+      return;
+    }
+
+    const headers = await this.buildAuthHeaders();
+    await firstValueFrom(
+      this.http.post<void>(`${this.baseUrl}/templates/access`, payload, { headers })
+    );
+  }
+
+  async revokeTemplateAccess(payload: TemplateAccessRevokePayload[]): Promise<void> {
+    if (!payload.length) {
+      return;
+    }
+
+    const headers = await this.buildAuthHeaders();
+    await firstValueFrom(
+      this.http.post<void>(`${this.baseUrl}/templates/access/revoke`, payload, { headers })
+    );
   }
 
   async fetchTemplateColumns(templateId: number | string): Promise<TemplateColumnResponse[]> {
