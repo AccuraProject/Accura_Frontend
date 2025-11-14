@@ -107,7 +107,12 @@
             </div>
           </td>
           <td class="history-table__actions">
-            <button type="button" class="history-table__view" (click)="openRecordDetail(record)">
+            <button
+              type="button"
+              class="history-table__view"
+              [disabled]="!canViewRecordDetail(record)"
+              (click)="openRecordDetail(record)"
+            >
               <span class="material-symbols-rounded" aria-hidden="true">visibility</span>
               Visualizar
             </button>

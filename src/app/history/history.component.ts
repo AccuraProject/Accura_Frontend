@@ -134,6 +134,10 @@ export class HistoryComponent implements OnInit {
     return record.id;
   }
 
+  protected canViewRecordDetail(record: HistoryRecord): boolean {
+    return record.status !== 'Procesando';
+  }
+
   protected statusBadgeClass(status: HistoryStatus): string {
     switch (status) {
       case 'Validado exitosamente':
@@ -150,6 +154,10 @@ export class HistoryComponent implements OnInit {
   }
 
   protected openRecordDetail(record: HistoryRecord): void {
+    if (!this.canViewRecordDetail(record)) {
+      return;
+    }
+
     const dialogData: HistoryDetailDialogData = {
       loadId: record.loadId,
       fileName: record.fileName,
