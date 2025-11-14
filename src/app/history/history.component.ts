@@ -3,9 +3,11 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Store } from '@ngrx/store';
 import { HistoryDetailDialogComponent, HistoryDetailDialogData } from './history-detail-dialog.component';
 import { LoadsService } from '../core/services/loads.service';
 import { LoadDetailResponseItem } from '../core/models/load-detail.model';
+import { selectIsUser } from '../core/store/session/session.selectors';
 
 type HistoryStatus =
   | 'Procesando'
@@ -56,6 +58,9 @@ export class HistoryComponent implements OnInit {
   private readonly dialog = inject(MatDialog);
   private readonly loadsService = inject(LoadsService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly store = inject(Store);
+
+  private displayActiveUsersMetric = true;
 
   protected searchTerm = '';
   protected statusFilter: HistoryFilter = 'Todos los estados';
@@ -71,38 +76,21 @@ export class HistoryComponent implements OnInit {
 
   protected templateOptions: TemplateFilter[] = ['Todas las plantillas'];
 
-  protected metrics: MetricSummary[] = [
-    {
-      label: 'Total de Cargas',
-      value: '0',
-      description: 'Archivos procesados este mes',
-      trend: 'Sin registros',
-      isPositive: false,
-      icon: 'upload_file'
-    },
-    {
-      label: 'Usuarios Activos',
-      value: '0',
-      description: 'Usuarios cargando archivos',
-      trend: 'Sin registros',
-      isPositive: false,
-      icon: 'group'
-    },
-    {
-      label: 'Filas Procesadas',
-      value: '0',
-      description: 'Volumen de filas validadas',
-      trend: 'Sin registros',
-      isPositive: false,
-      icon: 'table_rows'
-    }
-  ];
+  protected metrics: MetricSummary[] = this.createMetricPlaceholders();
 
   protected historyRecords: HistoryRecord[] = [];
   protected isLoading = false;
   protected hasError = false;
 
   ngOnInit(): void {
+    this.store
+      .select(selectIsUser)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((isUser) => {
+        this.displayActiveUsersMetric = !isUser;
+        this.updateMetrics(this.historyRecords);
+      });
+
     this.fetchHistoryRecords();
   }
 
@@ -353,7 +341,7 @@ export class HistoryComponent implements OnInit {
     const activeUsers = new Set(records.map((record) => record.uploadedBy)).size;
     const totalRows = records.reduce((sum, record) => sum + record.totalRows, 0);
 
-    this.metrics = [
+    const metrics: MetricSummary[] = [
       {
         label: 'Total de Cargas',
         value: totalLoads.toLocaleString('es-ES'),
@@ -361,23 +349,64 @@ export class HistoryComponent implements OnInit {
         trend: totalLoads > 0 ? 'Actividad reciente' : 'Sin registros',
         isPositive: totalLoads > 0,
         icon: 'upload_file'
-      },
-      {
+      }
+    ];
+
+    if (this.displayActiveUsersMetric) {
+      metrics.push({
         label: 'Usuarios Activos',
         value: activeUsers.toLocaleString('es-ES'),
         description: 'Usuarios cargando archivos',
         trend: activeUsers > 0 ? 'Usuarios activos' : 'Sin registros',
         isPositive: activeUsers > 0,
         icon: 'group'
-      },
+      });
+    }
+
+    metrics.push({
+      label: 'Filas Procesadas',
+      value: totalRows.toLocaleString('es-ES'),
+      description: 'Volumen de filas validadas',
+      trend: totalRows > 0 ? 'Validaciones completadas' : 'Sin registros',
+      isPositive: totalRows > 0,
+      icon: 'table_rows'
+    });
+
+    this.metrics = metrics;
+  }
+
+  private createMetricPlaceholders(): MetricSummary[] {
+    const metrics: MetricSummary[] = [
       {
-        label: 'Filas Procesadas',
-        value: totalRows.toLocaleString('es-ES'),
-        description: 'Volumen de filas validadas',
-        trend: totalRows > 0 ? 'Validaciones completadas' : 'Sin registros',
-        isPositive: totalRows > 0,
-        icon: 'table_rows'
+        label: 'Total de Cargas',
+        value: '0',
+        description: 'Archivos procesados este mes',
+        trend: 'Sin registros',
+        isPositive: false,
+        icon: 'upload_file'
       }
     ];
+
+    if (this.displayActiveUsersMetric) {
+      metrics.push({
+        label: 'Usuarios Activos',
+        value: '0',
+        description: 'Usuarios cargando archivos',
+        trend: 'Sin registros',
+        isPositive: false,
+        icon: 'group'
+      });
+    }
+
+    metrics.push({
+      label: 'Filas Procesadas',
+      value: '0',
+      description: 'Volumen de filas validadas',
+      trend: 'Sin registros',
+      isPositive: false,
+      icon: 'table_rows'
+    });
+
+    return metrics;
   }
 }
