@@ -8,6 +8,8 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { HistoryDetailDialogComponent, HistoryDetailDialogData } from './history-detail-dialog.component';
 import { LoadsService } from '../core/services/loads.service';
 import { LoadDetailResponseItem } from '../core/models/load-detail.model';
+import { NotificationService } from '../core/services/notification.service';
+import { NotificationUpdatesEvent, NotificationUpdatesLoadEvent } from '../core/models/notification.model';
 import { selectIsUser } from '../core/store/session/session.selectors';
 
 type HistoryStatus =
@@ -58,6 +60,7 @@ interface MetricSummary {
 export class HistoryComponent implements OnInit {
   private readonly dialog = inject(MatDialog);
   private readonly loadsService = inject(LoadsService);
+  private readonly notificationService = inject(NotificationService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly store = inject(Store);
   private readonly router = inject(Router);
@@ -108,6 +111,7 @@ export class HistoryComponent implements OnInit {
         }
       });
 
+    this.listenToRealtimeUpdates();
     this.fetchHistoryRecords();
   }
 
@@ -207,6 +211,46 @@ export class HistoryComponent implements OnInit {
           this.isLoading = false;
         }
       });
+  }
+
+  private listenToRealtimeUpdates(): void {
+    this.notificationService
+      .notificationUpdates()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((event: NotificationUpdatesEvent) => {
+        if (event.type === 'load-event') {
+          this.applyLoadEventUpdate(event);
+        }
+      });
+  }
+
+  private applyLoadEventUpdate(event: NotificationUpdatesLoadEvent): void {
+    const detail: LoadDetailResponseItem = {
+      load: event.data.load,
+      template: event.data.template ?? null,
+      user: event.data.user ?? null
+    };
+
+    const record = this.mapToHistoryRecord(detail);
+    const updatedRecords = [...this.historyRecords];
+    const existingIndex = updatedRecords.findIndex(
+      (item) => (record.loadId && item.loadId === record.loadId) || item.id === record.id
+    );
+
+    if (existingIndex >= 0) {
+      updatedRecords[existingIndex] = record;
+    } else {
+      updatedRecords.unshift(record);
+    }
+
+    const sortedRecords = updatedRecords.sort(
+      (a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime()
+    );
+
+    this.historyRecords = sortedRecords;
+    this.updateTemplateOptions(sortedRecords);
+    this.updateMetrics(sortedRecords);
+    this.tryOpenPendingLoad();
   }
 
   private tryOpenPendingLoad(): void {

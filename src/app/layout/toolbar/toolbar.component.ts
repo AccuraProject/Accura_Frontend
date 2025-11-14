@@ -9,7 +9,7 @@ import { SessionActions } from '../../core/store/session/session.actions';
 import { CurrentUserResponse } from '../../core/models/user.model';
 import { selectSessionUser } from '../../core/store/session/session.selectors';
 import { NotificationService } from '../../core/services/notification.service';
-import { NotificationEvent } from '../../core/models/notification.model';
+import { NotificationEvent, NotificationUpdatesEvent } from '../../core/models/notification.model';
 
 @Component({
   selector: 'app-toolbar',
@@ -164,22 +164,35 @@ export class ToolbarComponent {
       .notificationUpdates()
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (notification) => {
-          const existingIndex = this.notifications.findIndex((item) => item.id === notification.id);
-
-          if (existingIndex >= 0) {
-            this.notifications = this.notifications.map((item, index) =>
-              index === existingIndex ? notification : item
-            );
-          } else {
-            this.notifications = [notification, ...this.notifications];
+        next: (event: NotificationUpdatesEvent) => {
+          if (event.type === 'notification') {
+            this.applyNotificationUpdates(event.data);
           }
-
-          this.unreadCount = this.notifications.filter((item) => !item.read_at).length;
         },
         error: (error) => {
           this.notificationsError = error?.message ?? 'No fue posible recibir nuevas notificaciones.';
         }
       });
+  }
+
+  private applyNotificationUpdates(notifications: NotificationEvent[]): void {
+    if (!notifications.length) {
+      return;
+    }
+
+    const updated = [...this.notifications];
+
+    for (const notification of [...notifications].reverse()) {
+      const existingIndex = updated.findIndex((item) => item.id === notification.id);
+
+      if (existingIndex >= 0) {
+        updated[existingIndex] = notification;
+      } else {
+        updated.unshift(notification);
+      }
+    }
+
+    this.notifications = updated;
+    this.unreadCount = this.notifications.filter((item) => !item.read_at).length;
   }
 }

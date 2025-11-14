@@ -1,11 +1,17 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, defer, from, mergeMap, of, share, switchMap, take, throwError } from 'rxjs';
+import { EMPTY, Observable, defer, from, mergeMap, share, switchMap, take, throwError } from 'rxjs';
 import { Store } from '@ngrx/store';
 import { webSocket } from 'rxjs/webSocket';
 
 import { environment } from '../../../environments/environment';
-import { NotificationEvent } from '../models/notification.model';
+import {
+  NotificationEvent,
+  NotificationUpdatesEvent,
+  NotificationUpdatesLoadEvent,
+  NotificationUpdatesLoadEventData,
+  NotificationUpdatesNotificationEvent
+} from '../models/notification.model';
 import { selectSessionState } from '../store/session/session.reducer';
 
 @Injectable({
@@ -16,7 +22,7 @@ export class NotificationService {
   private readonly store = inject(Store);
   private readonly baseUrl = environment.apiBaseUrl.replace(/\/$/, '');
   private readonly notificationsWsUrl = environment.notificationsWsUrl;
-  private notificationUpdates$?: Observable<NotificationEvent>;
+  private notificationUpdates$?: Observable<NotificationUpdatesEvent>;
 
   fetchNotifications(): Observable<NotificationEvent[]> {
     return this.store.select(selectSessionState).pipe(
@@ -58,7 +64,7 @@ export class NotificationService {
     );
   }
 
-  notificationUpdates(): Observable<NotificationEvent> {
+  notificationUpdates(): Observable<NotificationUpdatesEvent> {
     if (!this.notificationUpdates$) {
       this.notificationUpdates$ = defer(() =>
         this.store.select(selectSessionState).pipe(
@@ -75,26 +81,9 @@ export class NotificationService {
               deserializer: ({ data }) => JSON.parse(data), // solo parsear
             });
           }),
-          mergeMap((raw: any) => {
-            console.log('Notificación recibida por WS:', raw);
-            // raw es algo como { type, data }
-
-            // Caso A: viene con type y data es un array
-            if (raw && Array.isArray(raw.data)) {
-              return from(raw.data as NotificationEvent[]);
-            }
-
-            // Caso B: viene con type y data es un objeto
-            if (raw && raw.data) {
-              return of(raw.data as NotificationEvent);
-            }
-
-            // Caso C: por si acaso, directo plano o array sin envoltura
-            if (Array.isArray(raw)) {
-              return from(raw as NotificationEvent[]);
-            }
-
-            return of(raw as NotificationEvent);
+          mergeMap((raw: unknown) => {
+            const normalized = this.normalizeWebSocketPayload(raw);
+            return normalized.length ? from(normalized) : EMPTY;
           }),
           share()
         )
@@ -114,5 +103,116 @@ export class NotificationService {
     const separator = url.includes('?') ? '&' : '?';
 
     return `${url}${separator}token=${encodeURIComponent(token)}`;
+  }
+
+  private normalizeWebSocketPayload(raw: unknown): NotificationUpdatesEvent[] {
+    if (this.isNotificationEnvelope(raw)) {
+      const notifications = this.ensureNotificationArray(raw.data);
+      if (!notifications.length) {
+        return [];
+      }
+
+      const event: NotificationUpdatesNotificationEvent = {
+        type: 'notification',
+        data: notifications
+      };
+
+      return [event];
+    }
+
+    if (this.isLoadEventEnvelope(raw)) {
+      const data = raw.data;
+      const event: NotificationUpdatesLoadEvent = {
+        type: 'load-event',
+        data: {
+          ...data,
+          template: data.template ?? null,
+          user: data.user ?? null
+        }
+      };
+
+      return [event];
+    }
+
+    if (Array.isArray(raw)) {
+      const notifications = this.ensureNotificationArray(raw);
+      if (!notifications.length) {
+        return [];
+      }
+
+      const event: NotificationUpdatesNotificationEvent = {
+        type: 'notification',
+        data: notifications
+      };
+
+      return [event];
+    }
+
+    if (this.isNotificationEvent(raw)) {
+      const event: NotificationUpdatesNotificationEvent = {
+        type: 'notification',
+        data: [raw]
+      };
+
+      return [event];
+    }
+
+    return [];
+  }
+
+  private ensureNotificationArray(value: unknown): NotificationEvent[] {
+    if (Array.isArray(value)) {
+      return value.filter((item): item is NotificationEvent => this.isNotificationEvent(item));
+    }
+
+    if (this.isNotificationEvent(value)) {
+      return [value];
+    }
+
+    return [];
+  }
+
+  private isNotificationEnvelope(value: unknown): value is NotificationUpdatesNotificationEvent & {
+    data: unknown;
+  } {
+    return this.isPlainObject(value) && value.type === 'notification';
+  }
+
+  private isLoadEventEnvelope(value: unknown): value is NotificationUpdatesLoadEvent {
+    if (!this.isPlainObject(value) || value.type !== 'load-event') {
+      return false;
+    }
+
+    return this.isLoadEventData((value as NotificationUpdatesLoadEvent).data);
+  }
+
+  private isLoadEventData(value: unknown): value is NotificationUpdatesLoadEventData {
+    if (!this.isPlainObject(value)) {
+      return false;
+    }
+
+    const data = value as NotificationUpdatesLoadEventData;
+    return this.isPlainObject(data.load) && typeof data.event_type === 'string' && typeof data.stage === 'string';
+  }
+
+  private isNotificationEvent(value: unknown): value is NotificationEvent {
+    if (!this.isPlainObject(value)) {
+      return false;
+    }
+
+    const candidate = value as NotificationEvent;
+    return (
+      typeof candidate.id === 'number' &&
+      typeof candidate.user_id === 'number' &&
+      typeof candidate.event_type === 'string' &&
+      typeof candidate.title === 'string' &&
+      typeof candidate.message === 'string' &&
+      typeof candidate.created_at === 'string' &&
+      ('read_at' in candidate ? candidate.read_at === null || typeof candidate.read_at === 'string' : true)
+    );
+  }
+
+  private isPlainObject(value: unknown): value is Record<string, unknown> {
+    return typeof value === 'object' && value !== null;
   }
 }
