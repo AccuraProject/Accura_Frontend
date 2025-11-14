@@ -71,7 +71,9 @@ export class AdminDashboardComponent {
 
     this.activityService.fetchRecentActivity().subscribe({
       next: (events) => {
-        this.activity = events.map((event) => this.mapEventToActivityItem(event));
+        this.activity = events
+          .slice(0, 5)
+          .map((event) => this.mapEventToActivityItem(event));
         this.isActivityLoading = false;
         this.activityError = false;
       },
