@@ -75,7 +75,8 @@
   padding: 2rem;
   box-shadow: 0 18px 42px rgba(15, 23, 42, 0.08);
   border: 1px solid rgba(148, 163, 184, 0.16);
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 1.5rem;
 }
 
@@ -172,6 +173,7 @@
 
 .quick-actions {
   display: grid;
+  align-items: start;
   gap: 1rem;
 }
 

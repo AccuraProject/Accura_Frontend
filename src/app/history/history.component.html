@@ -3,7 +3,8 @@
     <p class="page-header__pretitle">Historial Global</p>
     <h1 class="page-header__title">Monitorea todas las cargas de archivos del sistema</h1>
     <p class="page-header__subtitle">
-      Consulta el estado de las últimas ejecuciones, analiza su desempeño y mantén el control operativo de cada carga realizada.
+      Consulta el estado de las últimas ejecuciones, analiza su desempeño y mantén el control
+      operativo de cada carga realizada.
     </p>
   </div>
 </section>
@@ -12,7 +13,9 @@
   <article class="metric-card" *ngFor="let metric of metrics">
     <header>
       <span class="material-symbols-rounded" aria-hidden="true">{{ metric.icon }}</span>
-      <span class="metric-card__trend" [class.metric-card__trend--positive]="metric.isPositive">{{ metric.trend }}</span>
+      <span class="metric-card__trend" [class.metric-card__trend--positive]="metric.isPositive">{{
+        metric.trend
+      }}</span>
     </header>
     <strong>{{ metric.value }}</strong>
     <p class="metric-card__label">{{ metric.label }}</p>
@@ -24,7 +27,10 @@
   <header class="history-panel__header">
     <div>
       <h2>Historial de Archivos</h2>
-      <p>Consulta los archivos cargados recientemente y revisa los resultados obtenidos en el proceso de validación.</p>
+      <p>
+        Consulta los archivos cargados recientemente y revisa los resultados obtenidos en el proceso
+        de validación.
+      </p>
     </div>
     <div class="history-panel__actions">
       <label class="history-panel__search">
@@ -78,7 +84,9 @@
         <tr *ngFor="let record of records; trackBy: trackByRecordId">
           <td>
             <div class="history-table__file">
-              <span class="history-table__file-icon material-symbols-rounded" aria-hidden="true">description</span>
+              <span class="history-table__file-icon material-symbols-rounded" aria-hidden="true"
+                >description</span
+              >
               <div>
                 <p class="history-table__file-name">{{ record.fileName }}</p>
                 <span class="history-table__file-id">{{ record.id }}</span>
@@ -89,11 +97,15 @@
             <span class="history-table__template">{{ record.templateName }}</span>
           </td>
           <td>
-            <span class="history-table__date">{{ record.uploadedAt | date: 'dd/MM/yyyy, HH:mm' }}</span>
+            <span class="history-table__date">{{
+              record.uploadedAt | date : 'dd/MM/yyyy, HH:mm'
+            }}</span>
           </td>
           <td>
             <div class="history-table__user">
-              <span class="history-table__avatar" aria-hidden="true">{{ record.uploadedByInitials }}</span>
+              <span class="history-table__avatar" aria-hidden="true">{{
+                record.uploadedByInitials
+              }}</span>
               <span>{{ record.uploadedBy }}</span>
             </div>
           </td>
@@ -119,9 +131,11 @@
           </td>
         </tr>
         <tr *ngIf="records.length === 0">
-          <td colspan="7" class="history-table__empty">
-            <span class="material-symbols-rounded" aria-hidden="true">search_off</span>
-            <p>No se encontraron registros que coincidan con los filtros seleccionados.</p>
+          <td colspan="7">
+            <div class="history-table__empty">
+              <span class="material-symbols-rounded" aria-hidden="true">search_off</span>
+              <p>No se encontraron registros que coincidan con los filtros seleccionados.</p>
+            </div>
           </td>
         </tr>
       </tbody>
