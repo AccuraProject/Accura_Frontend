@@ -48,7 +48,11 @@
       <div class="client-recent__avatar">📄</div>
       <div class="client-recent__info">
         <p class="client-recent__item-title">{{ upload.title }}</p>
-        <p class="client-recent__meta">{{ upload.template }} · {{ upload.date }}</p>
+        <p class="client-recent__meta">
+          {{ upload.template }}
+          <ng-container *ngIf="upload.template && upload.date"> · </ng-container>
+          <ng-container *ngIf="upload.date">{{ upload.date }}</ng-container>
+        </p>
       </div>
       <span class="client-recent__status" [ngClass]="statusClassMap[upload.status]">
         {{ upload.statusLabel }}

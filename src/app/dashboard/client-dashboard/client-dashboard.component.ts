@@ -1,9 +1,12 @@
-import { Component, inject } from '@angular/core';
+import { Component, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 
 import { KpiService } from '../../core/services/kpi.service';
 import { ClientDashboardKpis } from '../../core/models/client-dashboard-kpis.model';
+import { LoadsService } from '../../core/services/loads.service';
+import { LoadDetailResponseItem } from '../../core/models/load-detail.model';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 type UploadStatus = 'success' | 'warning' | 'error';
 
@@ -37,6 +40,8 @@ interface RecentUpload {
 export class ClientDashboardComponent {
   private readonly router = inject(Router);
   private readonly kpiService = inject(KpiService);
+  private readonly loadsService = inject(LoadsService);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly numberFormatter = new Intl.NumberFormat('es-ES');
   private readonly percentageFormatter = new Intl.NumberFormat('es-ES', {
     maximumFractionDigits: 1,
@@ -63,29 +68,7 @@ export class ClientDashboardComponent {
 
   protected clientStats: ClientStatCard[] = this.createLoadingStats();
 
-  protected readonly recentUploads: RecentUpload[] = [
-    {
-      title: 'Plantilla de Ventas',
-      template: 'Plantilla Comercial',
-      date: '22 de abril, 09:30 AM',
-      status: 'success',
-      statusLabel: 'Completado',
-    },
-    {
-      title: 'Plantilla de Inventario',
-      template: 'Plantilla Logística',
-      date: '21 de abril, 05:18 PM',
-      status: 'warning',
-      statusLabel: 'Con observaciones',
-    },
-    {
-      title: 'Corte Financiero Q1',
-      template: 'Plantilla Financiera',
-      date: '20 de abril, 11:02 AM',
-      status: 'error',
-      statusLabel: 'Error crítico',
-    },
-  ];
+  protected recentUploads: RecentUpload[] = this.createLoadingUploads();
 
   protected readonly statusClassMap: Record<UploadStatus, string> = {
     success: 'client-recent__status--success',
@@ -102,6 +85,26 @@ export class ClientDashboardComponent {
         this.clientStats = this.createErrorStats();
       },
     });
+
+    this.loadsService
+      .fetchLoadDetails()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (details) => {
+          const recentUploads = details
+            .sort(
+              (a, b) =>
+                new Date(b.load.created_at).getTime() - new Date(a.load.created_at).getTime()
+            )
+            .slice(0, 5)
+            .map((detail) => this.mapToRecentUpload(detail));
+
+          this.recentUploads = recentUploads.length > 0 ? recentUploads : this.createEmptyUploads();
+        },
+        error: () => {
+          this.recentUploads = this.createErrorUploads();
+        },
+      });
   }
 
   protected navigateTo(route: string): void {
@@ -177,6 +180,142 @@ export class ClientDashboardComponent {
         label: 'Tasa de Éxito',
         value: '-',
         caption: 'No se pudo obtener la información',
+      },
+    ];
+  }
+
+  private mapToRecentUpload(detail: LoadDetailResponseItem): RecentUpload {
+    const { load, template } = detail;
+    const { status, label } = this.mapStatus(load.status);
+
+    return {
+      title: load.file_name ?? 'Carga sin nombre',
+      template: template?.name ?? 'Plantilla desconocida',
+      date: this.formatRecentUploadDate(load.created_at),
+      status,
+      statusLabel: label,
+    };
+  }
+
+  private mapStatus(status: string | null | undefined): { status: UploadStatus; label: string } {
+    const normalized = status
+      ? status
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .toLowerCase()
+          .replace(/_/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim()
+      : '';
+
+    switch (normalized) {
+      case 'validado exitosamente':
+      case 'validado exitoso':
+      case 'validado correctamente':
+      case 'success':
+      case 'successful':
+      case 'completed':
+      case 'completed successfully':
+      case 'finished':
+      case 'completado':
+        return { status: 'success', label: 'Completado' };
+      case 'validado con errores':
+      case 'con errores':
+      case 'with errors':
+      case 'completed with errors':
+      case 'partial success':
+      case 'partial':
+      case 'completado con errores':
+        return { status: 'warning', label: 'Con observaciones' };
+      case 'fallido':
+      case 'failed':
+      case 'error':
+      case 'errores criticos':
+      case 'cancelado':
+      case 'cancelled':
+      case 'canceled':
+      case 'aborted':
+      case 'stopped':
+        return { status: 'error', label: 'Error crítico' };
+      case 'procesando':
+      case 'en proceso':
+      case 'processing':
+      case 'in progress':
+      case 'in_progress':
+      case 'pending':
+      case 'queued':
+      case 'validando':
+      case 'validating':
+        return { status: 'warning', label: 'En proceso' };
+      default:
+        return { status: 'warning', label: 'Estado desconocido' };
+    }
+  }
+
+  private formatRecentUploadDate(value: string | null | undefined): string {
+    if (!value) {
+      return 'Fecha desconocida';
+    }
+
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+      return 'Fecha desconocida';
+    }
+
+    const dateFormatter = new Intl.DateTimeFormat('es-ES', {
+      day: 'numeric',
+      month: 'long',
+    });
+
+    const timeFormatter = new Intl.DateTimeFormat('es-ES', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
+    });
+
+    const formattedDate = dateFormatter.format(date);
+    const formattedTime = timeFormatter
+      .format(date)
+      .replace(/\. ?/g, '')
+      .replace('a. m.', 'AM')
+      .replace('p. m.', 'PM');
+
+    return `${formattedDate}, ${formattedTime}`;
+  }
+
+  private createLoadingUploads(): RecentUpload[] {
+    return [
+      {
+        title: 'Cargando cargas recientes…',
+        template: 'Por favor espera',
+        date: '',
+        status: 'warning',
+        statusLabel: 'Cargando…',
+      },
+    ];
+  }
+
+  private createErrorUploads(): RecentUpload[] {
+    return [
+      {
+        title: 'No se pudieron obtener las cargas recientes',
+        template: 'Intenta nuevamente más tarde',
+        date: '',
+        status: 'error',
+        statusLabel: 'Error',
+      },
+    ];
+  }
+
+  private createEmptyUploads(): RecentUpload[] {
+    return [
+      {
+        title: 'No hay cargas recientes',
+        template: 'Empieza subiendo tu primera carga',
+        date: '',
+        status: 'warning',
+        statusLabel: 'Sin registros',
       },
     ];
   }
