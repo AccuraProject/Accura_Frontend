@@ -175,15 +175,25 @@ export class NotificationService {
   private isNotificationEnvelope(value: unknown): value is NotificationUpdatesNotificationEvent & {
     data: unknown;
   } {
-    return this.isPlainObject(value) && value.type === 'notification';
-  }
-
-  private isLoadEventEnvelope(value: unknown): value is NotificationUpdatesLoadEvent {
-    if (!this.isPlainObject(value) || value.type !== 'load-event') {
+    if (!this.isPlainObject(value)) {
       return false;
     }
 
-    return this.isLoadEventData((value as NotificationUpdatesLoadEvent).data);
+    const candidate = value as { type?: unknown };
+    return candidate.type === 'notification';
+  }
+
+  private isLoadEventEnvelope(value: unknown): value is NotificationUpdatesLoadEvent {
+    if (!this.isPlainObject(value)) {
+      return false;
+    }
+
+    const candidate = value as { type?: unknown; data?: unknown };
+    if (candidate.type !== 'load-event') {
+      return false;
+    }
+
+    return this.isLoadEventData(candidate.data);
   }
 
   private isLoadEventData(value: unknown): value is NotificationUpdatesLoadEventData {
@@ -191,8 +201,31 @@ export class NotificationService {
       return false;
     }
 
-    const data = value as NotificationUpdatesLoadEventData;
-    return this.isPlainObject(data.load) && typeof data.event_type === 'string' && typeof data.stage === 'string';
+    const data = value as {
+      event_type?: unknown;
+      stage?: unknown;
+      load?: unknown;
+      template?: unknown;
+      user?: unknown;
+    };
+
+    if (typeof data.event_type !== 'string' || typeof data.stage !== 'string') {
+      return false;
+    }
+
+    if (!this.isPlainObject(data.load)) {
+      return false;
+    }
+
+    if (data.template !== undefined && data.template !== null && !this.isPlainObject(data.template)) {
+      return false;
+    }
+
+    if (data.user !== undefined && data.user !== null && !this.isPlainObject(data.user)) {
+      return false;
+    }
+
+    return true;
   }
 
   private isNotificationEvent(value: unknown): value is NotificationEvent {
@@ -200,7 +233,15 @@ export class NotificationService {
       return false;
     }
 
-    const candidate = value as NotificationEvent;
+    const candidate = value as {
+      id?: unknown;
+      user_id?: unknown;
+      event_type?: unknown;
+      title?: unknown;
+      message?: unknown;
+      created_at?: unknown;
+      read_at?: unknown;
+    };
     return (
       typeof candidate.id === 'number' &&
       typeof candidate.user_id === 'number' &&
@@ -208,7 +249,7 @@ export class NotificationService {
       typeof candidate.title === 'string' &&
       typeof candidate.message === 'string' &&
       typeof candidate.created_at === 'string' &&
-      ('read_at' in candidate ? candidate.read_at === null || typeof candidate.read_at === 'string' : true)
+      (candidate.read_at === null || candidate.read_at === undefined || typeof candidate.read_at === 'string')
     );
   }
 
