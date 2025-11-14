@@ -46,7 +46,6 @@ export class SidebarComponent {
       roles: ['admin'],
     },
     { icon: 'docs', label: 'Plantillas', route: '/plantillas' },
-    { icon: 'upload_file', label: 'Cargar archivo', route: '/cargar-archivo', roles: ['user'] },
     { icon: 'shield', label: 'Permisos', route: '/permisos', roles: ['admin'] },
     { icon: 'history', label: 'Historial', route: '/historial' },
     { icon: 'settings', label: 'Configuración', route: '/configuracion' }

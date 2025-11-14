@@ -76,6 +76,7 @@ export class NotificationService {
             });
           }),
           mergeMap((raw: any) => {
+            console.log('Notificación recibida por WS:', raw);
             // raw es algo como { type, data }
 
             // Caso A: viene con type y data es un array
