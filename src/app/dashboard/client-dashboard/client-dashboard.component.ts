@@ -23,6 +23,8 @@ interface ClientStatCard {
 }
 
 interface RecentUpload {
+  id: string;
+  loadId: string | null;
   title: string;
   template: string;
   date: string;
@@ -111,6 +113,17 @@ export class ClientDashboardComponent {
     this.router.navigateByUrl(route);
   }
 
+  protected viewLoadTracking(upload: RecentUpload): void {
+    if (!upload.loadId) {
+      this.navigateTo('/historial');
+      return;
+    }
+
+    void this.router.navigate(['/historial'], {
+      queryParams: { loadId: upload.loadId }
+    });
+  }
+
   private mapKpisToStats(kpis: ClientDashboardKpis): ClientStatCard[] {
     return [
       {
@@ -187,8 +200,11 @@ export class ClientDashboardComponent {
   private mapToRecentUpload(detail: LoadDetailResponseItem): RecentUpload {
     const { load, template } = detail;
     const { status, label } = this.mapStatus(load.status);
+    const loadId = load.id !== undefined && load.id !== null ? String(load.id) : null;
 
     return {
+      id: loadId ?? load.file_name ?? '',
+      loadId,
       title: load.file_name ?? 'Carga sin nombre',
       template: template?.name ?? 'Plantilla desconocida',
       date: this.formatRecentUploadDate(load.created_at),
@@ -287,6 +303,8 @@ export class ClientDashboardComponent {
   private createLoadingUploads(): RecentUpload[] {
     return [
       {
+        id: 'loading',
+        loadId: null,
         title: 'Cargando cargas recientes…',
         template: 'Por favor espera',
         date: '',
@@ -299,6 +317,8 @@ export class ClientDashboardComponent {
   private createErrorUploads(): RecentUpload[] {
     return [
       {
+        id: 'error',
+        loadId: null,
         title: 'No se pudieron obtener las cargas recientes',
         template: 'Intenta nuevamente más tarde',
         date: '',
@@ -311,6 +331,8 @@ export class ClientDashboardComponent {
   private createEmptyUploads(): RecentUpload[] {
     return [
       {
+        id: 'empty',
+        loadId: null,
         title: 'No hay cargas recientes',
         template: 'Empieza subiendo tu primera carga',
         date: '',

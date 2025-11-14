@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Store } from '@ngrx/store';
+import { ActivatedRoute, Router } from '@angular/router';
 import { HistoryDetailDialogComponent, HistoryDetailDialogData } from './history-detail-dialog.component';
 import { LoadsService } from '../core/services/loads.service';
 import { LoadDetailResponseItem } from '../core/models/load-detail.model';
@@ -59,8 +60,12 @@ export class HistoryComponent implements OnInit {
   private readonly loadsService = inject(LoadsService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly store = inject(Store);
+  private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
 
   private displayActiveUsersMetric = true;
+  private pendingLoadId: string | null = null;
+  private shouldOpenPendingLoad = false;
 
   protected searchTerm = '';
   protected statusFilter: HistoryFilter = 'Todos los estados';
@@ -89,6 +94,18 @@ export class HistoryComponent implements OnInit {
       .subscribe((isUser) => {
         this.displayActiveUsersMetric = !isUser;
         this.updateMetrics(this.historyRecords);
+      });
+
+    this.route.queryParamMap
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((params) => {
+        const loadId = params.get('loadId');
+        this.pendingLoadId = loadId;
+        this.shouldOpenPendingLoad = !!loadId;
+
+        if (this.shouldOpenPendingLoad) {
+          this.tryOpenPendingLoad();
+        }
       });
 
     this.fetchHistoryRecords();
@@ -174,12 +191,43 @@ export class HistoryComponent implements OnInit {
           this.updateTemplateOptions(records);
           this.updateMetrics(records);
           this.isLoading = false;
+
+          this.tryOpenPendingLoad();
         },
         error: () => {
           this.hasError = true;
           this.isLoading = false;
         }
       });
+  }
+
+  private tryOpenPendingLoad(): void {
+    if (!this.shouldOpenPendingLoad || !this.pendingLoadId) {
+      return;
+    }
+
+    const record = this.historyRecords.find(
+      (item) => item.loadId === this.pendingLoadId || item.id === this.pendingLoadId
+    );
+
+    if (!record) {
+      return;
+    }
+
+    this.shouldOpenPendingLoad = false;
+    this.openRecordDetail(record);
+    this.clearPendingLoadQueryParam();
+  }
+
+  private clearPendingLoadQueryParam(): void {
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { loadId: null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true
+    });
+
+    this.pendingLoadId = null;
   }
 
   private mapToHistoryRecord(detail: LoadDetailResponseItem): HistoryRecord {

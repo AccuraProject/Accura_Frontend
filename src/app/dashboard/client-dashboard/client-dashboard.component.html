@@ -57,7 +57,7 @@
       <span class="client-recent__status" [ngClass]="statusClassMap[upload.status]">
         {{ upload.statusLabel }}
       </span>
-      <button class="client-recent__link" type="button" (click)="navigateTo('/historial')">
+      <button class="client-recent__link" type="button" (click)="viewLoadTracking(upload)">
         Ver seguimiento
       </button>
     </li>
