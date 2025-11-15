@@ -243,10 +243,10 @@
         class="client-template-card"
         *ngFor="let template of templates; trackBy: trackByAssignedTemplateId"
       >
-        <header>
+        <header class="client-teamplates__header">
+          <h2>{{ template.name }}</h2>
           <span class="badge" [ngClass]="template.statusClass">{{ template.status }}</span>
         </header>
-        <h2>{{ template.name }}</h2>
 
         <dl class="client-template-card__meta">
           <div>
@@ -266,22 +266,22 @@
           <div class="client-template-card__actions">
             <button
               type="button"
-              class="client-template-card__action--secondary"
+              class="client-template-card__action client-template-card__action--secondary"
               (click)="openClientDetailDialog(template)"
             >
               <span class="material-symbols-rounded" aria-hidden="true">description</span>
-              Ver Especificaciones
+              Ver detalles
             </button>
             <button
               type="button"
-              class="client-template-card__action--secondary"
+              class="client-template-card__action client-template-card__action--tertiary"
               (click)="downloadTemplateExcel(template)"
               [disabled]="downloadingTemplates[template.id]"
             >
               <span class="material-symbols-rounded" aria-hidden="true">
                 {{ downloadingTemplates[template.id] ? 'downloading' : 'file_download' }}
               </span>
-              {{ downloadingTemplates[template.id] ? 'Descargando...' : 'Descargar Formato' }}
+              {{ downloadingTemplates[template.id] ? 'Descargando...' : 'Descargar formato' }}
             </button>
             <button
               type="button"

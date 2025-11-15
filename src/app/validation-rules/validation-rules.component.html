@@ -7,12 +7,10 @@
       procesos.
     </p>
   </div>
-  <div class="page-header__actions">
-    <button class="page-header__action" type="button" (click)="openCreateDialog()">
-      <span class="material-symbols-rounded" aria-hidden="true">add</span>
-      Crear Regla
-    </button>
-  </div>
+  <button class="page-header__cta" type="button" (click)="openCreateDialog()">
+    <span class="material-symbols-rounded" aria-hidden="true">add</span>
+    Crear Regla
+  </button>
 </section>
 
 <section class="validation-summary">
@@ -105,7 +103,10 @@
                 <span class="validation-table__text">{{ rule.dataType }}</span>
               </td>
               <td>
-                <span class="badge" [ngClass]="rule.mandatory ? 'badge--active' : 'badge--inactive'">
+                <span
+                  class="badge"
+                  [ngClass]="rule.mandatory ? 'badge--active' : 'badge--inactive'"
+                >
                   {{ mandatoryLabel(rule) }}
                 </span>
               </td>
@@ -132,7 +133,7 @@
               </td>
             </tr>
             <tr *ngIf="items.length === 0">
-              <td colspan="6" >
+              <td colspan="6">
                 <div class="validation-table__empty">
                   <span class="material-symbols-rounded" aria-hidden="true">search_off</span>
                   <p>No se encontraron reglas para la búsqueda realizada.</p>
