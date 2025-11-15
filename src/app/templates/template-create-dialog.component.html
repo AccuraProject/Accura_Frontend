@@ -200,7 +200,6 @@
                         class="form-field template-modal__field--inline"
                         *ngIf="rules.length > 0"
                       >
-                        <span>Agregar regla</span>
                         <select (change)="onRuleSelected(column, $event)">
                           <option value="">Selecciona una regla</option>
                           <option *ngFor="let rule of rules" [value]="rule.id">
