@@ -285,6 +285,7 @@
             </button>
             <button
               type="button"
+              class="client-template-card__action client-template-card__action--primary"
               (click)="toggleUpload(template)"
               [disabled]="isClientUploadDisabled(template)"
               [attr.aria-expanded]="!isClientUploadDisabled(template) && uploadTemplateId === template.id"
