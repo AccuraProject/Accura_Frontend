@@ -59,22 +59,28 @@
     </label>
   </header>
 
-  <p *ngIf="ruleLoadError" class="validation-panel__error">
-    <span class="material-symbols-rounded" aria-hidden="true">error</span>
-    {{ ruleLoadError }}
-  </p>
-
-  <p *ngIf="ruleSyncError" class="validation-panel__error">
-    <span class="material-symbols-rounded" aria-hidden="true">error</span>
-    {{ ruleSyncError }}
-  </p>
-
-  <div *ngIf="rulesLoading" class="validation-table__loading">
-    <span class="material-symbols-rounded" aria-hidden="true">progress_activity</span>
-    Cargando reglas...
+  <div class="validation-table__state" *ngIf="rulesLoading">
+    <span class="material-symbols-rounded" aria-hidden="true">hourglass_top</span>
+    <p>Cargando reglas configuradas...</p>
   </div>
 
-  <ng-container *ngIf="!rulesLoading">
+  <div
+    class="validation-table__state validation-table__state--error"
+    *ngIf="!rulesLoading && ruleLoadError"
+  >
+    <span class="material-symbols-rounded" aria-hidden="true">error</span>
+    <p>{{ ruleLoadError }}</p>
+  </div>
+
+  <div
+    class="validation-table__state validation-table__state--error"
+    *ngIf="!rulesLoading && !ruleLoadError && ruleSyncError"
+  >
+    <span class="material-symbols-rounded" aria-hidden="true">error</span>
+    <p>{{ ruleSyncError }}</p>
+  </div>
+
+  <ng-container *ngIf="!rulesLoading && !ruleLoadError">
     <div class="validation-table__wrapper" *ngIf="filteredRules as items">
       <table class="validation-table">
         <thead>

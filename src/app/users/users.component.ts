@@ -57,6 +57,8 @@ export class UsersComponent implements OnInit {
   ];
 
   protected users: UserRow[] = [];
+  protected usersLoading = false;
+  protected usersError: string | null = null;
 
   constructor(
     private readonly dialog: MatDialog,
@@ -275,17 +277,23 @@ export class UsersComponent implements OnInit {
   }
 
   private loadUsers(): void {
+    if (this.usersLoading) {
+      return;
+    }
+
+    this.usersLoading = true;
+    this.usersError = null;
+
     this.userService.getUsers().subscribe({
       next: (users: UserResponse[]) => {
         this.users = users.map((user) => this.mapToUserRow(user));
+        this.usersLoading = false;
       },
       error: (error: unknown) => {
-        const message = this.userService.getErrorMessage(error);
-        if (typeof window !== 'undefined') {
-          window.alert(message);
-        } else {
-          console.error(message);
-        }
+        this.users = [];
+        this.usersError = this.userService.getErrorMessage(error);
+        this.usersLoading = false;
+        console.error(this.usersError);
       },
     });
   }

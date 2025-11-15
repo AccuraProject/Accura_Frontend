@@ -56,7 +56,23 @@
     </div>
   </div>
 
-  <div class="users-table__wrapper" *ngIf="filteredUsers as items">
+  <div class="users-table__state" *ngIf="usersLoading">
+    <span class="material-symbols-rounded" aria-hidden="true">hourglass_top</span>
+    <p>Cargando usuarios registrados...</p>
+  </div>
+
+  <div
+    class="users-table__state users-table__state--error"
+    *ngIf="!usersLoading && usersError"
+  >
+    <span class="material-symbols-rounded" aria-hidden="true">error</span>
+    <p>{{ usersError }}</p>
+  </div>
+
+  <div
+    class="users-table__wrapper"
+    *ngIf="!usersLoading && !usersError && filteredUsers as items"
+  >
     <table class="users-table">
       <thead>
         <tr>
