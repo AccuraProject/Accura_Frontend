@@ -246,19 +246,6 @@
   gap: 2rem;
   align-items: center;
   flex-wrap: wrap;
-
-  h1 {
-    margin: 0.25rem 0 0;
-    font-size: 1.8rem;
-    font-weight: 700;
-    color: #0f172a;
-  }
-
-  p {
-    margin: 0.6rem 0 0;
-    color: #475569;
-    font-size: 0.95rem;
-  }
 }
 
 .client-templates__pretitle {
@@ -362,7 +349,9 @@
 }
 
 .client-template-card__action {
+  width: 100%;
   display: inline-flex;
+  justify-content: center;
   align-items: center;
   gap: 0.5rem;
   border-radius: 999px;
@@ -373,7 +362,6 @@
   border: 1px solid rgba(148, 163, 184, 0.35);
   background: rgba(248, 250, 252, 0.9);
   color: #1f2937;
-  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.1);
   transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease,
     color 0.2s ease, border-color 0.2s ease;
 
@@ -403,7 +391,6 @@
   border-color: transparent;
   background: linear-gradient(135deg, #6366f1, #8b5cf6);
   color: #ffffff;
-  box-shadow: 0 18px 36px rgba(99, 102, 241, 0.25);
 }
 
 .client-template-card__action--primary:disabled {
@@ -426,7 +413,19 @@
   box-shadow: 0 16px 28px rgba(99, 102, 241, 0.18);
 }
 
-.client-template-card__action--secondary:disabled {
+.client-template-card__action--tertiary {
+  background: rgba(37, 99, 235, 0.1);
+  border-color: rgba(37, 99, 235, 0.32);
+  color: #1d4ed8;
+}
+
+.client-template-card__action--tertiary:hover {
+  background: rgba(37, 99, 235, 0.18);
+  border-color: rgba(37, 99, 235, 0.48);
+  color: #1e3a8a;
+}
+
+.client-template-card__action--tertiary:disabled {
   background: rgba(148, 163, 184, 0.12);
   border-color: rgba(148, 163, 184, 0.3);
   color: #64748b;
