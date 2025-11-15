@@ -266,7 +266,7 @@
           <div class="client-template-card__actions">
             <button
               type="button"
-              class="client-template-card__action--secondary"
+              class="client-template-card__action client-template-card__action--secondary"
               (click)="openClientDetailDialog(template)"
             >
               <span class="material-symbols-rounded" aria-hidden="true">description</span>
@@ -274,7 +274,7 @@
             </button>
             <button
               type="button"
-              class="client-template-card__action--secondary"
+              class="client-template-card__action client-template-card__action--secondary"
               (click)="downloadTemplateExcel(template)"
               [disabled]="downloadingTemplates[template.id]"
             >
@@ -285,6 +285,7 @@
             </button>
             <button
               type="button"
+              class="client-template-card__action client-template-card__action--primary"
               (click)="toggleUpload(template.id)"
               [attr.aria-expanded]="uploadTemplateId === template.id"
             >
