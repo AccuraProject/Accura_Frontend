@@ -58,7 +58,7 @@
   </header>
 
   <div *ngIf="isLoading" class="history-table__state">
-    <span class="material-symbols-rounded" aria-hidden="true">hourglass_empty</span>
+    <span class="material-symbols-rounded" aria-hidden="true">hourglass_top</span>
     <p>Cargando historial de cargas...</p>
   </div>
 
@@ -89,7 +89,6 @@
               >
               <div>
                 <p class="history-table__file-name">{{ record.fileName }}</p>
-                <span class="history-table__file-id">{{ record.id }}</span>
               </div>
             </div>
           </td>

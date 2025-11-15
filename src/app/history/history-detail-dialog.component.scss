@@ -27,7 +27,14 @@
     color: #64748b;
     font-size: 0.95rem;
   }
+}
 
+.badge{
+  text-align: center;
+}
+
+.badge::before{
+  content: none;
 }
 
 .history-detail__icon {
@@ -112,10 +119,6 @@
   .material-symbols-rounded {
     font-size: 1.8rem;
   }
-}
-
-.history-detail__badge {
-  margin-left: auto;
 }
 
 .history-detail__grid {

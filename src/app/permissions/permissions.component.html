@@ -31,15 +31,19 @@
       </thead>
       <tbody>
         <tr *ngIf="isLoading">
-          <td colspan="5" class="permissions-table__empty-row">
-            <span class="material-symbols-rounded" aria-hidden="true">hourglass_top</span>
-            <p>Cargando usuarios...</p>
+          <td colspan="5">
+            <div class="permissions-table__state">
+              <span class="material-symbols-rounded" aria-hidden="true">hourglass_top</span>
+              <p>Cargando usuarios...</p>
+            </div>
           </td>
         </tr>
         <tr *ngIf="!isLoading && loadError && items.length === 0">
-          <td colspan="5" class="permissions-table__empty-row">
-            <span class="material-symbols-rounded" aria-hidden="true">warning</span>
-            <p>{{ loadError }}</p>
+          <td colspan="5">
+            <div class="permissions-table__state permissions-table__state--error">
+              <span class="material-symbols-rounded" aria-hidden="true">warning</span>
+              <p>{{ loadError }}</p>
+            </div>
           </td>
         </tr>
         <tr *ngFor="let user of items; trackBy: trackByUserId">
@@ -81,15 +85,21 @@
             <span class="permissions-table__date">{{ user.lastUpdated }}</span>
           </td>
           <td class="permissions-table__actions-column">
-            <button type="button" class="permissions-table__manage" (click)="openManageDialog(user)">
+            <button
+              type="button"
+              class="permissions-table__manage"
+              (click)="openManageDialog(user)"
+            >
               Gestionar
             </button>
           </td>
         </tr>
         <tr *ngIf="!isLoading && !loadError && items.length === 0">
-          <td colspan="5" class="permissions-table__empty-row">
-            <span class="material-symbols-rounded" aria-hidden="true">search_off</span>
-            <p>No se encontraron usuarios para la búsqueda realizada.</p>
+          <td colspan="5">
+            <div class="permissions-table__empty-row">
+              <span class="material-symbols-rounded" aria-hidden="true">search_off</span>
+              <p>No se encontraron usuarios para la búsqueda realizada.</p>
+            </div>
           </td>
         </tr>
       </tbody>

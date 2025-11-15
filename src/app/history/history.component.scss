@@ -97,7 +97,7 @@
 
 .history-panel__actions {
   display: flex;
-  align-items: center;
+  align-items: end;
   gap: 1rem;
   flex-wrap: wrap;
 }
@@ -114,7 +114,7 @@
   input {
     border: none;
     background: transparent;
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     min-width: 240px;
     outline: none;
     color: #0f172a;
@@ -133,7 +133,7 @@
     border: 1px solid rgba(148, 163, 184, 0.4);
     padding: 0.5rem 0.75rem;
     font-size: 0.9rem;
-    background: #ffffff;
+    background: #f8fafc;
     color: #1f2937;
   }
 }
@@ -188,7 +188,7 @@
 
   td {
     padding: 1rem;
-    vertical-align: top;
+    vertical-align: center;
     border-bottom: 1px solid rgba(241, 245, 249, 0.9);
   }
 }
@@ -331,6 +331,10 @@
 .badge--danger {
   background: rgba(248, 113, 113, 0.16);
   color: #b91c1c;
+}
+
+.badge::before{
+  content: none;
 }
 
 @media (max-width: 1024px) {
