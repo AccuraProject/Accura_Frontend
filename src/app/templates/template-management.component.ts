@@ -58,6 +58,7 @@ interface ClientTemplate {
   version: string;
   status: ClientTemplateStatus;
   statusClass: string;
+  statusCode?: string;
   lastUpdated: string;
   createdAt: string;
   columnsCount: number;
@@ -303,6 +304,12 @@ export class TemplateManagementComponent implements OnInit, OnDestroy {
     return template.status === 'Borrador';
   }
 
+  protected isClientUploadDisabled(template: ClientTemplate): boolean {
+    const normalizedStatus = template.statusCode?.trim().toLowerCase();
+
+    return normalizedStatus === 'unpublished';
+  }
+
   protected openCreateDialog(): void {
     const dialogRef = this.dialog.open<
       TemplateCreateDialogComponent,
@@ -498,7 +505,16 @@ export class TemplateManagementComponent implements OnInit, OnDestroy {
     }
   }
 
-  protected toggleUpload(templateId: string): void {
+  protected toggleUpload(template: ClientTemplate): void {
+    const templateId = template.id;
+
+    if (this.isClientUploadDisabled(template)) {
+      if (this.uploadTemplateId === templateId) {
+        this.uploadTemplateId = null;
+      }
+      return;
+    }
+
     this.uploadErrors[templateId] = null;
     if (!this.uploadInProgress[templateId]) {
       this.uploadProgress[templateId] = null;
@@ -848,6 +864,7 @@ export class TemplateManagementComponent implements OnInit, OnDestroy {
       version,
       status,
       statusClass,
+      statusCode: template.status ?? undefined,
       lastUpdated,
       createdAt,
       columnsCount,

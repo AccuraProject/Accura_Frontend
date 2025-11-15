@@ -285,8 +285,9 @@
             </button>
             <button
               type="button"
-              (click)="toggleUpload(template.id)"
-              [attr.aria-expanded]="uploadTemplateId === template.id"
+              (click)="toggleUpload(template)"
+              [disabled]="isClientUploadDisabled(template)"
+              [attr.aria-expanded]="!isClientUploadDisabled(template) && uploadTemplateId === template.id"
             >
               <span class="material-symbols-rounded" aria-hidden="true">upload_file</span>
               Cargar archivo
@@ -294,7 +295,7 @@
           </div>
 
           <div
-            *ngIf="uploadTemplateId === template.id"
+            *ngIf="uploadTemplateId === template.id && !isClientUploadDisabled(template)"
             class="client-template-card__upload"
           >
             <input
@@ -302,6 +303,7 @@
               class="client-template-card__upload-input"
               [id]="'upload-' + template.id"
               accept=".xlsx,.xls"
+              [disabled]="isClientUploadDisabled(template)"
               (change)="onFileSelected($event, template.id)"
             />
             <label
