@@ -8,7 +8,7 @@ import { LoadsService } from '../../core/services/loads.service';
 import { LoadDetailResponseItem } from '../../core/models/load-detail.model';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
-type UploadStatus = 'success' | 'warning' | 'error';
+type UploadStatus = 'Procesando' | 'Validado exitosamente' | 'Validado con errores' | 'Fallido';
 
 interface GuideStep {
   order: number;
@@ -73,9 +73,10 @@ export class ClientDashboardComponent {
   protected recentUploads: RecentUpload[] = this.createLoadingUploads();
 
   protected readonly statusClassMap: Record<UploadStatus, string> = {
-    success: 'client-recent__status--success',
-    warning: 'client-recent__status--warning',
-    error: 'client-recent__status--error',
+    Procesando: 'client-recent__status--info',
+    'Validado exitosamente': 'client-recent__status--success',
+    'Validado con errores': 'client-recent__status--warning',
+    Fallido: 'client-recent__status--error',
   };
 
   constructor() {
@@ -234,7 +235,7 @@ export class ClientDashboardComponent {
       case 'completed successfully':
       case 'finished':
       case 'completado':
-        return { status: 'success', label: 'Completado' };
+        return { status: 'Validado exitosamente', label: 'Validado exitosamente' };
       case 'validado con errores':
       case 'con errores':
       case 'with errors':
@@ -242,7 +243,7 @@ export class ClientDashboardComponent {
       case 'partial success':
       case 'partial':
       case 'completado con errores':
-        return { status: 'warning', label: 'Con observaciones' };
+        return { status: 'Validado con errores', label: 'Validado con errores' };
       case 'fallido':
       case 'failed':
       case 'error':
@@ -252,7 +253,7 @@ export class ClientDashboardComponent {
       case 'canceled':
       case 'aborted':
       case 'stopped':
-        return { status: 'error', label: 'Error crítico' };
+        return { status: 'Fallido', label: 'Fallido' };
       case 'procesando':
       case 'en proceso':
       case 'processing':
@@ -262,9 +263,9 @@ export class ClientDashboardComponent {
       case 'queued':
       case 'validando':
       case 'validating':
-        return { status: 'warning', label: 'En proceso' };
+        return { status: 'Procesando', label: 'Procesando' };
       default:
-        return { status: 'warning', label: 'Estado desconocido' };
+        return { status: 'Procesando', label: 'Procesando' };
     }
   }
 
@@ -308,8 +309,8 @@ export class ClientDashboardComponent {
         title: 'Cargando cargas recientes…',
         template: 'Por favor espera',
         date: '',
-        status: 'warning',
-        statusLabel: 'Cargando…',
+        status: 'Procesando',
+        statusLabel: 'Procesando',
       },
     ];
   }
@@ -322,8 +323,8 @@ export class ClientDashboardComponent {
         title: 'No se pudieron obtener las cargas recientes',
         template: 'Intenta nuevamente más tarde',
         date: '',
-        status: 'error',
-        statusLabel: 'Error',
+        status: 'Fallido',
+        statusLabel: 'Fallido',
       },
     ];
   }
@@ -336,8 +337,8 @@ export class ClientDashboardComponent {
         title: 'No hay cargas recientes',
         template: 'Empieza subiendo tu primera carga',
         date: '',
-        status: 'warning',
-        statusLabel: 'Sin registros',
+        status: 'Procesando',
+        statusLabel: 'Procesando',
       },
     ];
   }
