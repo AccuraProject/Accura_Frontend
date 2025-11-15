@@ -206,11 +206,11 @@
 
 <ng-template #clientTemplates>
   <section class="client-templates">
-    <header class="client-templates__header">
+    <header class="page-header">
       <div>
-        <p class="client-templates__pretitle">Plantillas Disponibles</p>
-        <h1>Explora las plantillas a las que tienes acceso</h1>
-        <p>Visualiza rápidamente la información clave de cada plantilla asignada a tu usuario.</p>
+        <p class="page-header__pretitle"> Plantillas Disponibles</p>
+        <h1 class="page-header__title">Explora las plantillas a las que tienes acceso</h1>
+        <p class="page-header__subtitle">Visualiza rápidamente la información clave de cada plantilla asignada a tu usuario.</p>
       </div>
       <label class="client-templates__search">
         <span class="material-symbols-rounded" aria-hidden="true">search</span>
@@ -244,24 +244,17 @@
         *ngFor="let template of templates; trackBy: trackByAssignedTemplateId"
       >
         <header>
-          <span class="client-template-card__version">{{ template.version }}</span>
           <span class="badge" [ngClass]="template.statusClass">{{ template.status }}</span>
         </header>
         <h2>{{ template.name }}</h2>
-        <p class="client-template-card__description">{{ template.description }}</p>
 
         <dl class="client-template-card__meta">
           <div>
+            <dd>{{ template.description }}</dd>
+          </div>
+          <div>
             <dt>Última actualización</dt>
             <dd>{{ template.lastUpdated | date: 'dd/MM/yyyy' }}</dd>
-          </div>
-          <div>
-            <dt>Columnas</dt>
-            <dd>{{ template.columnsCount }}</dd>
-          </div>
-          <div>
-            <dt>Responsable</dt>
-            <dd>{{ template.owner }}</dd>
           </div>
         </dl>
 
@@ -273,11 +266,11 @@
           <div class="client-template-card__actions">
             <button
               type="button"
-              (click)="toggleUpload(template.id)"
-              [attr.aria-expanded]="uploadTemplateId === template.id"
+              class="client-template-card__action--secondary"
+              (click)="openClientDetailDialog(template)"
             >
-              <span class="material-symbols-rounded" aria-hidden="true">upload_file</span>
-              Cargar archivo
+              <span class="material-symbols-rounded" aria-hidden="true">description</span>
+              Ver Especificaciones
             </button>
             <button
               type="button"
@@ -292,11 +285,11 @@
             </button>
             <button
               type="button"
-              class="client-template-card__action--secondary"
-              (click)="openClientDetailDialog(template)"
+              (click)="toggleUpload(template.id)"
+              [attr.aria-expanded]="uploadTemplateId === template.id"
             >
-              <span class="material-symbols-rounded" aria-hidden="true">description</span>
-              Ver Especificaciones
+              <span class="material-symbols-rounded" aria-hidden="true">upload_file</span>
+              Cargar archivo
             </button>
           </div>
 

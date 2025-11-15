@@ -24,10 +24,6 @@
         <p>Total de Columnas</p>
         <strong>{{ totalColumns }}</strong>
       </article>
-      <article *ngIf="data.owner as owner">
-        <p>Última revisión por</p>
-        <strong>{{ owner }}</strong>
-      </article>
       <article *ngIf="data.tags?.length" class="template-detail__tags">
         <p>Categorías</p>
         <span *ngFor="let tag of data.tags" class="template-detail__tag">{{ tag }}</span>

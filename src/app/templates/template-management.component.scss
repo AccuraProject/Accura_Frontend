@@ -274,18 +274,17 @@
   display: inline-flex;
   align-items: center;
   gap: 0.6rem;
-  padding: 0.75rem 1rem;
-  border-radius: 1.25rem;
-  border: 1px solid rgba(148, 163, 184, 0.32);
-  background: #ffffff;
-  box-shadow: 0 16px 30px rgba(15, 23, 42, 0.07);
+  padding: 0.6rem 0.9rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  background: #f8fafc;
 
   input {
     border: none;
-    outline: none;
+    background: transparent;
     font-size: 0.95rem;
     min-width: 240px;
-    background: transparent;
+    outline: none;
     color: #0f172a;
   }
 }
@@ -319,7 +318,7 @@
 
 .client-templates__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 1.75rem;
 }
 
@@ -395,10 +394,6 @@
 }
 
 .client-template-card__upload {
-  border: 1px dashed rgba(99, 102, 241, 0.35);
-  border-radius: 1.25rem;
-  padding: 1.5rem;
-  background: rgba(248, 250, 252, 0.85);
   display: grid;
   gap: 0.75rem;
 }
