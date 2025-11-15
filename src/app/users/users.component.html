@@ -24,6 +24,7 @@
         type="search"
         placeholder="Buscar por nombre, correo o rol..."
         [(ngModel)]="searchTerm"
+        (ngModelChange)="onSearchChange()"
         name="search"
       />
     </label>
@@ -73,66 +74,92 @@
     class="users-table__wrapper"
     *ngIf="!usersLoading && !usersError && filteredUsers as items"
   >
-    <table class="users-table">
-      <thead>
-        <tr>
-          <th>Nombre</th>
-          <th>Rol</th>
-          <th>Estado</th>
-          <th>Fecha de Creación</th>
-          <th class="users-table__actions-column">Acciones</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let user of items; trackBy: trackByEmail">
-          <td>
-            <div class="users-table__identity">
-              <span class="users-table__avatar" aria-hidden="true">
-                {{ getInitials(user.name) }}
-              </span>
-              <div>
-                <p class="users-table__name">{{ user.name }}</p>
-                <p class="users-table__email">{{ user.email }}</p>
+    <div class="users-table__scroll">
+      <table class="users-table">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Rol</th>
+            <th>Estado</th>
+            <th>Fecha de Creación</th>
+            <th class="users-table__actions-column">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let user of paginatedUsers; trackBy: trackByEmail">
+            <td>
+              <div class="users-table__identity">
+                <span class="users-table__avatar" aria-hidden="true">
+                  {{ getInitials(user.name) }}
+                </span>
+                <div>
+                  <p class="users-table__name">{{ user.name }}</p>
+                  <p class="users-table__email">{{ user.email }}</p>
+                </div>
               </div>
-            </div>
-          </td>
-          <td>
-            <span class="badge" [ngClass]="roleClass(user.role)">{{ user.role }}</span>
-          </td>
-          <td>
-            <span class="badge" [ngClass]="statusClass(user.status)">{{ user.status }}</span>
-          </td>
-          <td>
-            <span class="users-table__date">{{ user.createdAt }}</span>
-          </td>
-          <td class="users-table__actions">
-            <button
-              class="icon-button icon-button--ghost"
-              type="button"
-              (click)="openEditDialog(user)"
-              aria-label="Editar"
-            >
-              <span class="material-symbols-rounded" aria-hidden="true">edit</span>
-            </button>
-            <button
-              class="icon-button icon-button--danger"
-              type="button"
-              (click)="openDeleteDialog(user)"
-              aria-label="Eliminar"
-            >
-              <span class="material-symbols-rounded" aria-hidden="true">delete</span>
-            </button>
-          </td>
-        </tr>
-        <tr *ngIf="items.length === 0">
-          <td colspan="5">
-            <div class="users-table__empty">
-              <span class="material-symbols-rounded" aria-hidden="true">search_off</span>
-              <p>No se encontraron usuarios para la búsqueda realizada.</p>
-            </div>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+            </td>
+            <td>
+              <span class="badge" [ngClass]="roleClass(user.role)">{{ user.role }}</span>
+            </td>
+            <td>
+              <span class="badge" [ngClass]="statusClass(user.status)">{{ user.status }}</span>
+            </td>
+            <td>
+              <span class="users-table__date">{{ user.createdAt }}</span>
+            </td>
+            <td class="users-table__actions">
+              <button
+                class="icon-button icon-button--ghost"
+                type="button"
+                (click)="openEditDialog(user)"
+                aria-label="Editar"
+              >
+                <span class="material-symbols-rounded" aria-hidden="true">edit</span>
+              </button>
+              <button
+                class="icon-button icon-button--danger"
+                type="button"
+                (click)="openDeleteDialog(user)"
+                aria-label="Eliminar"
+              >
+                <span class="material-symbols-rounded" aria-hidden="true">delete</span>
+              </button>
+            </td>
+          </tr>
+          <tr *ngIf="items.length === 0">
+            <td colspan="5">
+              <div class="users-table__empty">
+                <span class="material-symbols-rounded" aria-hidden="true">search_off</span>
+                <p>No se encontraron usuarios para la búsqueda realizada.</p>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="table-pagination" *ngIf="items.length > 0">
+      <span class="table-pagination__info">
+        Mostrando {{ pageStart }}-{{ pageEnd }} de {{ items.length }}
+      </span>
+      <div class="table-pagination__controls">
+        <button
+          type="button"
+          class="table-pagination__button"
+          (click)="goToPreviousPage()"
+          [disabled]="currentPage === 1"
+        >
+          Anterior
+        </button>
+        <span class="table-pagination__status">Página {{ currentPage }} de {{ totalPages }}</span>
+        <button
+          type="button"
+          class="table-pagination__button"
+          (click)="goToNextPage()"
+          [disabled]="currentPage === totalPages || items.length === 0"
+        >
+          Siguiente
+        </button>
+      </div>
+    </div>
   </div>
 </section>

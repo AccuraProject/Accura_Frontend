@@ -60,6 +60,9 @@ export class UsersComponent implements OnInit {
   protected usersLoading = false;
   protected usersError: string | null = null;
 
+  protected readonly pageSize = 10;
+  protected currentPage = 1;
+
   constructor(
     private readonly dialog: MatDialog,
     private readonly userService: UserService,
@@ -82,6 +85,48 @@ export class UsersComponent implements OnInit {
         user.role.toLowerCase().includes(term)
       );
     });
+  }
+
+  protected get paginatedUsers(): UserRow[] {
+    const startIndex = (this.currentPage - 1) * this.pageSize;
+    return this.filteredUsers.slice(startIndex, startIndex + this.pageSize);
+  }
+
+  protected get totalPages(): number {
+    const total = Math.ceil(this.filteredUsers.length / this.pageSize);
+    return total > 0 ? total : 1;
+  }
+
+  protected get pageStart(): number {
+    if (this.filteredUsers.length === 0) {
+      return 0;
+    }
+
+    return (this.currentPage - 1) * this.pageSize + 1;
+  }
+
+  protected get pageEnd(): number {
+    if (this.filteredUsers.length === 0) {
+      return 0;
+    }
+
+    return Math.min(this.filteredUsers.length, this.currentPage * this.pageSize);
+  }
+
+  protected goToPreviousPage(): void {
+    if (this.currentPage > 1) {
+      this.currentPage -= 1;
+    }
+  }
+
+  protected goToNextPage(): void {
+    if (this.currentPage < this.totalPages) {
+      this.currentPage += 1;
+    }
+  }
+
+  protected onSearchChange(): void {
+    this.currentPage = 1;
   }
 
   protected openCreateDialog(): void {
@@ -225,6 +270,8 @@ export class UsersComponent implements OnInit {
           current.id === updatedRow.id ? updatedRow : current,
         );
 
+        this.updatePaginationAfterDataChange(this.users.length);
+
         this.formAlert = {
           type: 'success',
           title: 'Cambios guardados',
@@ -243,6 +290,7 @@ export class UsersComponent implements OnInit {
 
   private removeUserEntry(userId: number): void {
     this.users = this.users.filter((user) => user.id !== userId);
+    this.updatePaginationAfterDataChange(this.users.length);
   }
 
   protected trackByEmail(_: number, user: UserRow): string {
@@ -287,15 +335,32 @@ export class UsersComponent implements OnInit {
     this.userService.getUsers().subscribe({
       next: (users: UserResponse[]) => {
         this.users = users.map((user) => this.mapToUserRow(user));
+        this.updatePaginationAfterDataChange(this.users.length);
         this.usersLoading = false;
       },
       error: (error: unknown) => {
         this.users = [];
         this.usersError = this.userService.getErrorMessage(error);
+        this.updatePaginationAfterDataChange(this.users.length);
         this.usersLoading = false;
         console.error(this.usersError);
       },
     });
+  }
+
+  private updatePaginationAfterDataChange(totalItems: number): void {
+    const totalPages = this.calculateTotalPages(totalItems);
+    if (this.currentPage > totalPages) {
+      this.currentPage = totalPages;
+    }
+
+    if (this.currentPage < 1) {
+      this.currentPage = 1;
+    }
+  }
+
+  private calculateTotalPages(totalItems: number): number {
+    return totalItems > 0 ? Math.ceil(totalItems / this.pageSize) : 1;
   }
 
   private mapToUserRow(user: UserResponse): UserRow {

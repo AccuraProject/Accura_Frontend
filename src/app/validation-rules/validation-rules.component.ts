@@ -69,6 +69,9 @@ export class ValidationRulesComponent implements OnInit {
 
   protected ruleSyncError: string | null = null;
 
+  protected readonly pageSize = 10;
+  protected currentPage = 1;
+
   private readonly aiRuleSchema = VALIDATION_RULE_AI_SCHEMA;
 
   constructor(
@@ -92,13 +95,30 @@ export class ValidationRulesComponent implements OnInit {
       const data = await this.validationRulesService.fetchRules();
 
       this.rules = this.parseRuleListResponse(data);
+      this.updatePaginationAfterDataChange(this.rules.length);
     } catch (error) {
       console.error('[ValidationRules] Error al obtener las reglas:', error);
       this.ruleLoadError = this.getErrorMessage(error);
       this.rules = [];
+      this.updatePaginationAfterDataChange(this.rules.length);
     } finally {
       this.rulesLoading = false;
     }
+  }
+
+  private updatePaginationAfterDataChange(totalItems: number): void {
+    const totalPages = this.calculateTotalPages(totalItems);
+    if (this.currentPage > totalPages) {
+      this.currentPage = totalPages;
+    }
+
+    if (this.currentPage < 1) {
+      this.currentPage = 1;
+    }
+  }
+
+  private calculateTotalPages(totalItems: number): number {
+    return totalItems > 0 ? Math.ceil(totalItems / this.pageSize) : 1;
   }
 
   protected get filteredRules(): ValidationRule[] {
@@ -114,6 +134,48 @@ export class ValidationRulesComponent implements OnInit {
         rule.status.toLowerCase().includes(term)
       );
     });
+  }
+
+  protected get paginatedRules(): ValidationRule[] {
+    const startIndex = (this.currentPage - 1) * this.pageSize;
+    return this.filteredRules.slice(startIndex, startIndex + this.pageSize);
+  }
+
+  protected get totalPages(): number {
+    const total = Math.ceil(this.filteredRules.length / this.pageSize);
+    return total > 0 ? total : 1;
+  }
+
+  protected get pageStart(): number {
+    if (this.filteredRules.length === 0) {
+      return 0;
+    }
+
+    return (this.currentPage - 1) * this.pageSize + 1;
+  }
+
+  protected get pageEnd(): number {
+    if (this.filteredRules.length === 0) {
+      return 0;
+    }
+
+    return Math.min(this.filteredRules.length, this.currentPage * this.pageSize);
+  }
+
+  protected goToPreviousPage(): void {
+    if (this.currentPage > 1) {
+      this.currentPage -= 1;
+    }
+  }
+
+  protected goToNextPage(): void {
+    if (this.currentPage < this.totalPages) {
+      this.currentPage += 1;
+    }
+  }
+
+  protected onSearchChange(): void {
+    this.currentPage = 1;
   }
 
   protected get totalRules(): number {
@@ -362,6 +424,7 @@ export class ValidationRulesComponent implements OnInit {
     const payloadClone = JSON.parse(JSON.stringify(option.payload)) as RulePayload;
     const rule = this.buildRuleFromPayload(payloadClone, 'Inactiva', 'ia');
     this.rules = [rule, ...this.rules];
+    this.updatePaginationAfterDataChange(this.rules.length);
     this.persistRule(payloadClone, false).catch(() => undefined);
   }
 
@@ -378,6 +441,7 @@ export class ValidationRulesComponent implements OnInit {
     console.log('[ValidationRules] Payload listo para enviar (manual):', payload);
     const entry = this.buildRuleFromPayload(payload, result.status, 'manual');
     this.rules = [entry, ...this.rules];
+    this.updatePaginationAfterDataChange(this.rules.length);
     this.persistRule(payload, result.status === 'Activa')
       .then(() => this.loadRules())
       .catch(() => undefined);
@@ -393,6 +457,7 @@ export class ValidationRulesComponent implements OnInit {
 
       return this.buildRuleFromPayload(payloadClone, result.status, rule.source, rule.id);
     });
+    this.updatePaginationAfterDataChange(this.rules.length);
 
     this.persistRule(payloadClone, result.status === 'Activa', ruleId).catch(() => undefined);
   }
@@ -400,11 +465,13 @@ export class ValidationRulesComponent implements OnInit {
   private removeRule(ruleId: string): void {
     const previousRules = [...this.rules];
     this.rules = this.rules.filter((rule) => rule.id !== ruleId);
+    this.updatePaginationAfterDataChange(this.rules.length);
 
     this.ruleSyncError = null;
 
     void this.validationRulesService.deleteRule(ruleId).catch((error) => {
       this.rules = previousRules;
+      this.updatePaginationAfterDataChange(this.rules.length);
       this.handleRuleSyncError(error);
     });
   }

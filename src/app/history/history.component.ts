@@ -90,6 +90,9 @@ export class HistoryComponent implements OnInit {
   protected isLoading = false;
   protected hasError = false;
 
+  protected readonly pageSize = 10;
+  protected currentPage = 1;
+
   ngOnInit(): void {
     this.store
       .select(selectIsUser)
@@ -132,6 +135,48 @@ export class HistoryComponent implements OnInit {
 
       return matchesSearch && matchesStatus && matchesTemplate;
     });
+  }
+
+  protected get paginatedRecords(): HistoryRecord[] {
+    const startIndex = (this.currentPage - 1) * this.pageSize;
+    return this.filteredRecords.slice(startIndex, startIndex + this.pageSize);
+  }
+
+  protected get totalPages(): number {
+    const total = Math.ceil(this.filteredRecords.length / this.pageSize);
+    return total > 0 ? total : 1;
+  }
+
+  protected get pageStart(): number {
+    if (this.filteredRecords.length === 0) {
+      return 0;
+    }
+
+    return (this.currentPage - 1) * this.pageSize + 1;
+  }
+
+  protected get pageEnd(): number {
+    if (this.filteredRecords.length === 0) {
+      return 0;
+    }
+
+    return Math.min(this.filteredRecords.length, this.currentPage * this.pageSize);
+  }
+
+  protected goToPreviousPage(): void {
+    if (this.currentPage > 1) {
+      this.currentPage -= 1;
+    }
+  }
+
+  protected goToNextPage(): void {
+    if (this.currentPage < this.totalPages) {
+      this.currentPage += 1;
+    }
+  }
+
+  protected onFiltersChanged(): void {
+    this.currentPage = 1;
   }
 
   protected trackByRecordId(_: number, record: HistoryRecord): string {
@@ -200,6 +245,7 @@ export class HistoryComponent implements OnInit {
             .sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime());
 
           this.historyRecords = records;
+          this.updatePaginationAfterDataChange(records.length);
           this.updateTemplateOptions(records);
           this.updateMetrics(records);
           this.isLoading = false;
@@ -248,6 +294,7 @@ export class HistoryComponent implements OnInit {
     );
 
     this.historyRecords = sortedRecords;
+    this.updatePaginationAfterDataChange(sortedRecords.length);
     this.updateTemplateOptions(sortedRecords);
     this.updateMetrics(sortedRecords);
     this.tryOpenPendingLoad();
@@ -280,6 +327,21 @@ export class HistoryComponent implements OnInit {
     });
 
     this.pendingLoadId = null;
+  }
+
+  private updatePaginationAfterDataChange(totalItems: number): void {
+    const totalPages = this.calculateTotalPages(totalItems);
+    if (this.currentPage > totalPages) {
+      this.currentPage = totalPages;
+    }
+
+    if (this.currentPage < 1) {
+      this.currentPage = 1;
+    }
+  }
+
+  private calculateTotalPages(totalItems: number): number {
+    return totalItems > 0 ? Math.ceil(totalItems / this.pageSize) : 1;
   }
 
   private mapToHistoryRecord(detail: LoadDetailResponseItem): HistoryRecord {

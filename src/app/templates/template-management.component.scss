@@ -139,6 +139,11 @@
   overflow-x: auto;
 }
 
+.templates-table__scroll {
+  max-height: 420px;
+  overflow-y: auto;
+}
+
 .templates-table__state {
   margin-top: 1.75rem;
   border: 1px dashed rgba(148, 163, 184, 0.4);
@@ -179,6 +184,10 @@
     text-transform: uppercase;
     color: #64748b;
     border-bottom: 1px solid rgba(203, 213, 225, 0.7);
+    position: sticky;
+    top: 0;
+    background: rgba(248, 250, 252, 0.96);
+    z-index: 1;
   }
 
   td {

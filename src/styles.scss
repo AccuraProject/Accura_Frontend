@@ -663,6 +663,54 @@ button {
   color: #047857;
 }
 
+.table-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  color: #475569;
+}
+
+.table-pagination__info {
+  margin: 0;
+}
+
+.table-pagination__controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.table-pagination__status {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.table-pagination__button {
+  border: none;
+  border-radius: 12px;
+  padding: 0.45rem 1rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+  background: rgba(99, 102, 241, 0.12);
+  color: #4338ca;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, opacity 0.2s ease;
+}
+
+.table-pagination__button:hover:not(:disabled) {
+  background: rgba(99, 102, 241, 0.2);
+  color: #312e81;
+}
+
+.table-pagination__button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 @keyframes modalFade {
   from {
     transform: translateY(10px);

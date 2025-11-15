@@ -385,7 +385,13 @@
 }
 
 .validation-table__wrapper {
+  margin-top: 1.75rem;
   overflow-x: auto;
+}
+
+.validation-table__scroll {
+  max-height: 420px;
+  overflow-y: auto;
 }
 
 .validation-table__state {
@@ -439,6 +445,10 @@
   font-size: 0.85rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  position: sticky;
+  top: 0;
+  background: rgba(248, 250, 252, 0.96);
+  z-index: 1;
 }
 
 .validation-table tbody tr {

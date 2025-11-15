@@ -69,6 +69,11 @@
   overflow-x: auto;
 }
 
+.permissions-table__scroll {
+  max-height: 420px;
+  overflow-y: auto;
+}
+
 .permissions-table {
   width: 100%;
   border-collapse: collapse;
@@ -93,6 +98,10 @@
   font-size: 0.85rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  position: sticky;
+  top: 0;
+  background: rgba(248, 250, 252, 0.96);
+  z-index: 1;
 }
 
 .permissions-table tbody tr {

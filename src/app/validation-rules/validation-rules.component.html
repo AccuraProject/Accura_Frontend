@@ -54,6 +54,7 @@
         type="search"
         placeholder="Buscar por nombre, tipo, estado o plantilla..."
         [(ngModel)]="searchTerm"
+        (ngModelChange)="onSearchChange()"
         name="search"
       />
     </label>
@@ -82,63 +83,89 @@
 
   <ng-container *ngIf="!rulesLoading && !ruleLoadError">
     <div class="validation-table__wrapper" *ngIf="filteredRules as items">
-      <table class="validation-table">
-        <thead>
-          <tr>
-            <th>Nombre</th>
-            <th>Tipo de Dato</th>
-            <th>Obligatoria</th>
-            <th>Estado</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let rule of items; trackBy: trackByRuleId">
-            <td>
-              <div class="validation-table__name">
-                <p class="validation-table__title">{{ rule.name }}</p>
-              </div>
-            </td>
-            <td>
-              <span class="validation-table__text">{{ rule.dataType }}</span>
-            </td>
-            <td>
-              <span class="badge" [ngClass]="rule.mandatory ? 'badge--active' : 'badge--inactive'">
-                {{ mandatoryLabel(rule) }}
-              </span>
-            </td>
-            <td>
-              <span class="badge" [ngClass]="statusClass(rule.status)">{{ rule.status }}</span>
-            </td>
-            <td class="validation-table__actions">
-              <button
-                class="icon-button icon-button--ghost"
-                type="button"
-                (click)="openEditDialog(rule)"
-                aria-label="Editar"
-              >
-                <span class="material-symbols-rounded" aria-hidden="true">edit</span>
-              </button>
-              <button
-                class="icon-button icon-button--danger"
-                type="button"
-                (click)="openDeleteDialog(rule)"
-                aria-label="Eliminar"
-              >
-                <span class="material-symbols-rounded" aria-hidden="true">delete</span>
-              </button>
-            </td>
-          </tr>
-          <tr *ngIf="items.length === 0">
-            <td colspan="6" >
-              <div class="validation-table__empty">
-                <span class="material-symbols-rounded" aria-hidden="true">search_off</span>
-                <p>No se encontraron reglas para la búsqueda realizada.</p>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <div class="validation-table__scroll">
+        <table class="validation-table">
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Tipo de Dato</th>
+              <th>Obligatoria</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let rule of paginatedRules; trackBy: trackByRuleId">
+              <td>
+                <div class="validation-table__name">
+                  <p class="validation-table__title">{{ rule.name }}</p>
+                </div>
+              </td>
+              <td>
+                <span class="validation-table__text">{{ rule.dataType }}</span>
+              </td>
+              <td>
+                <span class="badge" [ngClass]="rule.mandatory ? 'badge--active' : 'badge--inactive'">
+                  {{ mandatoryLabel(rule) }}
+                </span>
+              </td>
+              <td>
+                <span class="badge" [ngClass]="statusClass(rule.status)">{{ rule.status }}</span>
+              </td>
+              <td class="validation-table__actions">
+                <button
+                  class="icon-button icon-button--ghost"
+                  type="button"
+                  (click)="openEditDialog(rule)"
+                  aria-label="Editar"
+                >
+                  <span class="material-symbols-rounded" aria-hidden="true">edit</span>
+                </button>
+                <button
+                  class="icon-button icon-button--danger"
+                  type="button"
+                  (click)="openDeleteDialog(rule)"
+                  aria-label="Eliminar"
+                >
+                  <span class="material-symbols-rounded" aria-hidden="true">delete</span>
+                </button>
+              </td>
+            </tr>
+            <tr *ngIf="items.length === 0">
+              <td colspan="6" >
+                <div class="validation-table__empty">
+                  <span class="material-symbols-rounded" aria-hidden="true">search_off</span>
+                  <p>No se encontraron reglas para la búsqueda realizada.</p>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="table-pagination" *ngIf="items.length > 0">
+        <span class="table-pagination__info">
+          Mostrando {{ pageStart }}-{{ pageEnd }} de {{ items.length }}
+        </span>
+        <div class="table-pagination__controls">
+          <button
+            type="button"
+            class="table-pagination__button"
+            (click)="goToPreviousPage()"
+            [disabled]="currentPage === 1"
+          >
+            Anterior
+          </button>
+          <span class="table-pagination__status">Página {{ currentPage }} de {{ totalPages }}</span>
+          <button
+            type="button"
+            class="table-pagination__button"
+            (click)="goToNextPage()"
+            [disabled]="currentPage === totalPages || items.length === 0"
+          >
+            Siguiente
+          </button>
+        </div>
+      </div>
     </div>
   </ng-container>
 </section>

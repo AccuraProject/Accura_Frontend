@@ -241,6 +241,11 @@
   overflow-x: auto;
 }
 
+.settings-users__table-scroll {
+  max-height: 420px;
+  overflow-y: auto;
+}
+
 .settings-users__table {
   width: 100%;
   border-collapse: collapse;
@@ -261,6 +266,13 @@
   text-align: left;
   font-size: 0.95rem;
   color: #1f2937;
+}
+
+.settings-users__table thead th {
+  position: sticky;
+  top: 0;
+  background: rgba(248, 250, 252, 0.96);
+  z-index: 1;
 }
 
 .settings-users__table tbody tr {

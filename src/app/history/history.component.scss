@@ -143,6 +143,11 @@
   overflow-x: auto;
 }
 
+.history-table__scroll {
+  max-height: 420px;
+  overflow-y: auto;
+}
+
 .history-table__state {
   margin-top: 1.75rem;
   padding: 2rem 1.5rem;
@@ -184,6 +189,10 @@
     text-transform: uppercase;
     color: #64748b;
     border-bottom: 1px solid rgba(203, 213, 225, 0.7);
+    position: sticky;
+    top: 0;
+    background: rgba(248, 250, 252, 0.96);
+    z-index: 1;
   }
 
   td {

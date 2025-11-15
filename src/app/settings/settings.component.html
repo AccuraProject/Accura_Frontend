@@ -290,6 +290,7 @@
         name="search"
         placeholder="Buscar por nombre, correo o rol..."
         [(ngModel)]="searchTerm"
+        (ngModelChange)="onSearchChange()"
       />
     </label>
   </header>
@@ -322,56 +323,82 @@
   </div>
 
   <div class="settings-users__table-wrapper" *ngIf="filteredUsers as items">
-    <table class="settings-users__table">
-      <thead>
-        <tr>
-          <th>Nombre</th>
-          <th>Rol</th>
-          <th>Estado</th>
-          <th>Fecha de Creación</th>
-          <th class="settings-users__actions-column">Acciones</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let user of items; trackBy: trackByUserId">
-          <td>
-            <div class="settings-users__identity">
-              <span class="settings-users__avatar" aria-hidden="true">{{
-                userInitials(user)
-              }}</span>
-              <div>
-                <p class="settings-users__name">{{ user.name }}</p>
-                <p class="settings-users__email">{{ user.email }}</p>
+    <div class="settings-users__table-scroll">
+      <table class="settings-users__table">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Rol</th>
+            <th>Estado</th>
+            <th>Fecha de Creación</th>
+            <th class="settings-users__actions-column">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let user of paginatedUsers; trackBy: trackByUserId">
+            <td>
+              <div class="settings-users__identity">
+                <span class="settings-users__avatar" aria-hidden="true">{{
+                  userInitials(user)
+                }}</span>
+                <div>
+                  <p class="settings-users__name">{{ user.name }}</p>
+                  <p class="settings-users__email">{{ user.email }}</p>
+                </div>
               </div>
-            </div>
-          </td>
-          <td>
-            <span class="badge" [ngClass]="roleClass(user.role)">
-              {{ user.role }}
-            </span>
-          </td>
-          <td>
-            <span class="badge" [ngClass]="statusClass(user.status)">{{ user.status }}</span>
-          </td>
-          <td>
-            <span class="settings-users__date">{{ user.createdAt }}</span>
-          </td>
-          <td class="settings-users__actions-column">
-            <button class="settings-users__manage" type="button" (click)="openManageDialog(user)">
-              Gestionar
-              <span class="material-symbols-rounded" aria-hidden="true">arrow_outward</span>
-            </button>
-          </td>
-        </tr>
-        <tr *ngIf="items.length === 0">
-          <td colspan="5">
-            <div class="settings-users__empty">
-              <span class="material-symbols-rounded" aria-hidden="true">search_off</span>
-              <p>No se encontraron usuarios para el criterio ingresado.</p>
-            </div>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+            </td>
+            <td>
+              <span class="badge" [ngClass]="roleClass(user.role)">
+                {{ user.role }}
+              </span>
+            </td>
+            <td>
+              <span class="badge" [ngClass]="statusClass(user.status)">{{ user.status }}</span>
+            </td>
+            <td>
+              <span class="settings-users__date">{{ user.createdAt }}</span>
+            </td>
+            <td class="settings-users__actions-column">
+              <button class="settings-users__manage" type="button" (click)="openManageDialog(user)">
+                Gestionar
+                <span class="material-symbols-rounded" aria-hidden="true">arrow_outward</span>
+              </button>
+            </td>
+          </tr>
+          <tr *ngIf="items.length === 0">
+            <td colspan="5">
+              <div class="settings-users__empty">
+                <span class="material-symbols-rounded" aria-hidden="true">search_off</span>
+                <p>No se encontraron usuarios para el criterio ingresado.</p>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="table-pagination" *ngIf="items.length > 0">
+      <span class="table-pagination__info">
+        Mostrando {{ pageStart }}-{{ pageEnd }} de {{ items.length }}
+      </span>
+      <div class="table-pagination__controls">
+        <button
+          type="button"
+          class="table-pagination__button"
+          (click)="goToPreviousPage()"
+          [disabled]="currentPage === 1"
+        >
+          Anterior
+        </button>
+        <span class="table-pagination__status">Página {{ currentPage }} de {{ totalPages }}</span>
+        <button
+          type="button"
+          class="table-pagination__button"
+          (click)="goToNextPage()"
+          [disabled]="currentPage === totalPages || items.length === 0"
+        >
+          Siguiente
+        </button>
+      </div>
+    </div>
   </div>
 </section>

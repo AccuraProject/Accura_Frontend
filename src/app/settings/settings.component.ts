@@ -62,6 +62,9 @@ export class SettingsComponent {
 
   protected searchTerm = '';
 
+  protected readonly pageSize = 10;
+  protected currentPage = 1;
+
   private currentUser: CurrentUserResponse | null = null;
   private personalInfoSubmitted = false;
   private changePasswordSubmitted = false;
@@ -113,6 +116,48 @@ export class SettingsComponent {
         value.toLowerCase().includes(query)
       )
     );
+  }
+
+  protected get paginatedUsers(): ManagedUser[] {
+    const startIndex = (this.currentPage - 1) * this.pageSize;
+    return this.filteredUsers.slice(startIndex, startIndex + this.pageSize);
+  }
+
+  protected get totalPages(): number {
+    const total = Math.ceil(this.filteredUsers.length / this.pageSize);
+    return total > 0 ? total : 1;
+  }
+
+  protected get pageStart(): number {
+    if (this.filteredUsers.length === 0) {
+      return 0;
+    }
+
+    return (this.currentPage - 1) * this.pageSize + 1;
+  }
+
+  protected get pageEnd(): number {
+    if (this.filteredUsers.length === 0) {
+      return 0;
+    }
+
+    return Math.min(this.filteredUsers.length, this.currentPage * this.pageSize);
+  }
+
+  protected goToPreviousPage(): void {
+    if (this.currentPage > 1) {
+      this.currentPage -= 1;
+    }
+  }
+
+  protected goToNextPage(): void {
+    if (this.currentPage < this.totalPages) {
+      this.currentPage += 1;
+    }
+  }
+
+  protected onSearchChange(): void {
+    this.currentPage = 1;
   }
 
   protected submitPersonalInfo(): void {
@@ -355,6 +400,7 @@ export class SettingsComponent {
     this.userService.getUsers().subscribe({
       next: (users: UserResponse[]) => {
         this.users = users.map((user) => this.mapToManagedUser(user));
+        this.updatePaginationAfterDataChange(this.users.length);
       },
       error: (error: unknown) => {
         const message = this.userService.getErrorMessage(error);
@@ -366,6 +412,21 @@ export class SettingsComponent {
         this.manageUsersLoaded = false;
       }
     });
+  }
+
+  private updatePaginationAfterDataChange(totalItems: number): void {
+    const totalPages = this.calculateTotalPages(totalItems);
+    if (this.currentPage > totalPages) {
+      this.currentPage = totalPages;
+    }
+
+    if (this.currentPage < 1) {
+      this.currentPage = 1;
+    }
+  }
+
+  private calculateTotalPages(totalItems: number): number {
+    return totalItems > 0 ? Math.ceil(totalItems / this.pageSize) : 1;
   }
 
   private updateManagedUserEmail(userId: number, email: string): void {
@@ -383,6 +444,7 @@ export class SettingsComponent {
         this.users = this.users.map((user) =>
           user.id === userId ? { ...user, ...managedUser } : user
         );
+        this.updatePaginationAfterDataChange(this.users.length);
         this.manageUsersAlert = {
           type: 'success',
           title: 'Correo actualizado',
@@ -480,6 +542,7 @@ export class SettingsComponent {
     if (!this.canManageUsers) {
       this.users = [];
       this.manageUsersLoaded = false;
+      this.updatePaginationAfterDataChange(this.users.length);
     }
 
     if (!user) {

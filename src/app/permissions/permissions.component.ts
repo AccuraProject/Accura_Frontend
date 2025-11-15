@@ -40,6 +40,9 @@ export class PermissionsComponent implements OnInit, OnDestroy {
   protected isLoading = false;
   protected loadError: string | null = null;
 
+  protected readonly pageSize = 10;
+  protected currentPage = 1;
+
   private readonly destroy$ = new Subject<void>();
 
   constructor(
@@ -69,6 +72,48 @@ export class PermissionsComponent implements OnInit, OnDestroy {
         user.email.toLowerCase().includes(term)
       );
     });
+  }
+
+  protected get paginatedUsers(): PermissionUser[] {
+    const startIndex = (this.currentPage - 1) * this.pageSize;
+    return this.filteredUsers.slice(startIndex, startIndex + this.pageSize);
+  }
+
+  protected get totalPages(): number {
+    const total = Math.ceil(this.filteredUsers.length / this.pageSize);
+    return total > 0 ? total : 1;
+  }
+
+  protected get pageStart(): number {
+    if (this.filteredUsers.length === 0) {
+      return 0;
+    }
+
+    return (this.currentPage - 1) * this.pageSize + 1;
+  }
+
+  protected get pageEnd(): number {
+    if (this.filteredUsers.length === 0) {
+      return 0;
+    }
+
+    return Math.min(this.filteredUsers.length, this.currentPage * this.pageSize);
+  }
+
+  protected goToPreviousPage(): void {
+    if (this.currentPage > 1) {
+      this.currentPage -= 1;
+    }
+  }
+
+  protected goToNextPage(): void {
+    if (this.currentPage < this.totalPages) {
+      this.currentPage += 1;
+    }
+  }
+
+  protected onSearchChange(): void {
+    this.currentPage = 1;
   }
 
   protected trackByUserId(_: number, user: PermissionUser): number {
@@ -138,12 +183,28 @@ export class PermissionsComponent implements OnInit, OnDestroy {
         users.map((user) => this.buildPermissionUser(user))
       );
       this.users = enrichedUsers;
+      this.updatePaginationAfterDataChange(this.users.length);
     } catch (error) {
       console.error('Error al cargar los usuarios con sus plantillas.', error);
       this.loadError = 'No fue posible cargar los usuarios. Inténtalo nuevamente.';
     } finally {
       this.isLoading = false;
     }
+  }
+
+  private updatePaginationAfterDataChange(totalItems: number): void {
+    const totalPages = this.calculateTotalPages(totalItems);
+    if (this.currentPage > totalPages) {
+      this.currentPage = totalPages;
+    }
+
+    if (this.currentPage < 1) {
+      this.currentPage = 1;
+    }
+  }
+
+  private calculateTotalPages(totalItems: number): number {
+    return totalItems > 0 ? Math.ceil(totalItems / this.pageSize) : 1;
   }
 
   private async buildPermissionUser(user: UserResponse): Promise<PermissionUser> {

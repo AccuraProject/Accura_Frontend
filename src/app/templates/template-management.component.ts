@@ -110,6 +110,9 @@ export class TemplateManagementComponent implements OnInit, OnDestroy {
   protected assignedTemplatesLoading = false;
   protected assignedTemplatesError: string | null = null;
 
+  protected readonly pageSize = 10;
+  protected currentPage = 1;
+
   ngOnInit(): void {
     void this.initializeTemplates();
   }
@@ -131,6 +134,21 @@ export class TemplateManagementComponent implements OnInit, OnDestroy {
     await this.loadAssignedTemplates();
   }
 
+  private updateTemplatePagination(): void {
+    const totalPages = this.calculateTotalPages(this.templates.length);
+    if (this.currentPage > totalPages) {
+      this.currentPage = totalPages;
+    }
+
+    if (this.currentPage < 1) {
+      this.currentPage = 1;
+    }
+  }
+
+  private calculateTotalPages(totalItems: number): number {
+    return totalItems > 0 ? Math.ceil(totalItems / this.pageSize) : 1;
+  }
+
   protected get filteredTemplates(): TemplateRow[] {
     const term = this.searchTerm.trim().toLowerCase();
     const statusFilter = this.statusFilter;
@@ -145,6 +163,48 @@ export class TemplateManagementComponent implements OnInit, OnDestroy {
 
       return matchesTerm && matchesStatus;
     });
+  }
+
+  protected get paginatedTemplates(): TemplateRow[] {
+    const startIndex = (this.currentPage - 1) * this.pageSize;
+    return this.filteredTemplates.slice(startIndex, startIndex + this.pageSize);
+  }
+
+  protected get totalPages(): number {
+    const total = Math.ceil(this.filteredTemplates.length / this.pageSize);
+    return total > 0 ? total : 1;
+  }
+
+  protected get pageStart(): number {
+    if (this.filteredTemplates.length === 0) {
+      return 0;
+    }
+
+    return (this.currentPage - 1) * this.pageSize + 1;
+  }
+
+  protected get pageEnd(): number {
+    if (this.filteredTemplates.length === 0) {
+      return 0;
+    }
+
+    return Math.min(this.filteredTemplates.length, this.currentPage * this.pageSize);
+  }
+
+  protected goToPreviousPage(): void {
+    if (this.currentPage > 1) {
+      this.currentPage -= 1;
+    }
+  }
+
+  protected goToNextPage(): void {
+    if (this.currentPage < this.totalPages) {
+      this.currentPage += 1;
+    }
+  }
+
+  protected onFilterChange(): void {
+    this.currentPage = 1;
   }
 
   protected get filteredAssignedTemplates(): ClientTemplate[] {
@@ -429,6 +489,7 @@ export class TemplateManagementComponent implements OnInit, OnDestroy {
           lastUpdated: updatedAt,
         };
       });
+      this.updateTemplatePagination();
     } catch (error) {
       console.error('[TemplateManagement] No se pudo actualizar el estado de la plantilla:', error);
       this.templatesError = this.getErrorMessage(error);
@@ -673,10 +734,12 @@ export class TemplateManagementComponent implements OnInit, OnDestroy {
           Array.isArray(template.columns) ? template.columns : []
         )
       );
+      this.updateTemplatePagination();
     } catch (error) {
       console.error('[TemplateManagement] Error al obtener plantillas registradas:', error);
       this.templatesError = this.getErrorMessage(error);
       this.templates = [];
+      this.updateTemplatePagination();
     } finally {
       this.templatesLoading = false;
     }
@@ -686,6 +749,7 @@ export class TemplateManagementComponent implements OnInit, OnDestroy {
     const entry = this.mapTemplateResultToRow(result);
     this.templatesError = null;
     this.templates = [entry, ...this.templates];
+    this.updateTemplatePagination();
 
     if (result.template?.id !== undefined && result.template?.id !== null) {
       void this.refreshTemplateColumns(result.template.id);
@@ -707,6 +771,7 @@ export class TemplateManagementComponent implements OnInit, OnDestroy {
         ...updatedEntry,
       };
     });
+    this.updateTemplatePagination();
 
     if (result.template?.id !== undefined && result.template?.id !== null) {
       void this.refreshTemplateColumns(result.template.id);
@@ -1118,6 +1183,7 @@ export class TemplateManagementComponent implements OnInit, OnDestroy {
           columnsDetail,
         };
       });
+      this.updateTemplatePagination();
     } catch (error) {
       console.error(
         '[TemplateManagement] No se pudieron sincronizar las columnas de la plantilla creada.',
@@ -1178,6 +1244,7 @@ export class TemplateManagementComponent implements OnInit, OnDestroy {
     try {
       await this.templatesService.deleteTemplate(templateId);
       this.templates = this.templates.filter((template) => template.id !== templateId);
+      this.updateTemplatePagination();
     } catch (error) {
       console.error('[TemplateManagement] No se pudo eliminar la plantilla seleccionada:', error);
       this.templatesError = this.getErrorMessage(error);

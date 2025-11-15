@@ -85,6 +85,11 @@
   overflow-x: auto;
 }
 
+.users-table__scroll {
+  max-height: 420px;
+  overflow-y: auto;
+}
+
 .users-table__state {
   margin-top: 1.75rem;
   border: 1px dashed rgba(148, 163, 184, 0.4);
@@ -136,6 +141,10 @@
   font-size: 0.85rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  position: sticky;
+  top: 0;
+  background: rgba(248, 250, 252, 0.96);
+  z-index: 1;
 }
 
 .users-table tbody tr {

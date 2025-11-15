@@ -80,100 +80,126 @@
       class="templates-table__wrapper"
       *ngIf="!templatesLoading && !templatesError && filteredTemplates as items"
     >
-      <table class="templates-table">
-        <thead>
-          <tr>
-            <th>Nombre</th>
-            <th>Versión / Tabla</th>
-            <th>Descripción</th>
-            <th>Última Actualización</th>
-            <th>Estado</th>
-            <th style="text-align: center;">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let template of items; trackBy: trackByTemplateId">
-            <td>
-              <div class="templates-table__name">
-                <p class="templates-table__title">{{ template.name }}</p>
-                <p class="templates-table__meta">{{ template.createdAt | date: 'dd/MM/yyyy' }}</p>
-                <p class="templates-table__meta" *ngIf="template.tableName">Tabla: {{ template.tableName }}</p>
-              </div>
-            </td>
-            <td>
-              <span class="templates-table__version">{{ template.version || '—' }}</span>
-            </td>
-            <td>
-              <span class="templates-table__description">{{ template.description }}</span>
-            </td>
-            <td>
-              <span class="templates-table__date">{{ template.lastUpdated | date: 'dd/MM/yyyy' }}</span>
-            </td>
-            <td>
-              <span class="badge" [ngClass]="statusClass(template.status)">{{ template.status }}</span>
-            </td>
-            <td class="templates-table__actions">
-              <button
-                class="icon-button"
-                type="button"
-                aria-label="Abrir acciones"
-                [matMenuTriggerFor]="actionsMenu"
-              >
-                <span class="material-symbols-rounded" aria-hidden="true">more_vert</span>
-              </button>
-              <mat-menu #actionsMenu="matMenu">
-                <button mat-menu-item type="button" (click)="openDetailDialog(template)">
-                  <div class="menu-item-text">
-                    <span class="material-symbols-rounded" aria-hidden="true">visibility</span>
-                    <span>Ver Detalle</span>
-                  </div>
-                </button>
+      <div class="templates-table__scroll">
+        <table class="templates-table">
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Versión / Tabla</th>
+              <th>Descripción</th>
+              <th>Última Actualización</th>
+              <th>Estado</th>
+              <th style="text-align: center;">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let template of paginatedTemplates; trackBy: trackByTemplateId">
+              <td>
+                <div class="templates-table__name">
+                  <p class="templates-table__title">{{ template.name }}</p>
+                  <p class="templates-table__meta">{{ template.createdAt | date: 'dd/MM/yyyy' }}</p>
+                  <p class="templates-table__meta" *ngIf="template.tableName">Tabla: {{ template.tableName }}</p>
+                </div>
+              </td>
+              <td>
+                <span class="templates-table__version">{{ template.version || '—' }}</span>
+              </td>
+              <td>
+                <span class="templates-table__description">{{ template.description }}</span>
+              </td>
+              <td>
+                <span class="templates-table__date">{{ template.lastUpdated | date: 'dd/MM/yyyy' }}</span>
+              </td>
+              <td>
+                <span class="badge" [ngClass]="statusClass(template.status)">{{ template.status }}</span>
+              </td>
+              <td class="templates-table__actions">
                 <button
-                  mat-menu-item
+                  class="icon-button"
                   type="button"
-                  (click)="toggleTemplateStatus(template)"
-                  [disabled]="statusUpdating[template.id]"
+                  aria-label="Abrir acciones"
+                  [matMenuTriggerFor]="actionsMenu"
                 >
-                  <div class="menu-item-text">
-                    <span class="material-symbols-rounded" aria-hidden="true">
-                      {{ template.status === 'Publicado' ? 'toggle_off' : 'publish' }}
-                    </span>
-                    <span>{{ template.status === 'Publicado' ? 'Desactivar' : 'Publicar' }}</span>
-                  </div>
+                  <span class="material-symbols-rounded" aria-hidden="true">more_vert</span>
                 </button>
-                <button
-                  mat-menu-item
-                  type="button"
-                  (click)="openEditDialog(template)"
-                  [disabled]="!canEditTemplate(template)"
-                >
-                  <div class="menu-item-text">
-                    <span class="material-symbols-rounded" aria-hidden="true">edit</span>
-                    <span>Editar</span>
-                  </div>
-                </button>
-                <button
-                  mat-menu-item
-                  type="button"
-                  (click)="openDeleteDialog(template)"
-                  [disabled]="deletingTemplates[template.id]"
-                >
-                  <div class="menu-item-text text-danger">
-                    <span class="material-symbols-rounded" aria-hidden="true">delete</span>
-                    <span>Eliminar</span>
-                  </div>
-                </button>
-              </mat-menu>
-            </td>
-          </tr>
-          <tr *ngIf="items.length === 0">
-            <td colspan="6" class="templates-table__empty">
-              <span class="material-symbols-rounded" aria-hidden="true">search_off</span>
-              <p>No se encontraron plantillas para los criterios seleccionados.</p>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+                <mat-menu #actionsMenu="matMenu">
+                  <button mat-menu-item type="button" (click)="openDetailDialog(template)">
+                    <div class="menu-item-text">
+                      <span class="material-symbols-rounded" aria-hidden="true">visibility</span>
+                      <span>Ver Detalle</span>
+                    </div>
+                  </button>
+                  <button
+                    mat-menu-item
+                    type="button"
+                    (click)="toggleTemplateStatus(template)"
+                    [disabled]="statusUpdating[template.id]"
+                  >
+                    <div class="menu-item-text">
+                      <span class="material-symbols-rounded" aria-hidden="true">
+                        {{ template.status === 'Publicado' ? 'toggle_off' : 'publish' }}
+                      </span>
+                      <span>{{ template.status === 'Publicado' ? 'Desactivar' : 'Publicar' }}</span>
+                    </div>
+                  </button>
+                  <button
+                    mat-menu-item
+                    type="button"
+                    (click)="openEditDialog(template)"
+                    [disabled]="!canEditTemplate(template)"
+                  >
+                    <div class="menu-item-text">
+                      <span class="material-symbols-rounded" aria-hidden="true">edit</span>
+                      <span>Editar</span>
+                    </div>
+                  </button>
+                  <button
+                    mat-menu-item
+                    type="button"
+                    (click)="openDeleteDialog(template)"
+                    [disabled]="deletingTemplates[template.id]"
+                  >
+                    <div class="menu-item-text text-danger">
+                      <span class="material-symbols-rounded" aria-hidden="true">delete</span>
+                      <span>Eliminar</span>
+                    </div>
+                  </button>
+                </mat-menu>
+              </td>
+            </tr>
+            <tr *ngIf="items.length === 0">
+              <td colspan="6" class="templates-table__empty">
+                <span class="material-symbols-rounded" aria-hidden="true">search_off</span>
+                <p>No se encontraron plantillas para los criterios seleccionados.</p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="table-pagination" *ngIf="items.length > 0">
+        <span class="table-pagination__info">
+          Mostrando {{ pageStart }}-{{ pageEnd }} de {{ items.length }}
+        </span>
+        <div class="table-pagination__controls">
+          <button
+            type="button"
+            class="table-pagination__button"
+            (click)="goToPreviousPage()"
+            [disabled]="currentPage === 1"
+          >
+            Anterior
+          </button>
+          <span class="table-pagination__status">Página {{ currentPage }} de {{ totalPages }}</span>
+          <button
+            type="button"
+            class="table-pagination__button"
+            (click)="goToNextPage()"
+            [disabled]="currentPage === totalPages || items.length === 0"
+          >
+            Siguiente
+          </button>
+        </div>
+      </div>
     </div>
   </section>
 </ng-container>
