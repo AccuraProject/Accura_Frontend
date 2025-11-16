@@ -134,7 +134,7 @@
     color: #64748b;
     border-bottom: 1px solid rgba(226, 232, 240, 0.8);
     background-color: #ffffff;
-    position:sticky;
+    position: sticky;
     top: 0;
     z-index: 1;
   }
@@ -307,7 +307,7 @@
 .template-detail__rule-popover {
   position: fixed;
   top: 0;
-  left: 0;
+  left: 0rem;
   transform: translateY(-50%);
   z-index: 1050;
   width: min(360px, calc(100vw - 2rem));
@@ -320,6 +320,11 @@
   flex-direction: column;
   gap: 0.75rem;
   color: #0f172a;
+  // max-height: 70vh;
+  overflow-y: visible;
+}
+
+.template-detail__rule-popover__content{
   max-height: 70vh;
   overflow-y: auto;
 }
@@ -332,19 +337,22 @@
   width: 0.75rem;
   height: 0.75rem;
   background: inherit;
-  border-top: 1px solid rgba(148, 163, 184, 0.3);
   border-left: 1px solid rgba(148, 163, 184, 0.3);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.3);
+  z-index: 2000;
 }
 
 .template-detail__rule-popover--right::before {
-  left: -0.4rem;
+  left: -0.5rem;
 }
 
 .template-detail__rule-popover--left::before {
-  right: -0.4rem;
+  right: -0.55rem;
   left: auto;
   transform: translateY(-50%) rotate(45deg);
   border-left: none;
+  border-bottom: none;
+  border-top: 1px solid rgba(148, 163, 184, 0.3);
   border-right: 1px solid rgba(148, 163, 184, 0.3);
 }
 
