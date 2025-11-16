@@ -100,6 +100,7 @@
                               isColumnRuleSummaryOpen(columnIndex) ? getRulePopoverId(columnIndex) : null
                             "
                             [attr.aria-description]="getRuleAriaDescription(ruleDisplay.rule)"
+                            [attr.data-column-index]="columnIndex"
                             aria-haspopup="true"
                           >
                             <span class="material-symbols-rounded" aria-hidden="true">info</span>
@@ -114,6 +115,8 @@
                           <div
                             *ngIf="isColumnRuleSummaryOpen(columnIndex)"
                             class="template-detail__rule-popover"
+                            [ngClass]="getRulePopoverPlacementClass(columnIndex)"
+                            [ngStyle]="getRulePopoverStyles(columnIndex)"
                             role="dialog"
                             [attr.id]="getRulePopoverId(columnIndex)"
                             aria-live="polite"

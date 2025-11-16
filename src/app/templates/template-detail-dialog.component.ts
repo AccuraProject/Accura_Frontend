@@ -391,16 +391,33 @@ export class TemplateDetailDialogComponent implements OnInit {
       }
     }
 
+    const trigger = event.currentTarget instanceof HTMLElement ? event.currentTarget : undefined;
+
     if (this.isColumnRuleSummaryOpen(columnIndex)) {
       this.closeRuleSummary();
       return;
     }
 
-    this.openRuleSummary(columnIndex, ruleIndex);
+    this.openRuleSummary(columnIndex, ruleIndex, trigger);
   }
 
   protected closeRuleSummary(): void {
     this.activeRuleState = null;
+  }
+
+  @HostListener('window:resize')
+  @HostListener('window:scroll')
+  @HostListener('document:scroll')
+  protected refreshRulePopoverPosition(): void {
+    if (!this.activeRuleState?.trigger) {
+      return;
+    }
+
+    const placement = this.calculatePopoverPlacement(this.activeRuleState.trigger);
+    this.activeRuleState = {
+      ...this.activeRuleState,
+      placement,
+    };
   }
 
   protected getRuleSummaryContent(rule: TemplateColumnRuleDetail): RuleSummaryDisplay | null {
@@ -417,6 +434,38 @@ export class TemplateDetailDialogComponent implements OnInit {
 
   protected getRulePopoverId(columnIndex: number): string {
     return `template-rule-popover-${columnIndex}`;
+  }
+
+  protected getRulePopoverPlacementClass(columnIndex: number): string | null {
+    if (!this.isColumnRuleSummaryOpen(columnIndex)) {
+      return null;
+    }
+
+    const side = this.activeRuleState?.placement?.side ?? 'right';
+    return `template-detail__rule-popover--${side}`;
+  }
+
+  protected getRulePopoverStyles(columnIndex: number): Record<string, string> | null {
+    if (!this.isColumnRuleSummaryOpen(columnIndex)) {
+      return null;
+    }
+
+    const placement = this.activeRuleState?.placement;
+    if (!placement) {
+      return {
+        top: '50%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
+        maxHeight: '70vh',
+      };
+    }
+
+    return {
+      top: `${placement.top}px`,
+      left: `${placement.left}px`,
+      transform: `translate(${placement.translateX}, ${placement.translateY})`,
+      maxHeight: `${placement.maxHeight}px`,
+    };
   }
 
   protected getRuleAriaDescription(rule: TemplateColumnRuleDetail): string {
@@ -501,16 +550,21 @@ export class TemplateDetailDialogComponent implements OnInit {
     return this.columnRuleIndexMap.get(columnIndex) ?? 0;
   }
 
-  private openRuleSummary(columnIndex: number, ruleIndex: number): void {
+  private openRuleSummary(columnIndex: number, ruleIndex: number, trigger?: HTMLElement): void {
     const column = this.columnsDetail[columnIndex];
     if (!column?.rules?.length) {
       return;
     }
 
     const normalizedIndex = this.clampRuleIndex(columnIndex, ruleIndex);
+    const ruleTrigger = trigger ?? this.activeRuleState?.trigger ?? this.findRuleTrigger(columnIndex);
+    const placement = ruleTrigger ? this.calculatePopoverPlacement(ruleTrigger) : null;
+
     this.activeRuleState = {
       columnIndex,
       ruleIndex: normalizedIndex,
+      trigger: ruleTrigger ?? null,
+      placement: placement ?? null,
     };
     this.columnRuleIndexMap.set(columnIndex, normalizedIndex);
   }
@@ -532,6 +586,51 @@ export class TemplateDetailDialogComponent implements OnInit {
     }
 
     return ruleIndex;
+  }
+
+  private findRuleTrigger(columnIndex: number): HTMLElement | null {
+    return this.host.nativeElement.querySelector(
+      `[data-column-index="${columnIndex}"]`
+    ) as HTMLElement | null;
+  }
+
+  private calculatePopoverPlacement(trigger: HTMLElement): RulePopoverPlacement {
+    const rect = trigger.getBoundingClientRect();
+    const viewportWidth = window.innerWidth || document.documentElement.clientWidth || 0;
+    const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 0;
+    const margin = 16;
+    const offset = 12;
+    const preferredTop = rect.top + rect.height / 2;
+    const clampTop = Math.min(Math.max(preferredTop, margin), viewportHeight - margin);
+
+    let translateY = '-50%';
+    if (clampTop === margin) {
+      translateY = '0';
+    } else if (clampTop === viewportHeight - margin) {
+      translateY = '-100%';
+    }
+
+    let left = rect.right + offset;
+    let translateX = '0';
+    let side: 'left' | 'right' = 'right';
+    const estimatedWidth = Math.min(360, Math.max(280, viewportWidth - margin * 2));
+
+    if (left + estimatedWidth > viewportWidth - margin) {
+      left = rect.left - offset;
+      translateX = '-100%';
+      side = 'left';
+    }
+
+    const maxHeight = Math.max(240, viewportHeight - margin * 2);
+
+    return {
+      top: clampTop,
+      left,
+      translateX,
+      translateY,
+      side,
+      maxHeight,
+    };
   }
 }
 
@@ -556,4 +655,15 @@ interface RuleDisplay {
 interface ActiveRuleState {
   columnIndex: number;
   ruleIndex: number;
+  trigger: HTMLElement | null;
+  placement: RulePopoverPlacement | null;
+}
+
+interface RulePopoverPlacement {
+  top: number;
+  left: number;
+  translateX: string;
+  translateY: string;
+  side: 'left' | 'right';
+  maxHeight: number;
 }
