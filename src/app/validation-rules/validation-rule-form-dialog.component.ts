@@ -68,7 +68,7 @@ export class ValidationRuleFormDialogComponent {
     'Documento',
     'Lista',
     'Lista compleja',
-    'Telefono',
+    'Teléfono',
     'Correo',
     'Fecha',
     'Dependencia',
@@ -1149,8 +1149,8 @@ export class ValidationRuleFormDialogComponent {
 
     switch (dataType) {
       case 'Texto':
-        record['Longitud minima'] = this.toNumber(record['Longitud minima'], 0);
-        record['Longitud maxima'] = this.toNumber(record['Longitud maxima'], 0);
+        record['Longitud mínima'] = this.toNumber(record['Longitud mínima'], 0);
+        record['Longitud máxima'] = this.toNumber(record['Longitud máxima'], 0);
         break;
       case 'Número':
         record['Valor mínimo'] = this.toNumber(record['Valor mínimo'], null);
@@ -1158,8 +1158,8 @@ export class ValidationRuleFormDialogComponent {
         record['Número de decimales'] = this.toNumber(record['Número de decimales'], 0);
         break;
       case 'Documento':
-        record['Longitud minima'] = this.toNumber(record['Longitud minima'], 1);
-        record['Longitud maxima'] = this.toNumber(record['Longitud maxima'], 1);
+        record['Longitud mínima'] = this.toNumber(record['Longitud mínima'], 1);
+        record['Longitud máxima'] = this.toNumber(record['Longitud máxima'], 1);
         break;
       case 'Lista': {
         const values = Array.isArray(record['Lista'])
@@ -1175,8 +1175,8 @@ export class ValidationRuleFormDialogComponent {
           ? (record['Lista compleja'] as unknown[])
           : [];
         break;
-      case 'Telefono':
-        record['Longitud minima'] = this.toNumber(record['Longitud minima'], 1);
+      case 'Teléfono':
+        record['Longitud mínima'] = this.toNumber(record['Longitud mínima'], 1);
         record['Código de país'] = this.sanitizeString(record['Código de país']) ?? '+00';
         break;
       case 'Correo':
