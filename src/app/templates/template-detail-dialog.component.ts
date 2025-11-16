@@ -55,7 +55,8 @@ export class TemplateDetailDialogComponent implements OnInit {
   protected readonly columnsDetail: TemplateColumnDetail[];
 
   private readonly ruleRegistry = new Map<string, TemplateColumnRuleDetail[]>();
-  private activeRule: TemplateColumnRuleDetail | null = null;
+  private activeRuleState: ActiveRuleState | null = null;
+  private readonly columnRuleIndexMap = new Map<number, number>();
 
   constructor(
     @Inject(MAT_DIALOG_DATA) protected readonly data: TemplateDetailDialogData,
@@ -380,11 +381,7 @@ export class TemplateDetailDialogComponent implements OnInit {
     return this.getRuleLabel(rule, index);
   }
 
-  protected isRuleSummaryOpen(rule: TemplateColumnRuleDetail): boolean {
-    return this.activeRule === rule;
-  }
-
-  protected toggleRuleSummary(event: Event, rule: TemplateColumnRuleDetail): void {
+  protected toggleRuleSummary(event: Event, columnIndex: number, ruleIndex = 0): void {
     event.stopPropagation();
 
     if (event instanceof KeyboardEvent) {
@@ -394,15 +391,16 @@ export class TemplateDetailDialogComponent implements OnInit {
       }
     }
 
-    if (this.activeRule === rule) {
-      this.activeRule = null;
-    } else {
-      this.activeRule = rule;
+    if (this.isColumnRuleSummaryOpen(columnIndex)) {
+      this.closeRuleSummary();
+      return;
     }
+
+    this.openRuleSummary(columnIndex, ruleIndex);
   }
 
   protected closeRuleSummary(): void {
-    this.activeRule = null;
+    this.activeRuleState = null;
   }
 
   protected getRuleSummaryContent(rule: TemplateColumnRuleDetail): RuleSummaryDisplay | null {
@@ -417,8 +415,8 @@ export class TemplateDetailDialogComponent implements OnInit {
     return null;
   }
 
-  protected getRulePopoverId(columnIndex: number, ruleIndex: number): string {
-    return `template-rule-popover-${columnIndex}-${ruleIndex}`;
+  protected getRulePopoverId(columnIndex: number): string {
+    return `template-rule-popover-${columnIndex}`;
   }
 
   protected getRuleAriaDescription(rule: TemplateColumnRuleDetail): string {
@@ -431,6 +429,109 @@ export class TemplateDetailDialogComponent implements OnInit {
     }
 
     return rule.summary ?? 'Sin resumen disponible.';
+  }
+
+  protected isColumnRuleSummaryOpen(columnIndex: number): boolean {
+    return this.activeRuleState?.columnIndex === columnIndex;
+  }
+
+  protected getRuleDisplay(columnIndex: number): RuleDisplay | null {
+    const column = this.columnsDetail[columnIndex];
+    if (!column || !column.rules?.length) {
+      return null;
+    }
+
+    const preferredIndex = this.isColumnRuleSummaryOpen(columnIndex)
+      ? this.activeRuleState?.ruleIndex ?? 0
+      : this.columnRuleIndexMap.get(columnIndex) ?? 0;
+
+    const ruleIndex = this.clampRuleIndex(columnIndex, preferredIndex);
+    this.columnRuleIndexMap.set(columnIndex, ruleIndex);
+    const rule = column.rules[ruleIndex];
+
+    return { rule, index: ruleIndex };
+  }
+
+  protected hasMultipleRules(columnIndex: number): boolean {
+    return (this.columnsDetail[columnIndex]?.rules?.length ?? 0) > 1;
+  }
+
+  protected hasPreviousRule(columnIndex: number): boolean {
+    if (!this.isColumnRuleSummaryOpen(columnIndex)) {
+      return false;
+    }
+
+    return (this.activeRuleState?.ruleIndex ?? 0) > 0;
+  }
+
+  protected hasNextRule(columnIndex: number): boolean {
+    const column = this.columnsDetail[columnIndex];
+    if (!column || !this.isColumnRuleSummaryOpen(columnIndex)) {
+      return false;
+    }
+
+    return (this.activeRuleState?.ruleIndex ?? 0) < column.rules.length - 1;
+  }
+
+  protected goToPreviousRule(event: Event, columnIndex: number): void {
+    event.stopPropagation();
+    if (!this.hasPreviousRule(columnIndex)) {
+      return;
+    }
+
+    const currentIndex = this.activeRuleState?.ruleIndex ?? 0;
+    this.openRuleSummary(columnIndex, currentIndex - 1);
+  }
+
+  protected goToNextRule(event: Event, columnIndex: number): void {
+    event.stopPropagation();
+    if (!this.hasNextRule(columnIndex)) {
+      return;
+    }
+
+    const currentIndex = this.activeRuleState?.ruleIndex ?? 0;
+    this.openRuleSummary(columnIndex, currentIndex + 1);
+  }
+
+  protected getActiveRuleIndex(columnIndex: number): number {
+    if (this.isColumnRuleSummaryOpen(columnIndex)) {
+      return this.activeRuleState?.ruleIndex ?? 0;
+    }
+
+    return this.columnRuleIndexMap.get(columnIndex) ?? 0;
+  }
+
+  private openRuleSummary(columnIndex: number, ruleIndex: number): void {
+    const column = this.columnsDetail[columnIndex];
+    if (!column?.rules?.length) {
+      return;
+    }
+
+    const normalizedIndex = this.clampRuleIndex(columnIndex, ruleIndex);
+    this.activeRuleState = {
+      columnIndex,
+      ruleIndex: normalizedIndex,
+    };
+    this.columnRuleIndexMap.set(columnIndex, normalizedIndex);
+  }
+
+  private clampRuleIndex(columnIndex: number, ruleIndex: number): number {
+    const column = this.columnsDetail[columnIndex];
+    const total = column?.rules?.length ?? 0;
+
+    if (total === 0) {
+      return 0;
+    }
+
+    if (ruleIndex < 0) {
+      return 0;
+    }
+
+    if (ruleIndex >= total) {
+      return total - 1;
+    }
+
+    return ruleIndex;
   }
 }
 
@@ -445,4 +546,14 @@ interface RuleSummaryDisplay {
   title: string;
   description?: string;
   conditions?: string[];
+}
+
+interface RuleDisplay {
+  rule: TemplateColumnRuleDetail;
+  index: number;
+}
+
+interface ActiveRuleState {
+  columnIndex: number;
+  ruleIndex: number;
 }

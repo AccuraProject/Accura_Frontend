@@ -206,9 +206,23 @@
 
 .template-detail__rule-entry {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 0.5rem;
   position: relative;
+}
+
+.template-detail__rule-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  padding: 0 0.3rem;
+  border-radius: 999px;
+  background: rgba(99, 102, 241, 0.12);
+  color: #3730a3;
+  font-size: 0.7rem;
+  font-weight: 700;
 }
 
 .template-detail__rule-name {
@@ -292,8 +306,9 @@
 
 .template-detail__rule-popover {
   position: absolute;
-  top: calc(100% + 0.5rem);
-  right: 0;
+  top: 50%;
+  left: calc(100% + 0.75rem);
+  transform: translateY(-50%);
   z-index: 5;
   width: min(320px, 70vw);
   background: #f8fafc;
@@ -310,14 +325,14 @@
 .template-detail__rule-popover::before {
   content: '';
   position: absolute;
-  top: -0.5rem;
-  right: 1rem;
+  top: 50%;
+  left: -0.4rem;
+  transform: translateY(-50%) rotate(45deg);
   width: 0.75rem;
   height: 0.75rem;
   background: inherit;
   border-top: 1px solid rgba(148, 163, 184, 0.3);
   border-left: 1px solid rgba(148, 163, 184, 0.3);
-  transform: rotate(45deg);
 }
 
 .template-detail__rule-popover-header {
@@ -332,6 +347,20 @@
     font-weight: 700;
     color: #1f2937;
   }
+}
+
+.template-detail__rule-popover-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.template-detail__rule-popover-step {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #6366f1;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
 
 .template-detail__rule-popover-close {
@@ -395,6 +424,61 @@
 
 .template-detail__rule-popover-list li {
   list-style: disc;
+}
+
+.template-detail__rule-popover-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(148, 163, 184, 0.3);
+}
+
+.template-detail__rule-pagination-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border: none;
+  background: rgba(99, 102, 241, 0.12);
+  color: #3730a3;
+  border-radius: 999px;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, opacity 0.2s ease;
+}
+
+.template-detail__rule-pagination-button .material-symbols-rounded {
+  font-size: 1rem;
+}
+
+.template-detail__rule-pagination-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.template-detail__rule-popover-page {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+@media (max-width: 640px) {
+  .template-detail__rule-popover {
+    top: calc(100% + 0.5rem);
+    left: auto;
+    right: 0;
+    transform: none;
+  }
+
+  .template-detail__rule-popover::before {
+    top: -0.4rem;
+    left: auto;
+    right: 1rem;
+    transform: rotate(45deg);
+  }
 }
 
 .sr-only {
