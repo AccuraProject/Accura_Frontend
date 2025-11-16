@@ -45,7 +45,7 @@ export const VALIDATION_RULE_AI_SCHEMA: Record<string, unknown> = {
         'Documento',
         'Lista',
         'Lista compleja',
-        'Telefono',
+        'Teléfono',
         'Correo',
         'Fecha',
         'Dependencia',
@@ -77,10 +77,10 @@ export const VALIDATION_RULE_AI_SCHEMA: Record<string, unknown> = {
           Regla: {
             type: 'object',
             additionalProperties: false,
-            required: ['Longitud minima', 'Longitud maxima'],
+            required: ['Longitud mínima', 'Longitud máxima'],
             properties: {
-              'Longitud minima': { type: 'integer', minimum: 0 },
-              'Longitud maxima': { type: 'integer', minimum: 0 }
+              'Longitud mínima': { type: 'integer', minimum: 0 },
+              'Longitud máxima': { type: 'integer', minimum: 0 }
             }
           }
         }
@@ -110,10 +110,10 @@ export const VALIDATION_RULE_AI_SCHEMA: Record<string, unknown> = {
           Regla: {
             type: 'object',
             additionalProperties: false,
-            required: ['Longitud minima', 'Longitud maxima'],
+            required: ['Longitud mínima', 'Longitud máxima'],
             properties: {
-              'Longitud minima': { type: 'integer', minimum: 1 },
-              'Longitud maxima': { type: 'integer', minimum: 1 }
+              'Longitud mínima': { type: 'integer', minimum: 1 },
+              'Longitud máxima': { type: 'integer', minimum: 1 }
             }
           }
         }
@@ -170,15 +170,15 @@ export const VALIDATION_RULE_AI_SCHEMA: Record<string, unknown> = {
       }
     },
     {
-      if: { properties: { 'Tipo de dato': { const: 'Telefono' } } },
+      if: { properties: { 'Tipo de dato': { const: 'Teléfono' } } },
       then: {
         properties: {
           Regla: {
             type: 'object',
             additionalProperties: false,
-            required: ['Longitud minima', 'Código de país'],
+            required: ['Longitud mínima', 'Código de país'],
             properties: {
-              'Longitud minima': { type: 'integer', minimum: 1 },
+              'Longitud mínima': { type: 'integer', minimum: 1 },
               'Código de país': { type: 'string', pattern: '^\\+\\d{1,3}$' }
             }
           }
@@ -237,10 +237,10 @@ export const VALIDATION_RULE_AI_SCHEMA: Record<string, unknown> = {
                     Texto: {
                       type: 'object',
                       additionalProperties: false,
-                      required: ['Longitud minima', 'Longitud maxima'],
+                      required: ['Longitud mínima', 'Longitud máxima'],
                       properties: {
-                        'Longitud minima': { type: 'integer', minimum: 0 },
-                        'Longitud maxima': { type: 'integer', minimum: 0 }
+                        'Longitud mínima': { type: 'integer', minimum: 0 },
+                        'Longitud máxima': { type: 'integer', minimum: 0 }
                       }
                     },
                     'Número': {
@@ -256,10 +256,10 @@ export const VALIDATION_RULE_AI_SCHEMA: Record<string, unknown> = {
                     Documento: {
                       type: 'object',
                       additionalProperties: false,
-                      required: ['Longitud minima', 'Longitud maxima'],
+                      required: ['Longitud mínima', 'Longitud máxima'],
                       properties: {
-                        'Longitud minima': { type: 'integer', minimum: 1 },
-                        'Longitud maxima': { type: 'integer', minimum: 1 }
+                        'Longitud mínima': { type: 'integer', minimum: 1 },
+                        'Longitud máxima': { type: 'integer', minimum: 1 }
                       }
                     },
                     Lista: {
@@ -295,12 +295,12 @@ export const VALIDATION_RULE_AI_SCHEMA: Record<string, unknown> = {
                         }
                       }
                     },
-                    Telefono: {
+                    Teléfono: {
                       type: 'object',
                       additionalProperties: false,
-                      required: ['Longitud minima', 'Código de país'],
+                      required: ['Longitud mínima', 'Código de país'],
                       properties: {
-                        'Longitud minima': { type: 'integer', minimum: 1 },
+                        'Longitud mínima': { type: 'integer', minimum: 1 },
                         'Código de país': { type: 'string', pattern: '^\\+\\d{1,3}$' }
                       }
                     },
@@ -325,7 +325,7 @@ export const VALIDATION_RULE_AI_SCHEMA: Record<string, unknown> = {
                     }
                   },
                   patternProperties: {
-                    '^(?!(Texto|Número|Documento|Lista|Lista compleja|Telefono|Correo|Fecha)$).+': {
+                    '^(?!(Texto|Número|Documento|Lista|Lista compleja|Teléfono|Correo|Fecha)$).+': {
                       anyOf: [
                         { type: 'string', minLength: 1 },
                         { type: 'number' },
@@ -340,7 +340,7 @@ export const VALIDATION_RULE_AI_SCHEMA: Record<string, unknown> = {
                     { required: ['Documento'] },
                     { required: ['Lista'] },
                     { required: ['Lista compleja'] },
-                    { required: ['Telefono'] },
+                    { required: ['Teléfono'] },
                     { required: ['Correo'] },
                     { required: ['Fecha'] }
                   ]
@@ -357,17 +357,17 @@ export const VALIDATION_RULE_AI_SCHEMA: Record<string, unknown> = {
 export function generateDefaultRuleConfig(dataType: string): Record<string, unknown> {
   switch (dataType) {
     case 'Texto':
-      return { 'Longitud minima': 0, 'Longitud maxima': 0 };
+      return { 'Longitud mínima': 0, 'Longitud máxima': 0 };
     case 'Número':
       return { 'Valor mínimo': null, 'Valor máximo': null, 'Número de decimales': 0 };
     case 'Documento':
-      return { 'Longitud minima': 1, 'Longitud maxima': 1 };
+      return { 'Longitud mínima': 1, 'Longitud máxima': 1 };
     case 'Lista':
       return { Lista: [] };
     case 'Lista compleja':
       return { 'Lista compleja': [] };
-    case 'Telefono':
-      return { 'Longitud minima': 1, 'Código de país': '+00' };
+    case 'Teléfono':
+      return { 'Longitud mínima': 1, 'Código de país': '+00' };
     case 'Correo':
       return { Formato: 'usuario@dominio.com', 'Longitud máxima': 1 };
     case 'Fecha':
@@ -454,8 +454,8 @@ export function describeRuleConfig(payload: RulePayload): string[] {
 
   switch (payload['Tipo de dato']) {
     case 'Texto':
-      entries.push(`Longitud mínima: ${record['Longitud minima'] ?? '—'}`);
-      entries.push(`Longitud máxima: ${record['Longitud maxima'] ?? '—'}`);
+      entries.push(`Longitud mínima: ${record['Longitud mínima'] ?? '—'}`);
+      entries.push(`Longitud máxima: ${record['Longitud máxima'] ?? '—'}`);
       break;
     case 'Número':
       entries.push(`Valor mínimo: ${record['Valor mínimo'] ?? '—'}`);
@@ -463,8 +463,8 @@ export function describeRuleConfig(payload: RulePayload): string[] {
       entries.push(`Número de decimales: ${record['Número de decimales'] ?? '—'}`);
       break;
     case 'Documento':
-      entries.push(`Longitud mínima: ${record['Longitud minima'] ?? '—'}`);
-      entries.push(`Longitud máxima: ${record['Longitud maxima'] ?? '—'}`);
+      entries.push(`Longitud mínima: ${record['Longitud mínima'] ?? '—'}`);
+      entries.push(`Longitud máxima: ${record['Longitud máxima'] ?? '—'}`);
       break;
     case 'Lista':
       entries.push(
@@ -473,8 +473,8 @@ export function describeRuleConfig(payload: RulePayload): string[] {
             .join(', ') : '—'}`
       );
       break;
-    case 'Telefono':
-      entries.push(`Longitud mínima: ${record['Longitud minima'] ?? '—'}`);
+    case 'Teléfono':
+      entries.push(`Longitud mínima: ${record['Longitud mínima'] ?? '—'}`);
       entries.push(`Código de país: ${record['Código de país'] ?? '—'}`);
       break;
     case 'Correo':
@@ -655,8 +655,8 @@ function sanitizeRuleConfig(value: unknown, dataType: string): Record<string, un
 
   switch (dataType) {
     case 'Texto':
-      record['Longitud minima'] = toNumber(record['Longitud minima'], 0);
-      record['Longitud maxima'] = toNumber(record['Longitud maxima'], 0);
+      record['Longitud mínima'] = toNumber(record['Longitud mínima'], 0);
+      record['Longitud máxima'] = toNumber(record['Longitud máxima'], 0);
       break;
     case 'Número':
       record['Valor mínimo'] = toNumber(record['Valor mínimo'], null);
@@ -664,8 +664,8 @@ function sanitizeRuleConfig(value: unknown, dataType: string): Record<string, un
       record['Número de decimales'] = toNumber(record['Número de decimales'], 0);
       break;
     case 'Documento':
-      record['Longitud minima'] = toNumber(record['Longitud minima'], 1);
-      record['Longitud maxima'] = toNumber(record['Longitud maxima'], 1);
+      record['Longitud mínima'] = toNumber(record['Longitud mínima'], 1);
+      record['Longitud máxima'] = toNumber(record['Longitud máxima'], 1);
       break;
     case 'Lista': {
       const values = Array.isArray(record['Lista'])
@@ -681,8 +681,8 @@ function sanitizeRuleConfig(value: unknown, dataType: string): Record<string, un
             .filter((row) => Object.keys(row).length > 0)
         : [];
       break;
-    case 'Telefono':
-      record['Longitud minima'] = toNumber(record['Longitud minima'], 1);
+    case 'Teléfono':
+      record['Longitud mínima'] = toNumber(record['Longitud mínima'], 1);
       record['Código de país'] = sanitizeString(record['Código de país']) ?? '+00';
       break;
     case 'Correo':
