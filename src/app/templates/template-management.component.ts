@@ -393,7 +393,7 @@ export class TemplateManagementComponent implements OnInit, OnDestroy {
       TemplateDetailDialogComponent,
       {
         width: '70vw',
-        maxWidth: '1240px',
+        maxWidth: '70vw',
         // maxHeight: '95vh',
         data: {
           name: template.name,
