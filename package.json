@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
-    "start": "ng serve",
+    "start": "ng serve --host 0.0.0.0 --port 8080",
     "build": "npm run build:prod",
     "build:prod": "ng build --configuration production",
     "build:dev": "ng build --configuration development",
@@ -39,11 +39,11 @@
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
     "xlsx": "^0.18.5",
-    "zone.js": "~0.15.0"
+    "zone.js": "~0.15.0",
+    "@angular/cli": "^20.3.7"
   },
   "devDependencies": {
     "@angular/build": "^20.3.7",
-    "@angular/cli": "^20.3.7",
     "@angular/compiler-cli": "^20.3.0",
     "@types/jasmine": "~5.1.0",
     "jasmine-core": "~5.9.0",
