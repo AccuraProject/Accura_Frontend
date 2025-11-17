@@ -11,7 +11,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     permissions:
       contents: read #This is required for actions/checkout
 
@@ -28,7 +28,7 @@ jobs:
           npm install
           npm run build --if-present
           npm run test --if-present
-
+      
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
@@ -51,13 +51,13 @@ jobs:
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_1B1807FCD4DA40C99F0BD66677DDA8FE }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_6A1A10A2CA9A472691D9924AB128B1B2 }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_F6C0DFC959B2408DB6A0750C336B1924 }}
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_214282F62D3640ECBBB97A0DA5061CCA }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_239E49B769234FC8B0B63948C84ABA30 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_B85106BB5F3B4C88A129EAE75177676D }}
 
       - name: 'Deploy to Azure Web App'
-        id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
+        id: deploy-to-webapp
         with:
           app-name: 'accura-frontend'
           slot-name: 'Production'
