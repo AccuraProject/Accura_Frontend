@@ -1,5 +1,5 @@
 export const environment = {
   production: true,
-  apiBaseUrl: 'http://localhost:8000',
-  notificationsWsUrl: 'ws://localhost:8000/notifications/ws'
+  apiBaseUrl: 'https://accura-api.azurewebsites.net/',
+  notificationsWsUrl: 'ws://accura-api.azurewebsites.net/ws'
 };
