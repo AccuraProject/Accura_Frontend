@@ -28,20 +28,34 @@ ng generate --help
 
 ## Building
 
-To build the project run:
+To produce an optimized build without running the unit tests automatically, use:
 
 ```bash
-ng build
+npm run build
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+This command simply proxies to `npm run build:prod`, which calls `ng build --configuration production` so the Angular compiler focuses solely on bundling the app.
+
+If you need a development-optimized bundle you can run:
+
+```bash
+npm run build:dev
+```
+
+The build artifacts for both commands are emitted to the `dist/` directory.
 
 ## Running unit tests
 
-To execute unit tests with the [Karma](https://karma-runner.github.io) test runner, use the following command:
+Tests are now completely decoupled from the build pipeline. Execute them only when needed with:
 
 ```bash
-ng test
+npm run test:ci
+```
+
+This will run the Karma suite once in headless mode. For the traditional watch experience during development, run:
+
+```bash
+npm run test
 ```
 
 ## Running end-to-end tests
