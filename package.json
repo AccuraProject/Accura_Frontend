@@ -8,9 +8,9 @@
     "build:prod": "ng build --configuration production",
     "build:dev": "ng build --configuration development",
     "watch": "ng build --watch --configuration development",
-    "test": "npm run test:watch",
+    "test": "ng test --watch=false --browsers=ChromeHeadless",
     "test:watch": "ng test",
-    "test:ci": "ng test --watch=false"
+    "test:ci": "ng test --watch=false --browsers=ChromeHeadless"
   },
   "prettier": {
     "printWidth": 100,
