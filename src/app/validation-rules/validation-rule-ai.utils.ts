@@ -419,12 +419,13 @@ export function normalizeAiPayload(payload: unknown): RulePayload | null {
   const name = sanitizeString(record['Nombre de la regla']) ?? 'Regla generada por IA';
   const dataType = sanitizeString(record['Tipo de dato']) ?? 'Texto';
   const mandatory = toBoolean(record['Campo obligatorio']);
-  const header = sanitizeHeader('Header' in record ? record['Header'] : record['header']);
+  let header = sanitizeHeader('Header' in record ? record['Header'] : record['header']);
   const headerRule = sanitizeHeaderRule(record['Header rule']);
   const errorMessage = sanitizeString(record['Mensaje de error']) ?? DEFAULT_RULE_ERROR_MESSAGE;
   const description = sanitizeString(record['Descripción']) ?? 'Descripción generada automáticamente.';
   const example = sanitizeExample(record['Ejemplo']);
   const ruleConfig = sanitizeRuleConfig(record['Regla'], dataType);
+  header = correctHeaderWithRules(header, headerRule, ruleConfig, dataType);
 
   return {
     'Nombre de la regla': name,
@@ -609,6 +610,95 @@ export function extractRuleTable(payload: RulePayload): RuleTableData | null {
   }
 
   return { columns, rows: normalizedRows };
+}
+
+function correctHeaderWithRules(
+  header: string[],
+  headerRule: string[],
+  ruleConfig: Record<string, unknown>,
+  dataType: string
+): string[] {
+  if (headerRule.length === 0) {
+    return header;
+  }
+
+  if (dataType !== 'Dependencia' || !ruleConfig || typeof ruleConfig !== 'object') {
+    return header.length > 0 ? header : headerRule;
+  }
+
+  const normalizedRule = headerRule.filter((item) => typeof item === 'string' && item.trim().length > 0);
+  if (normalizedRule.length < 2) {
+    return header.length > 0 ? header : normalizedRule;
+  }
+
+  const dependencyColumn = normalizedRule[0];
+  const dependentColumn = normalizedRule[1];
+  const specificRules = Array.isArray(ruleConfig['reglas especifica'])
+    ? (ruleConfig['reglas especifica'] as unknown[])
+    : [];
+
+  const rules = specificRules.filter(
+    (item): item is Record<string, unknown> => Boolean(item) && typeof item === 'object' && !Array.isArray(item)
+  );
+
+  if (rules.length === 0) {
+    return header.length > 0 ? header : normalizedRule;
+  }
+
+  const dependentValues = collectValuesForKey(rules, dependentColumn);
+
+  if (dependentValues.some((value) => Array.isArray(value))) {
+    return normalizedRule;
+  }
+
+  const nestedObjects = dependentValues.filter(
+    (value): value is Record<string, unknown> => Boolean(value) && typeof value === 'object' && !Array.isArray(value)
+  );
+
+  if (nestedObjects.length === 0) {
+    return header.length > 0 ? header : normalizedRule;
+  }
+
+  const nestedKeys: string[] = [];
+  const hasKey = (label: string): boolean =>
+    nestedKeys.some((item) => item.trim().toLowerCase() === label.trim().toLowerCase());
+
+  nestedObjects.forEach((entry) => {
+    Object.keys(entry).forEach((key) => {
+      const label = key.trim();
+      if (label && !hasKey(label)) {
+        nestedKeys.push(label);
+      }
+    });
+  });
+
+  return nestedKeys.length > 0 ? [dependencyColumn, ...nestedKeys] : normalizedRule;
+}
+
+function collectValuesForKey(records: Array<Record<string, unknown>>, target: string): unknown[] {
+  const targetKey = target.trim().toLowerCase();
+  const values: unknown[] = [];
+
+  const visit = (record: Record<string, unknown>): void => {
+    Object.entries(record).forEach(([key, value]) => {
+      const label = typeof key === 'string' ? key.trim() : '';
+      if (!label) {
+        return;
+      }
+
+      if (label.toLowerCase() === targetKey) {
+        values.push(value);
+      }
+
+      if (value && typeof value === 'object' && !Array.isArray(value)) {
+        visit(value as Record<string, unknown>);
+      }
+    });
+  };
+
+  records.forEach((record) => visit(record));
+
+  return values;
 }
 
 function sanitizeHeader(value: unknown): string[] {
