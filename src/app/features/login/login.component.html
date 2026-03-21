@@ -34,49 +34,40 @@
           </app-password-field>
         </div>
 
-        <div style="text-align: end; margin-bottom: 1rem;">
+        <div style="text-align: end; margin-bottom: 1rem">
           <a class="link-primary" routerLink="/recuperar-contrasena"> ¿Olvidaste tu contraseña? </a>
         </div>
 
-        
-
         <app-button
-          label="Iniciar sesión"
+          [label]="isSubmitting() ? 'Iniciando...' : 'Iniciar sesión'"
           type="submit"
+          [loading]="isSubmitting()"
           [disabled]="loginForm.invalid || isSubmitting()"
           [fluid]="true"
         ></app-button>
-
-        <!-- <button class="submit" type="submit" [disabled]="loginForm.invalid || isSubmitting()">
-          <span *ngIf="!isSubmitting(); else loading">Iniciar Sesión</span>
-          <ng-template #loading>
-            <span class="spinner" aria-hidden="true"></span>
-            <span>Iniciando...</span>
-          </ng-template>
-        </button> -->
       </form>
 
       @if (serverError() || successMessage()) {
-          <div style="margin-top: 1rem;">
-            @if (serverError()) {
-              <app-message-feedback
-                [text]="serverError()!"
-                severity="error"
-                icon="pi pi-times-circle"
-                styleClass="message-center"
-              />
-            }
+        <div style="margin-top: 1rem">
+          @if (serverError()) {
+            <app-message-feedback
+              [text]="serverError()!"
+              severity="error"
+              icon="pi pi-times-circle"
+              styleClass="message-center"
+            />
+          }
 
-            @if (successMessage()) {
-              <app-message-feedback
-                [text]="successMessage()!"
-                severity="success"
-                icon="pi pi-check-circle"
-                styleClass="message-center"
-              />
-            }
-          </div>
-        }
+          @if (successMessage()) {
+            <app-message-feedback
+              [text]="successMessage()!"
+              severity="success"
+              icon="pi pi-check-circle"
+              styleClass="message-center"
+            />
+          }
+        </div>
+      }
     </section>
   </div>
 </div>
