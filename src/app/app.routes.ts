@@ -1,19 +1,19 @@
 import { Routes } from '@angular/router';
 
-import { LoginComponent } from './login/login.component';
+import { LoginComponent } from './features/login/login.component';
 import { MainLayoutComponent } from './layout/main-layout/main-layout.component';
-import { DashboardComponent } from './dashboard/dashboard.component';
-import { UsersComponent } from './users/users.component';
-import { ValidationRulesComponent } from './validation-rules/validation-rules.component';
-import { PermissionsComponent } from './permissions/permissions.component';
-import { TemplateManagementComponent } from './templates/template-management.component';
-import { HistoryComponent } from './history/history.component';
-import { SettingsComponent } from './settings/settings.component';
+import { DashboardComponent } from './features/dashboard/dashboard.component';
+import { UsersComponent } from './features/users/users.component';
+import { ValidationRulesComponent } from './features/validation-rules/validation-rules.component';
+import { PermissionsComponent } from './features/permissions/permissions.component';
+import { TemplateManagementComponent } from './features/templates/template-management.component';
+import { HistoryComponent } from './features/history/history.component';
+import { SettingsComponent } from './features/settings/settings.component';
 import { authGuard } from './core/guards/auth.guard';
-import { PasswordUpdateComponent } from './password-update/password-update.component';
+import { PasswordUpdateComponent } from './features/password-update/password-update.component';
 import { passwordUpdateGuard } from './core/guards/password-update.guard';
 import { loginRedirectGuard } from './core/guards/login-redirect.guard';
-import { ForgotPasswordComponent } from './forgot-password/forgot-password.component';
+import { ForgotPasswordComponent } from './features/forgot-password/forgot-password.component';
 
 export const routes: Routes = [
   {

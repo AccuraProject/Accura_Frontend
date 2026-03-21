@@ -1,39 +1,44 @@
-// Include theming for Angular Material with `mat.theme()`.
-// This Sass mixin will define CSS variables that are used for styling Angular Material
-// components according to the Material 3 design spec.
-// Learn more about theming and how to use it for your application's
-// custom components at https://material.angular.dev/guide/theming
-@use '@angular/material' as mat;
+@import "primeicons/primeicons.css";
 
-html {
-  @include mat.theme(
-    (
-      color: (
-        primary: mat.$azure-palette,
-        tertiary: mat.$blue-palette,
-      ),
-      typography: Roboto,
-      density: 0,
-    )
-  );
+@font-face {
+  font-family: 'Poppins';
+  font-style: normal;
+  font-weight: 400;
+  src: url('./assets/fonts/poppins-v20-latin-regular-SFWTNBQB.woff2') format('woff2');
+  font-display: swap;
 }
 
-body {
-  // Default the application to a light color theme. This can be changed to
-  // `dark` to enable the dark color theme, or to `light dark` to defer to the
-  // user's system settings.
-  color-scheme: light;
-
-  // Set a default background, font and text colors for the application using
-  // Angular Material's system-level CSS variables. Learn more about these
-  // variables at https://material.angular.dev/guide/system-variables
-  background-color: var(--mat-sys-surface);
-  color: var(--mat-sys-on-surface);
-  font: var(--mat-sys-body-medium);
-
-  // Reset the user agent margin.
-  margin: 0;
+@font-face {
+  font-family: 'Poppins';
+  font-style: normal;
+  font-weight: 500;
+  src: url('./assets/fonts/poppins-v20-latin-500-O53RGPUQ.woff2') format('woff2');
+  font-display: swap;
 }
+
+@font-face {
+  font-family: 'Poppins';
+  font-style: normal;
+  font-weight: 600;
+  src: url('./assets/fonts/poppins-v20-latin-600-3BUSBBSI.woff2') format('woff2');
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Poppins';
+  font-style: normal;
+  font-weight: 700;
+  src: url('./assets/fonts/poppins-v20-latin-700-TKEB4KWA.woff2') format('woff2');
+  font-display: swap;
+}
+
+:root, :host {
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -41,14 +46,13 @@ body {
 html,
 body {
   height: 100%;
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
 }
 
 body {
   margin: 0;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue',
-    sans-serif;
   background: linear-gradient(145deg, #f3f4ff 0%, #ffffff 55%, #f5f3ff 100%);
-  color: #0f172a;
 }
 
 app-root {
@@ -56,12 +60,18 @@ app-root {
   min-height: 100%;
 }
 
-a {
-  color: inherit;
+.field-error-message{
+  --p-message-text-font-weight: 400;
 }
 
-button {
-  font-family: inherit;
+.link-primary {
+  color: var(--p-primary-600);
+  font-weight: var(--font-weight-medium);
+  text-decoration: none;
+}
+
+.link-primary:hover {
+  text-decoration: underline;
 }
 
 /* MAT DIALOG CONFIG */
@@ -221,181 +231,6 @@ button {
   gap: 1rem;
 }
 
-.form-field {
-  display: grid;
-  gap: 0.5rem;
-  label {
-    font-weight: 500;
-    color: #111827;
-  }
-  input {
-    width: 100%;
-    padding: 0.875rem 1rem;
-    border-radius: 14px;
-    border: 1px solid #e5e7eb;
-    background: #f9fafb;
-    transition: border 0.2s ease, box-shadow 0.2s ease;
-    font-size: 1rem;
-    &:focus {
-      outline: none;
-      border-color: #6366f1;
-      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
-      background: #ffffff;
-    }
-    &:read-only {
-      background-color: #f4f4f4;
-      border-color: #e0e0e0;
-      color: #6b7280;
-    }
-  }
-  &.checkbox-field {
-    display: grid;
-    grid-template-columns: 1.125rem auto;
-    align-items: center;
-    gap: 1.75rem;
-
-    label {
-      font-weight: 500;
-      color: #111827;
-      user-select: none;
-    }
-
-    small {
-      grid-column: 2 / -1;
-      color: #dc2626;
-    }
-
-    /* Hereda tratamiento de error como tus inputs */
-    &.form-field--invalid input[type='checkbox'] {
-      border-color: #dc2626;
-      background-color: #fef2f2;
-      box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12);
-    }
-
-    input[type='checkbox'] {
-      /* reset */
-      appearance: none;
-      -webkit-appearance: none;
-      -moz-appearance: none;
-
-      width: 1rem;
-      height: 1rem;
-      border-radius: 6px;
-      border: 1px solid #e5e7eb;
-      background: #f9fafb;
-      display: inline-grid;
-      place-content: center;
-      cursor: pointer;
-      transition: border 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
-
-      &:focus {
-        outline: none;
-        border-color: #6366f1;
-        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
-        background: #ffffff;
-      }
-
-      &:checked {
-        border-color: #6366f1;
-        background-color: #6366f1;
-      }
-
-      &:checked::after {
-        content: '';
-        width: 0.8rem; /* antes 0.7rem */
-        height: 0.8rem; /* antes 0.7rem */
-        background-repeat: no-repeat;
-        background-position: center;
-        background-size: 100% 100%;
-        /* check blanco más grueso */
-        background-image: url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M5 10.5l3 3 7-7' stroke='%23FFFFFF' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-      }
-
-      &:indeterminate {
-        border-color: #6366f1;
-        background-color: #6366f1;
-      }
-
-      &:indeterminate::after {
-        content: '';
-        width: 0.7rem;
-        height: 2px;
-        background-color: #ffffff;
-        border-radius: 2px;
-      }
-
-      &:disabled {
-        background-color: #f4f4f4;
-        border-color: #e0e0e0;
-        cursor: not-allowed;
-      }
-
-      &:disabled + label {
-        color: #6b7280;
-      }
-    }
-  }
-  select {
-    width: 100%;
-    padding: 0.875rem 1rem;
-    border-radius: 14px;
-    border: 1px solid #e5e7eb;
-    background: #f9fafb;
-    transition: border 0.2s ease, box-shadow 0.2s ease;
-    font-size: 1rem;
-    appearance: none;
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    background-image: url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2230%22 height=%2230%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22currentColor%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M6 9l6 6 6-6%22/%3E%3C/svg%3E'); /* Aquí defines un icono personalizado */
-    background-position: right 1rem center;
-    background-repeat: no-repeat;
-    background-size: 12px;
-    &:focus {
-      outline: none;
-      border-color: #6366f1;
-      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
-      background: #ffffff;
-    }
-    &:disabled {
-      background-color: #f4f4f4;
-      border-color: #e0e0e0;
-      color: #6b7280;
-      pointer-events: none;
-    }
-  }
-  textarea {
-    width: 100%;
-    padding: 0.875rem 1rem;
-    border-radius: 14px;
-    border: 1px solid #e5e7eb;
-    background: #f9fafb;
-    transition: border 0.2s ease, box-shadow 0.2s ease;
-    font-size: 1rem;
-    min-height: 120px;
-    resize: vertical;
-    font-family: inherit;
-    line-height: 1.5;
-    &:focus {
-      outline: none;
-      border-color: #6366f1;
-      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
-      background: #ffffff;
-    }
-    &:read-only {
-      background-color: #f4f4f4;
-      border-color: #e0e0e0;
-      color: #6b7280;
-    }
-  }
-  small {
-    color: #dc2626;
-  }
-  &.form-field--invalid input,
-  &.form-field--invalid select {
-    border-color: #dc2626;
-    background-color: #fef2f2;
-  }
-}
 
 .modal__hint {
   display: block;
