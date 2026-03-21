@@ -3,15 +3,21 @@ import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { PasswordModule } from 'primeng/password';
 import { MessageModule } from 'primeng/message';
 import { FloatLabelModule } from 'primeng/floatlabel';
+import { IconFieldModule } from 'primeng/iconfield';
+import { InputIconModule } from 'primeng/inputicon';
+import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-password-field',
   standalone: true,
   imports: [
+    CommonModule,
     ReactiveFormsModule,
     PasswordModule,
     MessageModule,
-    FloatLabelModule
+    FloatLabelModule,
+    IconFieldModule,
+    InputIconModule
   ],
   templateUrl: './password-field.html'
 })
@@ -19,6 +25,7 @@ export class PasswordFieldComponent {
   @Input() label?: string;
   @Input() placeholder = '';
   @Input() control!: FormControl;
+
   @Input() required = false;
   @Input() disabled = false;
   @Input() readonly = false;
@@ -32,8 +39,23 @@ export class PasswordFieldComponent {
 
   @Input() errorMessage?: string;
 
+  @Input() icon?: string;
+  @Input() iconPosition: 'left' | 'right' = 'left';
+
   get showError(): boolean {
     return !!this.control && this.control.invalid && (this.control.touched || this.control.dirty);
+  }
+
+  get hasIcon(): boolean {
+    return !!this.icon;
+  }
+
+  get showCustomRightIcon(): boolean {
+    return this.hasIcon && this.iconPosition === 'right' && !this.toggleMask;
+  }
+
+  get showLeftIcon(): boolean {
+    return this.hasIcon && this.iconPosition === 'left';
   }
 
   get computedInputId(): string {

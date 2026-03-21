@@ -6,6 +6,9 @@ import { finalize } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { AuthService } from '../../core/services/auth.service';
+import { TextFieldComponent } from '../../shared/ui/field/text-field/text-field';
+import { MessageFeedbackComponent } from '../../shared/feedback/message/message-feedback';
+import { ButtonComponent } from '../../shared/ui/button/button';
 
 interface AlertMessage {
   type: 'success' | 'error';
@@ -15,7 +18,14 @@ interface AlertMessage {
 @Component({
   selector: 'app-forgot-password',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterModule],
+  imports: [
+    CommonModule, 
+    ReactiveFormsModule, 
+    RouterModule,
+    TextFieldComponent,
+    MessageFeedbackComponent,
+    ButtonComponent
+  ],
   templateUrl: './forgot-password.component.html',
   styleUrl: './forgot-password.component.scss',
 })

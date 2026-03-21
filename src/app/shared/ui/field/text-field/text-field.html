@@ -1,18 +1,38 @@
 <div class="flex flex-col gap-1">
   @if (label) {
     <p-floatlabel variant="on">
-      <input
-        pInputText
-        [id]="computedInputId"
-        [type]="type"
-        [formControl]="control"
-        [required]="required"
-        [readonly]="readonly"
-        [disabled]="disabled"
-        [autocomplete]="autocomplete"
-        [fluid]="fluid"
-        [invalid]="showError"
-      />
+      @if (hasIcon) {
+        <p-iconfield [iconPosition]="iconPosition" [ngClass]="{ 'invalid-field': showError }">
+          <p-inputicon [class]="icon"></p-inputicon>
+
+          <input
+            pInputText
+            [id]="computedInputId"
+            [type]="type"
+            [formControl]="control"
+            [required]="required"
+            [readonly]="readonly"
+            [disabled]="disabled"
+            [autocomplete]="autocomplete"
+            [fluid]="fluid"
+            [invalid]="showError"
+          />
+        </p-iconfield>
+      } @else {
+        <input
+          pInputText
+          [id]="computedInputId"
+          [type]="type"
+          [formControl]="control"
+          [required]="required"
+          [readonly]="readonly"
+          [disabled]="disabled"
+          [autocomplete]="autocomplete"
+          [fluid]="fluid"
+          [invalid]="showError"
+        />
+      }
+
       <label [for]="computedInputId">
         {{ label }}
       </label>
@@ -20,19 +40,39 @@
   }
 
   @if (!label) {
-    <input
-      pInputText
-      [id]="computedInputId"
-      [type]="type"
-      [formControl]="control"
-      [placeholder]="placeholder"
-      [required]="required"
-      [readonly]="readonly"
-      [disabled]="disabled"
-      [autocomplete]="autocomplete"
-      [fluid]="fluid"
-      [invalid]="showError"
-    />
+    @if (hasIcon) {
+      <p-iconfield [iconPosition]="iconPosition">
+        <p-inputicon [class]="icon"></p-inputicon>
+
+        <input
+          pInputText
+          [id]="computedInputId"
+          [type]="type"
+          [formControl]="control"
+          [placeholder]="placeholder"
+          [required]="required"
+          [readonly]="readonly"
+          [disabled]="disabled"
+          [autocomplete]="autocomplete"
+          [fluid]="fluid"
+          [invalid]="showError"
+        />
+      </p-iconfield>
+    } @else {
+      <input
+        pInputText
+        [id]="computedInputId"
+        [type]="type"
+        [formControl]="control"
+        [placeholder]="placeholder"
+        [required]="required"
+        [readonly]="readonly"
+        [disabled]="disabled"
+        [autocomplete]="autocomplete"
+        [fluid]="fluid"
+        [invalid]="showError"
+      />
+    }
   }
 
   @if (showError) {

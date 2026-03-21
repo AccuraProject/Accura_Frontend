@@ -13,4 +13,5 @@ export class MessageFeedbackComponent {
   @Input() variant?: 'simple' | 'outlined' | 'text';
   @Input() size: 'small' | 'large' = 'small';
   @Input() icon?: string;
+  @Input() styleClass?: string;
 }
