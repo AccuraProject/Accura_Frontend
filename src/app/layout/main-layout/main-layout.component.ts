@@ -13,9 +13,15 @@ import { ToolbarComponent } from '../toolbar/toolbar.component';
 })
 export class MainLayoutComponent {
   protected mobileNavOpen = false;
+  protected sidebarCollapsed = false;
 
-  protected toggleMobileNav(): void {
-    this.mobileNavOpen = !this.mobileNavOpen;
+  protected toggleSidebar(): void {
+    if (window.innerWidth <= 991) {
+      this.mobileNavOpen = !this.mobileNavOpen;
+      return;
+    }
+
+    this.sidebarCollapsed = !this.sidebarCollapsed;
   }
 
   protected closeMobileNav(): void {

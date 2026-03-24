@@ -10,13 +10,24 @@ import { CurrentUserResponse } from '../../core/models/user.model';
 import { selectSessionUser } from '../../core/store/session/session.selectors';
 import { NotificationService } from '../../core/services/notification.service';
 import { NotificationEvent, NotificationUpdatesEvent } from '../../core/models/notification.model';
+import { ButtonComponent } from '../../shared/ui/button/button';
+import { NotificationBadgeComponent } from '../../shared/ui/badge/notification-badge/notification-badge';
+import { AvatarModule } from 'primeng/avatar';
+import { MenuModule } from 'primeng/menu';
+import { MenuItem } from 'primeng/api';
 
 @Component({
   selector: 'app-toolbar',
   standalone: true,
-  imports: [CommonModule],
+  imports: [
+    CommonModule, 
+    ButtonComponent, 
+    NotificationBadgeComponent,
+    AvatarModule,
+    MenuModule
+  ],
   templateUrl: './toolbar.component.html',
-  styleUrl: './toolbar.component.scss'
+  styleUrl: './toolbar.component.scss',
 })
 export class ToolbarComponent {
   @Output() menuToggle = new EventEmitter<void>();
@@ -47,6 +58,15 @@ export class ToolbarComponent {
     this.listenToNotificationUpdates();
   }
 
+  protected userMenuItems: MenuItem[] = [
+    {
+      label: 'Cerrar sesión',
+      icon: 'pi pi-sign-out',
+      command: () => this.onLogout()
+    }
+  ];
+
+
   protected onToggleMenu(): void {
     this.menuToggle.emit();
   }
@@ -69,7 +89,9 @@ export class ToolbarComponent {
       return;
     }
 
-    const unreadIds = this.notifications.filter((notification) => !notification.read_at).map((notification) => notification.id);
+    const unreadIds = this.notifications
+      .filter((notification) => !notification.read_at)
+      .map((notification) => notification.id);
 
     if (unreadIds.length === 0) {
       return;
@@ -84,21 +106,24 @@ export class ToolbarComponent {
         takeUntilDestroyed(this.destroyRef),
         finalize(() => {
           this.isMarkingNotifications = false;
-        })
+        }),
       )
       .subscribe({
         next: () => {
           const readTimestamp = new Date().toISOString();
 
           this.notifications = this.notifications.map((notification) =>
-            notification.read_at ? notification : { ...notification, read_at: readTimestamp }
+            notification.read_at ? notification : { ...notification, read_at: readTimestamp },
           );
-          this.unreadCount = this.notifications.filter((notification) => !notification.read_at).length;
+          this.unreadCount = this.notifications.filter(
+            (notification) => !notification.read_at,
+          ).length;
         },
         error: (error) => {
           this.markNotificationsError =
-            error?.message ?? 'No fue posible marcar las notificaciones como leídas. Intenta nuevamente.';
-        }
+            error?.message ??
+            'No fue posible marcar las notificaciones como leídas. Intenta nuevamente.';
+        },
       });
   }
 
@@ -125,9 +150,7 @@ export class ToolbarComponent {
     const parts = cleaned.split(/\s+/);
     const firstLetter = parts[0]?.charAt(0) ?? '';
     const secondLetter =
-      parts.length > 1
-        ? parts[parts.length - 1]?.charAt(0) ?? ''
-        : parts[0]?.charAt(1) ?? '';
+      parts.length > 1 ? (parts[parts.length - 1]?.charAt(0) ?? '') : (parts[0]?.charAt(1) ?? '');
 
     const initials = `${firstLetter}${secondLetter}`.toUpperCase();
     return initials.trim();
@@ -155,7 +178,7 @@ export class ToolbarComponent {
         error: (error) => {
           this.notificationsError = error?.message ?? 'No fue posible cargar las notificaciones.';
           this.isLoadingNotifications = false;
-        }
+        },
       });
   }
 
@@ -170,8 +193,9 @@ export class ToolbarComponent {
           }
         },
         error: (error) => {
-          this.notificationsError = error?.message ?? 'No fue posible recibir nuevas notificaciones.';
-        }
+          this.notificationsError =
+            error?.message ?? 'No fue posible recibir nuevas notificaciones.';
+        },
       });
   }
 

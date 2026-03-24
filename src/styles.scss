@@ -38,6 +38,21 @@
   --font-weight-medium: 500;
   --font-weight-semibold: 600;
   --font-weight-bold: 700;
+
+  --surface-ground: var(--p-surface-100);
+  --surface-hover: var(--p-content-hover-background);
+  --surface-overlay: var(--p-overlay-popover-background);
+
+  --sidebar-border: 1px solid transparent;
+  --sidebar-shadow: 0px 4px 50px #d9ddfc;
+}
+
+.layout-colorscheme-menu {
+  --menu-bg: var(--surface-overlay);
+  --root-menuitem-text-color: var(--p-primary-color);
+  --menuitem-text-color: var(--p-text-color);
+  --menuitem-icon-color: var(--p-primary-color);
+  --menuitem-hover-bg-color: var(--surface-hover);
 }
 
 * {
@@ -52,8 +67,12 @@ body {
 }
 
 body {
+  font-weight: 400;
+  padding: 0;
   margin: 0;
-  background: linear-gradient(145deg, #f3f4ff 0%, #ffffff 55%, #f5f3ff 100%);
+  min-height: 100%;
+  background: var(--surface-ground);
+  -webkit-font-smoothing: antialiased;
 }
 
 app-root {
@@ -61,9 +80,34 @@ app-root {
   min-height: 100%;
 }
 
+a {
+  text-decoration: none;
+}
+
 // .p-iconfield:focus-within .p-inputicon {
 //   color: var(--p-primary-color);
 // }
+
+.toolbar-menubutton.p-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 2rem;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex-shrink: 0;
+  background-color: transparent;
+  border: transparent;
+  transition: background-color 0.2s;
+  color: var(--p-surface-500);
+  cursor: pointer;
+  .p-button-icon {
+    font-size: 1.25rem;
+  }
+  &:hover {
+    background-color: var(--p-primary-color);
+  }
+}
 
 .invalid-field .p-inputicon {
   color: var(--p-red-500); /* o tu color de error */

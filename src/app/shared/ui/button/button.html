@@ -1,5 +1,5 @@
 <p-button
-  [label]="iconOnly ? undefined : label"
+  [label]="computedLabel"
   [icon]="icon"
   [severity]="severity"
   [type]="type"
@@ -12,5 +12,6 @@
   [disabled]="disabled"
   [fluid]="fluid"
   [ariaLabel]="ariaLabel"
+  [styleClass]="styleClass"
   (onClick)="onClick($event)">
 </p-button>

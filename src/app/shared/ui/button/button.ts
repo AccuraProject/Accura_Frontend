@@ -18,11 +18,12 @@ type IconPosition = 'left' | 'right' | 'top' | 'bottom';
   selector: 'app-button',
   standalone: true,
   imports: [ButtonModule],
-  templateUrl: './button.html'
+  templateUrl: './button.html',
 })
 export class ButtonComponent {
   @Input() label?: string;
   @Input() icon?: string;
+  @Input() styleClass?: string;
 
   @Input() variant: ButtonVariant = 'primary';
   @Input() type: ButtonType = 'button';
@@ -47,6 +48,11 @@ export class ButtonComponent {
 
   get severity(): Exclude<ButtonVariant, 'primary'> | undefined {
     return this.variant === 'primary' ? undefined : this.variant;
+  }
+
+  get computedLabel(): string | undefined {
+    if (this.iconOnly) return undefined;
+    return this.label;
   }
 
   get ariaLabel(): string | undefined {

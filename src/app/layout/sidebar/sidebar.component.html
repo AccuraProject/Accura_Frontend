@@ -1,17 +1,38 @@
-<aside class="sidebar" [class.sidebar--open]="mobileNavOpen">
-  <nav class="sidebar__nav" aria-label="Navegación principal">
-    <button
-      *ngFor="let item of filteredNavigation$ | async; trackBy: trackByLabel"
-      class="sidebar__link"
-      type="button"
-      (click)="navigate(item)"
-      [class.sidebar__link--active]="isActive(item)"
-      [attr.aria-current]="isActive(item) ? 'page' : null"
-    >
-      <span class="sidebar__icon material-symbols-rounded" aria-hidden="true">
-        {{ item.icon }}
-      </span>
-      <span>{{ item.label }}</span>
-    </button>
-  </nav>
+<aside
+  class="layout-sidebar"
+  [class.layout-sidebar--open]="mobileNavOpen"
+  [class.layout-sidebar--collapsed]="collapsed"
+>
+  <div class="sidebar-header">
+    <a class="app-logo" href="/">
+      <h1>Accura</h1>
+    </a>
+  </div>
+
+  <div class="layout-menu-container">
+    <nav>
+      <ul class="layout-menu">
+        @for (item of filteredNavigation$ | async; track item.label) {
+          <li class="layout-root-menu-item">
+            <a
+              pRipple
+              [routerLink]="item.route"
+              routerLinkActive="active-route"
+              [routerLinkActiveOptions]="{ exact: item.exact ?? false }"
+              [attr.aria-label]="collapsed ? item.label : null"
+              [pTooltip]="collapsed ? item.label : undefined"
+              tooltipPosition="right"
+              (click)="onNavigate()"
+            >
+              <i class="layout-menuitem-icon" [class]="item.icon"></i>
+
+              @if (!collapsed) {
+                <span class="layout-menuitem-text">{{ item.label }}</span>
+              }
+            </a>
+          </li>
+        }
+      </ul>
+    </nav>
+  </div>
 </aside>

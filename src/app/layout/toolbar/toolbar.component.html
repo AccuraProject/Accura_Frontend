@@ -1,42 +1,36 @@
-<header class="toolbar">
-  <div class="toolbar__brand">
-    <button
-      class="toolbar__menu material-symbols-rounded"
-      type="button"
-      aria-label="Abrir navegación"
-      (click)="onToggleMenu()"
-    >
-      menu
-    </button>
-    <div class="toolbar__logo"><img src="accura-logo.png" alt="Accura logo"></div>
-    <p class="toolbar__title">Accura</p>
+<header class="layout-toolbar">
+  <div class="toolbar-start">
+    <app-button
+      icon="pi pi-bars"
+      [iconOnly]="true"
+      [rounded]="true"
+      styleClass="toolbar-menubutton"
+      (clicked)="onToggleMenu()"
+    ></app-button>
+    <!-- <nav app-breadcrumb="" class="topbar-breadcrumb">
+      <nav class="layout-breadcrumb">
+        <ol>
+          <li>Banking Dashboard</li>
+        </ol>
+      </nav>
+    </nav> -->
   </div>
 
   <div class="toolbar__actions">
     <div class="toolbar__notifications-trigger">
-      <button
-        class="toolbar__icon"
-        type="button"
-        aria-label="Notificaciones"
-        (click)="onToggleNotifications()"
-      >
-      🔔
-        <span
-          *ngIf="unreadCount > 0"
-          class="toolbar__badge"
-          aria-hidden="true"
-        >
-          {{ unreadCount }}
-        </span>
-      </button>
+      <app-notification-badge
+        icon="pi pi-bell"
+        [value]="unreadCount"
+        severity="danger"
+        ariaLabel="Notificaciones"
+        (clicked)="onToggleNotifications()"
+      ></app-notification-badge>
 
       <div class="toolbar__notifications-panel" *ngIf="showNotifications">
         <header class="toolbar__notifications-header">
           <div class="toolbar__notifications-header-info">
             <h2 class="toolbar__notifications-title">Notificaciones</h2>
-            <span class="toolbar__notifications-subtitle">
-              {{ unreadCount }} sin leer
-            </span>
+            <span class="toolbar__notifications-subtitle"> {{ unreadCount }} sin leer </span>
           </div>
 
           <button
@@ -50,7 +44,10 @@
         </header>
 
         <div class="toolbar__notifications-content" *ngIf="!isLoadingNotifications; else loading">
-          <p *ngIf="markNotificationsError && !notificationsError" class="toolbar__notifications-error">
+          <p
+            *ngIf="markNotificationsError && !notificationsError"
+            class="toolbar__notifications-error"
+          >
             {{ markNotificationsError }}
           </p>
 
@@ -58,11 +55,17 @@
             {{ notificationsError }}
           </p>
 
-          <p *ngIf="!notificationsError && notifications.length === 0" class="toolbar__notifications-empty">
+          <p
+            *ngIf="!notificationsError && notifications.length === 0"
+            class="toolbar__notifications-empty"
+          >
             No tienes notificaciones por ahora.
           </p>
 
-          <ul *ngIf="!notificationsError && notifications.length > 0" class="toolbar__notifications-list">
+          <ul
+            *ngIf="!notificationsError && notifications.length > 0"
+            class="toolbar__notifications-list"
+          >
             <li
               *ngFor="let notification of notifications; trackBy: trackByNotificationId"
               class="toolbar__notification"
@@ -84,9 +87,10 @@
         </ng-template>
       </div>
     </div>
-    <button class="toolbar__profile" type="button" (click)="onLogout()">
-      <span class="toolbar__avatar">{{ userInitials }}</span>
-      <span class="toolbar__name">Cerrar Sesión</span>
+    <button type="button" class="toolbar-user" (click)="userMenu.toggle($event)">
+      <span class="toolbar-user-avatar" aria-hidden="true">{{ userInitials }}</span>
     </button>
+
+    <p-menu #userMenu [model]="userMenuItems" [popup]="true"></p-menu>
   </div>
 </header>
