@@ -10,12 +10,12 @@ import {
   CurrentUserResponse,
   ResetPasswordPayload,
   UpdateUserPayload,
-  UserResponse
+  UserResponse,
 } from '../models/user.model';
 import { selectSessionState } from '../store/session/session.reducer';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class UserService {
   private readonly http = inject(HttpClient);
@@ -32,11 +32,11 @@ export class UserService {
 
         const tokenType = session.tokenType ?? 'Bearer';
         const headers = new HttpHeaders({
-          Authorization: `${tokenType} ${session.accessToken}`
+          Authorization: `${tokenType} ${session.accessToken}`,
         });
 
         return this.http.post<CreatedUserResponse>(`${this.baseUrl}/users`, payload, { headers });
-      })
+      }),
     );
   }
 
@@ -50,13 +50,13 @@ export class UserService {
 
         const tokenType = session.tokenType ?? 'Bearer';
         const headers = new HttpHeaders({
-          Authorization: `${tokenType} ${session.accessToken}`
+          Authorization: `${tokenType} ${session.accessToken}`,
         });
 
         return this.http.get<UserResponse[]>(`${this.baseUrl}/users`, {
-          headers
+          headers,
         });
-      })
+      }),
     );
   }
 
@@ -70,11 +70,11 @@ export class UserService {
 
         const tokenType = session.tokenType ?? 'Bearer';
         const headers = new HttpHeaders({
-          Authorization: `${tokenType} ${session.accessToken}`
+          Authorization: `${tokenType} ${session.accessToken}`,
         });
 
         return this.http.get<CurrentUserResponse>(`${this.baseUrl}/users/me`, { headers });
-      })
+      }),
     );
   }
 
@@ -88,13 +88,13 @@ export class UserService {
 
         const tokenType = session.tokenType ?? 'Bearer';
         const headers = new HttpHeaders({
-          Authorization: `${tokenType} ${session.accessToken}`
+          Authorization: `${tokenType} ${session.accessToken}`,
         });
 
         return this.http.put<CurrentUserResponse>(`${this.baseUrl}/users/${userId}`, payload, {
-          headers
+          headers,
         });
-      })
+      }),
     );
   }
 
@@ -108,11 +108,11 @@ export class UserService {
 
         const tokenType = session.tokenType ?? 'Bearer';
         const headers = new HttpHeaders({
-          Authorization: `${tokenType} ${session.accessToken}`
+          Authorization: `${tokenType} ${session.accessToken}`,
         });
 
         return this.http.delete<void>(`${this.baseUrl}/users/${userId}`, { headers });
-      })
+      }),
     );
   }
 
@@ -126,11 +126,11 @@ export class UserService {
 
         const tokenType = session.tokenType ?? 'Bearer';
         const headers = new HttpHeaders({
-          Authorization: `${tokenType} ${session.accessToken}`
+          Authorization: `${tokenType} ${session.accessToken}`,
         });
 
         return this.http.put<void>(`${this.baseUrl}/users/${userId}`, payload, { headers });
-      })
+      }),
     );
   }
 
@@ -144,34 +144,50 @@ export class UserService {
 
         const tokenType = session.tokenType ?? 'Bearer';
         const headers = new HttpHeaders({
-          Authorization: `${tokenType} ${session.accessToken}`
+          Authorization: `${tokenType} ${session.accessToken}`,
         });
 
-        return this.http.post<void>(`${this.baseUrl}/users/${userId}/reset-password`, {}, {
-          headers
-        });
-      })
+        return this.http.post<void>(
+          `${this.baseUrl}/users/${userId}/reset-password`,
+          {},
+          {
+            headers,
+          },
+        );
+      }),
     );
   }
 
   getErrorMessage(error: unknown): string {
     if (error instanceof HttpErrorResponse) {
-      if (typeof error.error === 'string' && error.error.trim().length > 0) {
-        return error.error;
+      const err = error.error;
+
+      if (typeof err === 'string' && err.trim().length > 0) {
+        return err;
       }
 
-      if (error.error?.detail) {
-        return error.error.detail;
+      if (err?.detail) {
+        if (typeof err.detail === 'string') {
+          return err.detail;
+        }
+
+        if (Array.isArray(err.detail) || typeof err.detail === 'object') {
+          console.warn('Error detail no controlado:', err.detail);
+          return 'Ocurrió un error inesperado. Contacta al soporte o intenta nuevamente.';
+        }
       }
 
+      // Sin conexión
       if (error.status === 0) {
         return 'No se pudo establecer conexión con el servidor.';
       }
 
+      // No autorizado
       if (error.status === 401) {
         return 'No estás autorizado para realizar esta acción.';
       }
 
+      // Error genérico backend
       return 'No se pudo completar la solicitud. Inténtalo nuevamente.';
     }
 

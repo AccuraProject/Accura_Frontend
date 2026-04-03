@@ -95,7 +95,11 @@ export class UserFormDialogComponent {
       : 'Completa los datos del nuevo usuario para agregarlo a la plataforma.';
     this.actionLabel = this.isEditMode ? 'Guardar cambios' : 'Crear usuario';
 
+    console.log(value);
+
     const initialValue = value.user ?? this.getEmptyForm();
+
+    console.log(initialValue);
 
     this.userForm.reset({
       name: initialValue.name,
@@ -105,10 +109,10 @@ export class UserFormDialogComponent {
     });
 
     if (this.isEditMode) {
-      this.userForm.controls.email.disable({ emitEvent: false });
+      // this.userForm.controls.email.disable({ emitEvent: false });
       this.userForm.controls.status.addValidators([Validators.required]);
     } else {
-      this.userForm.controls.email.enable({ emitEvent: false });
+      // this.userForm.controls.email.enable({ emitEvent: false });
       this.userForm.controls.status.clearValidators();
     }
 

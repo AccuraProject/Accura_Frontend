@@ -89,6 +89,8 @@ export class UsersComponent implements OnInit {
     mode: 'create',
   };
 
+  protected isEditing = false;
+
   constructor(
     private readonly dialog: MatDialog,
     private readonly userService: UserService,
@@ -100,26 +102,24 @@ export class UsersComponent implements OnInit {
   }
 
   onCreateUser(): void {
-    console.log('Crear usuario');
+    this.isEditing = false;
     this.openCreateDialog();
-    // abrir modal / navegar
   }
 
   onEditUser(): void {
+    this.isEditing = true;
     if (!this.selectedUser) return;
 
     const user = this.selectedUser;
-    console.log('Editar usuario', user);
 
-    // abrir modal con user
+    console.log('Editar usuario', user);
+    this.openEditDialog(user);
   }
 
   onDeleteUsers(): void {
     if (!this.selectedUser) return;
 
     console.log('Eliminar usuarios', this.selectedUser);
-
-    // confirmar + eliminar
   }
 
   onRowSelect(user: UserRow) {
@@ -132,70 +132,52 @@ export class UsersComponent implements OnInit {
     console.log('Deseleccionado');
   }
 
-  protected get filteredUsers(): UserRow[] {
-    const term = this.searchTerm.trim().toLowerCase();
-    if (!term) {
-      return this.users;
-    }
-
-    return this.users.filter((user) => {
-      return (
-        user.name.toLowerCase().includes(term) ||
-        user.email.toLowerCase().includes(term) ||
-        user.role.toLowerCase().includes(term)
-      );
-    });
-  }
-
   handleSaveUser(user: UserFormDialogValue): void {
-    console.log(user);
+    if (!this.isEditing) {
+      this.userService
+        .createUser({
+          name: user.name,
+          email: user.email,
+          role_id: user.roleId,
+        })
+        .subscribe({
+          next: () => {
+            this.loadUsers();
+            this.toast.success('Usuario creado exitosamente');
+          },
+          error: (error: unknown) => {
+            const message = this.userService.getErrorMessage(error);
+            this.toast.error(message);
+          },
+        });
+    } else {
+      if (this.selectedUser) {
+        const payload: UpdateUserPayload = {
+          name: user.name,
+          role_id: user.roleId,
+          is_active: user.status,
+        };
 
-    this.userService
-      .createUser({
-        name: user.name,
-        email: user.email,
-        role_id: user.roleId,
-      })
-      .subscribe({
-        next: () => {
-          this.loadUsers();
-          this.toast.success('Usuario creado exitosamente');
-        },
-        error: (error: unknown) => {
-          const message = this.userService.getErrorMessage(error);
-          this.toast.error(message);
-        },
-      });
+        this.userService.updateUser(this.selectedUser.id, payload).subscribe({
+          next: (updatedUser: UserResponse) => {
+            const updatedRow = this.mapToUserRow(updatedUser);
+            this.users = this.users.map((current) =>
+              current.id === updatedRow.id ? updatedRow : current,
+            );
+
+            this.toast.success('Usuario actualizado exitosamente');
+          },
+          error: (error: unknown) => {
+            const message = this.userService.getErrorMessage(error);
+            this.toast.error(message);
+          },
+        });
+      }
+    }
   }
 
   handleCancelUserDialog(): void {
     console.log('cancelado');
-  }
-
-  protected get paginatedUsers(): UserRow[] {
-    const startIndex = (this.currentPage - 1) * this.pageSize;
-    return this.filteredUsers.slice(startIndex, startIndex + this.pageSize);
-  }
-
-  protected get totalPages(): number {
-    const total = Math.ceil(this.filteredUsers.length / this.pageSize);
-    return total > 0 ? total : 1;
-  }
-
-  protected get pageStart(): number {
-    if (this.filteredUsers.length === 0) {
-      return 0;
-    }
-
-    return (this.currentPage - 1) * this.pageSize + 1;
-  }
-
-  protected get pageEnd(): number {
-    if (this.filteredUsers.length === 0) {
-      return 0;
-    }
-
-    return Math.min(this.filteredUsers.length, this.currentPage * this.pageSize);
   }
 
   protected onSearchChange(): void {
@@ -208,75 +190,20 @@ export class UsersComponent implements OnInit {
       roles: this.roles,
       mode: 'create',
     };
-    // const dialogRef = this.dialog.open<
-    //   UserFormDialogComponent,
-    //   UserFormDialogData,
-    //   UserFormDialogValue
-    // >(UserFormDialogComponent, {
-    //   disableClose: true,
-    //   data: {
-    //     roles: this.roles,
-    //     mode: 'create',
-    //   },
-    // });
-
-    // dialogRef.afterClosed().subscribe((result: UserFormDialogValue | undefined) => {
-    //   if (!result) {
-    //     return;
-    //   }
-
-    //   this.userService
-    //     .createUser({
-    //       name: result.name,
-    //       email: result.email,
-    //       role_id: result.roleId,
-    //     })
-    //     .subscribe({
-    //       next: (createdUser: CreatedUserResponse) => {
-    //         this.loadUsers();
-    //         console.info(
-    //           'Usuario creado correctamente. Contraseña temporal:',
-    //           createdUser.temporary_password,
-    //         );
-    //       },
-    //       error: (error: unknown) => {
-    //         const message = this.userService.getErrorMessage(error);
-    //         if (typeof window !== 'undefined') {
-    //           window.alert(message);
-    //         } else {
-    //           console.error(message);
-    //         }
-    //       },
-    //     });
-    // });
   }
 
   protected openEditDialog(user: UserRow): void {
-    const dialogRef = this.dialog.open<
-      UserFormDialogComponent,
-      UserFormDialogData,
-      UserFormDialogValue
-    >(UserFormDialogComponent, {
-      disableClose: true,
-      data: {
-        roles: this.roles,
-        mode: 'edit',
-        user: {
-          name: user.name,
-          email: user.email,
-          roleId: user.roleId,
-          status: user.isActive,
-        },
+    this.userDialogVisible = true;
+    this.userDialogData = {
+      roles: this.roles,
+      mode: 'edit',
+      user: {
+        name: user.name,
+        email: user.email,
+        roleId: user.roleId,
+        status: user.isActive,
       },
-    });
-
-    dialogRef.afterClosed().subscribe((result: UserFormDialogValue | undefined) => {
-      if (!result) {
-        return;
-      }
-
-      this.updateUserEntry(user, result);
-    });
+    };
   }
 
   protected openDeleteDialog(user: UserRow): void {
@@ -320,38 +247,6 @@ export class UsersComponent implements OnInit {
 
   protected closeAlert(): void {
     this.formAlert = null;
-  }
-
-  private updateUserEntry(user: UserRow, formData: UserFormDialogValue): void {
-    const payload: UpdateUserPayload = {
-      name: formData.name,
-      role_id: formData.roleId,
-      is_active: formData.status,
-    };
-
-    this.formAlert = null;
-
-    this.userService.updateUser(user.id, payload).subscribe({
-      next: (updatedUser: UserResponse) => {
-        const updatedRow = this.mapToUserRow(updatedUser);
-        this.users = this.users.map((current) =>
-          current.id === updatedRow.id ? updatedRow : current,
-        );
-
-        this.formAlert = {
-          type: 'success',
-          title: 'Cambios guardados',
-          message: 'La información del usuario se actualizó correctamente.',
-        };
-      },
-      error: (error: unknown) => {
-        this.formAlert = {
-          type: 'error',
-          title: 'No se pudo actualizar al usuario',
-          message: this.userService.getErrorMessage(error),
-        };
-      },
-    });
   }
 
   private removeUserEntry(userId: number): void {

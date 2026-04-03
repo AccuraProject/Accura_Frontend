@@ -23,7 +23,7 @@
   <!-- Tabla de usuarios -->
   <app-data-table
     [columns]="columns"
-    [value]="filteredUsers"
+    [value]="users"
     [selection]="selectedUser"
     [loading]="usersLoading"
     (rowSelect)="onRowSelect($event)"

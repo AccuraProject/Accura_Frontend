@@ -26,30 +26,8 @@
         [control]="userForm.controls.email"
         autocomplete="email"
         errorMessage="Ingresa un correo electrónico válido."
-        [readonly]="isEditMode"
       >
       </app-text-field>
-
-      @if (isEditMode) {
-        <div class="form-field">
-          <label for="status">Estado</label>
-
-          <p-select
-            inputId="status"
-            formControlName="status"
-            [options]="statusOptions"
-            optionLabel="label"
-            optionValue="value"
-            placeholder="Selecciona"
-            [invalid]="userForm.controls.status.invalid && userForm.controls.status.touched"
-            styleClass="w-full"
-          />
-
-          @if (userForm.controls.status.invalid && userForm.controls.status.touched) {
-            <small class="modal__error">Selecciona el estado del usuario.</small>
-          }
-        </div>
-      }
 
       <app-select-field
         inputId="role"
@@ -63,9 +41,15 @@
       </app-select-field>
 
       @if (isEditMode) {
-        <small class="modal__hint">
-          El correo electrónico solo puede cambiarse desde la configuración avanzada del usuario.
-        </small>
+        <app-select-field
+          inputId="status"
+          label="Estado"
+          [control]="userForm.controls.status"
+          [options]="statusOptions"
+          optionLabel="label"
+          optionValue="value"
+        >
+        </app-select-field>
       }
     </div>
   </form>
