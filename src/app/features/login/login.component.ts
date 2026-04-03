@@ -9,10 +9,10 @@ import { Store } from '@ngrx/store';
 import { AuthService } from '../../core/services/auth.service';
 import { UserService } from '../../core/services/user.service';
 import { SessionActions } from '../../core/store/session/session.actions';
-import { ButtonComponent } from '../../shared/ui/button/button';
-import { TextFieldComponent } from '../../shared/ui/field/text-field/text-field';
-import { PasswordFieldComponent } from '../../shared/ui/field/password-field/password-field';
-import { MessageFeedbackComponent } from '../../shared/feedback/message/message-feedback';
+import { ButtonComponent } from '../../shared/components/ui/button/button';
+import { TextFieldComponent } from '../../shared/components/ui/field/text-field/text-field';
+import { PasswordFieldComponent } from '../../shared/components/ui/field/password-field/password-field';
+import { MessageFeedbackComponent } from '../../shared/components/feedback/message/message-feedback';
 
 @Component({
   selector: 'app-login',

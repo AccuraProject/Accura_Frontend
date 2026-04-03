@@ -1,0 +1,57 @@
+<p-table
+  #dt
+  [columns]="columns"
+  [value]="value"
+  [(selection)]="selection"
+  [loading]="loading"
+  [paginator]="true"
+  [rows]="rows"
+  selectionMode="single"
+  (onRowSelect)="onRowSelect($event)"
+  (onRowUnselect)="onRowUnselect($event)"
+  [metaKeySelection]="false"
+>
+  <!-- Filtro y búsqueda -->
+  <!-- <ng-template pTemplate="caption">
+    <div class="table-search">
+      <input pInputText type="text" (input)="onSearchChange($event)" placeholder="Buscar..." />
+    </div>
+  </ng-template> -->
+
+  <ng-template #caption>
+    <div class="table-search">
+      <p-iconfield iconPosition="left">
+        <p-inputicon>
+          <i class="pi pi-search"></i>
+        </p-inputicon>
+        <input
+          pInputText
+          type="text"
+          (input)="dt.filterGlobal($event.target.value, 'contains')"
+          placeholder="Buscar..."
+        />
+      </p-iconfield>
+    </div>
+  </ng-template>
+
+  <!-- Columnas -->
+  <ng-template #header let-columns>
+    <tr>
+      @for (col of columns; track col) {
+        <th>
+          {{ col.header }}
+        </th>
+      }
+    </tr>
+  </ng-template>
+
+  <ng-template #body let-rowData let-columns="columns">
+    <tr [pSelectableRow]="rowData">
+      @for (col of columns; track col) {
+        <td>
+          {{ rowData[col.field] }}
+        </td>
+      }
+    </tr>
+  </ng-template>
+</p-table>

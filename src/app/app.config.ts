@@ -14,6 +14,7 @@ import { provideStore, provideState } from '@ngrx/store';
 import { routes } from './app.routes';
 import { sessionFeature } from './core/store/session/session.reducer';
 import { SessionPersistenceService } from './core/services/session-persistence.service';
+import { MessageService } from 'primeng/api';
 import { tokenValidationInterceptor } from './core/interceptors/token-validation.interceptor';
 import { provideStoreDevtools } from '@ngrx/store-devtools';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
@@ -40,6 +41,7 @@ export const appConfig: ApplicationConfig = {
         preset: MyPreset,
       },
     }),
+    MessageService
   ],
 };
 

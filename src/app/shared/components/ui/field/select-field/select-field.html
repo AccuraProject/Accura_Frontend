@@ -1,0 +1,47 @@
+<div class="flex flex-col gap-1">
+  @if (label) {
+    <p-floatlabel variant="on">
+      <p-select
+        [id]="computedInputId"
+        [formControl]="control"
+        [options]="options"
+        [optionLabel]="optionLabel"
+        [optionValue]="optionValue"
+        [required]="required"
+        [disabled]="disabled"
+        [fluid]="fluid"
+        [invalid]="showError"
+        [filter]="filter"
+        [showClear]="showClear"
+        [appendTo]="appendTo"
+      >
+      </p-select>
+
+      <label [for]="computedInputId">
+        {{ label }}
+      </label>
+    </p-floatlabel>
+  } @else {
+    <p-select
+      [id]="computedInputId"
+      [formControl]="control"
+      [options]="options"
+      [optionLabel]="optionLabel"
+      [optionValue]="optionValue"
+      [required]="required"
+      [disabled]="disabled"
+      [fluid]="fluid"
+      [invalid]="showError"
+      [filter]="filter"
+      [showClear]="showClear"
+      [appendTo]="appendTo"
+    >
+    </p-select>
+  }
+
+  @if (showError) {
+    <p-message severity="error" variant="simple" size="small" styleClass="field-error-message">
+      {{ errorText }}
+    </p-message>
+  }
+</div>

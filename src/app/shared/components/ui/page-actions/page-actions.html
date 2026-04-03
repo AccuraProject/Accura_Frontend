@@ -1,0 +1,47 @@
+<p-toolbar class="page-actions">
+  <ng-template pTemplate="start">
+    <div class="page-actions__group">
+      @if (showCreate) {
+        <app-button
+          [label]="createLabel"
+          icon="pi pi-plus"
+          variant="secondary"
+          (clicked)="onCreate()"
+        ></app-button>
+      }
+
+      @if (showEdit) {
+        <app-button
+          [label]="editLabel"
+          icon="pi pi-pencil"
+          variant="secondary"
+          [outlined]="true"
+          [disabled]="disableEdit"
+          (clicked)="onEdit()"
+        ></app-button>
+      }
+
+      @if (showDelete) {
+        <app-button
+          [label]="deleteLabel"
+          icon="pi pi-trash"
+          variant="secondary"
+          [outlined]="true"
+          [disabled]="disableDelete"
+          (clicked)="onDelete()"
+        ></app-button>
+      }
+    </div>
+  </ng-template>
+
+  <ng-template pTemplate="end">
+    @if (showExport) {
+      <app-button
+        [label]="exportLabel"
+        icon="pi pi-upload"
+        variant="secondary"
+        (clicked)="onExport()"
+      ></app-button>
+    }
+  </ng-template>
+</p-toolbar>

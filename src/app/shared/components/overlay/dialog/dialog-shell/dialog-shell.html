@@ -1,0 +1,59 @@
+<p-dialog
+  [(visible)]="visible"
+  [modal]="modal"
+  [closable]="closable"
+  [draggable]="draggable"
+  [resizable]="resizable"
+  [dismissableMask]="dismissableMask"
+  [closeOnEscape]="closeOnEscape"
+  [style]="{ width: width }"
+  [breakpoints]="{ '960px': '75vw', '640px': '95vw' }"
+  (onHide)="onHide()"
+  styleClass="app-dialog-shell"
+>
+  <ng-template pTemplate="header">
+    <div class="dialog-shell__header">
+      <div class="dialog-shell__heading">
+        <h3 class="dialog-shell__title">{{ title }}</h3>
+
+        @if (description) {
+          <p class="dialog-shell__description">{{ description }}</p>
+        }
+      </div>
+
+      <p-button
+        type="button"
+        icon="pi pi-times"
+        text
+        rounded
+        severity="secondary"
+        aria-label="Cerrar"
+        (click)="onCancel()"
+      ></p-button>
+    </div>
+  </ng-template>
+
+  <div class="dialog-shell__content">
+    <ng-content></ng-content>
+  </div>
+
+  <ng-template pTemplate="footer">
+    <div class="dialog-shell__actions">
+      <p-button
+        type="button"
+        [label]="cancelLabel"
+        severity="secondary"
+        text
+        (click)="onCancel()"
+      ></p-button>
+
+      <p-button
+        type="button"
+        [label]="saveLabel"
+        [disabled]="saveDisabled"
+        [loading]="loading"
+        (click)="onSave()"
+      ></p-button>
+    </div>
+  </ng-template>
+</p-dialog>

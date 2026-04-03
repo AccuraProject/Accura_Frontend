@@ -6,18 +6,40 @@
       Administra los accesos, roles y estados de los colaboradores desde un único lugar.
     </p>
   </div>
-  <button class="page-header__cta" type="button" (click)="openCreateDialog()">
-    <span class="material-symbols-rounded">add</span>
-    Crear Usuario
-  </button>
 </section>
 
-<section class="users-panel">
+<div class="card">
+  <app-page-actions
+    [showCreate]="true"
+    [showEdit]="true"
+    [showDelete]="true"
+    [disableEdit]="!selectedUser"
+    [disableDelete]="!selectedUser"
+    (create)="onCreateUser()"
+    (edit)="onEditUser()"
+    (delete)="onDeleteUsers()"
+  ></app-page-actions>
+
+  <!-- Tabla de usuarios -->
+  <app-data-table
+    [columns]="columns"
+    [value]="filteredUsers"
+    [selection]="selectedUser"
+    [loading]="usersLoading"
+    (rowSelect)="onRowSelect($event)"
+    (rowUnselect)="onRowUnselect()"
+    (searchChange)="onSearchChange()"
+  ></app-data-table>
+</div>
+
+<app-user-form-dialog
+  [(visible)]="userDialogVisible"
+  [data]="userDialogData"
+  (saveUser)="handleSaveUser($event)"
+/>
+
+<!-- <section class="users-panel">
   <header class="users-panel__header">
-    <div>
-      <h2>Usuarios</h2>
-      <p>Lista de usuarios registrados en la plataforma</p>
-    </div>
     <label class="users-panel__search">
       <span class="material-symbols-rounded" aria-hidden="true">search</span>
       <input
@@ -35,7 +57,7 @@
       class="modal__alert"
       [ngClass]="{
         'modal__alert--success': alert.type === 'success',
-        'modal__alert--error': alert.type === 'error'
+        'modal__alert--error': alert.type === 'error',
       }"
       role="alert"
     >
@@ -62,18 +84,12 @@
     <p>Cargando usuarios registrados...</p>
   </div>
 
-  <div
-    class="users-table__state users-table__state--error"
-    *ngIf="!usersLoading && usersError"
-  >
+  <div class="users-table__state users-table__state--error" *ngIf="!usersLoading && usersError">
     <span class="material-symbols-rounded" aria-hidden="true">error</span>
     <p>{{ usersError }}</p>
   </div>
 
-  <div
-    class="users-table__wrapper"
-    *ngIf="!usersLoading && !usersError && filteredUsers as items"
-  >
+  <div class="users-table__wrapper" *ngIf="!usersLoading && !usersError && filteredUsers as items">
     <div class="users-table__scroll">
       <table class="users-table">
         <thead>
@@ -162,4 +178,4 @@
       </div>
     </div>
   </div>
-</section>
+</section> -->

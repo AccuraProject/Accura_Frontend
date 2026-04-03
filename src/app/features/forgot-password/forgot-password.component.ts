@@ -6,9 +6,9 @@ import { finalize } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { AuthService } from '../../core/services/auth.service';
-import { TextFieldComponent } from '../../shared/ui/field/text-field/text-field';
-import { MessageFeedbackComponent } from '../../shared/feedback/message/message-feedback';
-import { ButtonComponent } from '../../shared/ui/button/button';
+import { TextFieldComponent } from '../../shared/components/ui/field/text-field/text-field';
+import { MessageFeedbackComponent } from '../../shared/components/feedback/message/message-feedback';
+import { ButtonComponent } from '../../shared/components/ui/button/button';
 
 interface AlertMessage {
   type: 'success' | 'error';

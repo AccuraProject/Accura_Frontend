@@ -8,11 +8,8 @@ import {
   UserFormDialogData,
   UserFormDialogValue,
   UserRoleOption,
-} from './user-form-dialog.component';
-import {
-  UserDeleteDialogComponent,
-  UserDeleteDialogData,
-} from './user-delete-dialog.component';
+} from './components/user-form-dialog/user-form-dialog.component';
+import { UserDeleteDialogComponent, UserDeleteDialogData } from './user-delete-dialog.component';
 
 import { UserService } from '../../core/services/user.service';
 import {
@@ -21,6 +18,10 @@ import {
   UserResponse,
   UserRole,
 } from '../../core/models/user.model';
+import { PageActionsComponent } from '../../shared/components/ui/page-actions/page-actions';
+import { CardModule } from 'primeng/card';
+import { DataTableComponent } from '../../shared/components/data/data-table/data-table';
+import { ToastService } from '../../shared/services/toast.service';
 
 interface UserRow {
   id: number;
@@ -42,7 +43,16 @@ interface UsersAlert {
 @Component({
   selector: 'app-users',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatDialogModule, MatMenuModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    MatDialogModule,
+    MatMenuModule,
+    PageActionsComponent,
+    DataTableComponent,
+    CardModule,
+    UserFormDialogComponent,
+  ],
   templateUrl: './users.component.html',
   styleUrl: './users.component.scss',
 })
@@ -57,19 +67,69 @@ export class UsersComponent implements OnInit {
   ];
 
   protected users: UserRow[] = [];
+  protected selectedUser: UserRow | null = null;
   protected usersLoading = false;
   protected usersError: string | null = null;
 
   protected readonly pageSize = 10;
   protected currentPage = 1;
 
+  columns = [
+    { field: 'name', header: 'Nombre' },
+    { field: 'email', header: 'Email' },
+    { field: 'role', header: 'Rol' },
+    { field: 'status', header: 'Estado' },
+    { field: 'createdAt', header: 'Fecha de Creación' },
+  ];
+
+  protected userDialogVisible = false;
+
+  userDialogData: UserFormDialogData = {
+    roles: [],
+    mode: 'create',
+  };
+
   constructor(
     private readonly dialog: MatDialog,
     private readonly userService: UserService,
+    private readonly toast: ToastService,
   ) {}
 
   public ngOnInit(): void {
     this.loadUsers();
+  }
+
+  onCreateUser(): void {
+    console.log('Crear usuario');
+    this.openCreateDialog();
+    // abrir modal / navegar
+  }
+
+  onEditUser(): void {
+    if (!this.selectedUser) return;
+
+    const user = this.selectedUser;
+    console.log('Editar usuario', user);
+
+    // abrir modal con user
+  }
+
+  onDeleteUsers(): void {
+    if (!this.selectedUser) return;
+
+    console.log('Eliminar usuarios', this.selectedUser);
+
+    // confirmar + eliminar
+  }
+
+  onRowSelect(user: UserRow) {
+    this.selectedUser = user;
+    console.log('Usuario seleccionado', user);
+  }
+
+  onRowUnselect() {
+    this.selectedUser = null;
+    console.log('Deseleccionado');
   }
 
   protected get filteredUsers(): UserRow[] {
@@ -85,6 +145,31 @@ export class UsersComponent implements OnInit {
         user.role.toLowerCase().includes(term)
       );
     });
+  }
+
+  handleSaveUser(user: UserFormDialogValue): void {
+    console.log(user);
+
+    this.userService
+      .createUser({
+        name: user.name,
+        email: user.email,
+        role_id: user.roleId,
+      })
+      .subscribe({
+        next: () => {
+          this.loadUsers();
+          this.toast.success('Usuario creado exitosamente');
+        },
+        error: (error: unknown) => {
+          const message = this.userService.getErrorMessage(error);
+          this.toast.error(message);
+        },
+      });
+  }
+
+  handleCancelUserDialog(): void {
+    console.log('cancelado');
   }
 
   protected get paginatedUsers(): UserRow[] {
@@ -113,67 +198,57 @@ export class UsersComponent implements OnInit {
     return Math.min(this.filteredUsers.length, this.currentPage * this.pageSize);
   }
 
-  protected goToPreviousPage(): void {
-    if (this.currentPage > 1) {
-      this.currentPage -= 1;
-    }
-  }
-
-  protected goToNextPage(): void {
-    if (this.currentPage < this.totalPages) {
-      this.currentPage += 1;
-    }
-  }
-
   protected onSearchChange(): void {
     this.currentPage = 1;
   }
 
   protected openCreateDialog(): void {
-    const dialogRef = this.dialog.open<
-      UserFormDialogComponent,
-      UserFormDialogData,
-      UserFormDialogValue
-    >(
-      UserFormDialogComponent,
-      {
-        disableClose: true,
-        data: {
-          roles: this.roles,
-          mode: 'create',
-        },
-      },
-    );
+    this.userDialogVisible = true;
+    this.userDialogData = {
+      roles: this.roles,
+      mode: 'create',
+    };
+    // const dialogRef = this.dialog.open<
+    //   UserFormDialogComponent,
+    //   UserFormDialogData,
+    //   UserFormDialogValue
+    // >(UserFormDialogComponent, {
+    //   disableClose: true,
+    //   data: {
+    //     roles: this.roles,
+    //     mode: 'create',
+    //   },
+    // });
 
-    dialogRef.afterClosed().subscribe((result: UserFormDialogValue | undefined) => {
-      if (!result) {
-        return;
-      }
+    // dialogRef.afterClosed().subscribe((result: UserFormDialogValue | undefined) => {
+    //   if (!result) {
+    //     return;
+    //   }
 
-      this.userService
-        .createUser({
-          name: result.name,
-          email: result.email,
-          role_id: result.roleId,
-        })
-        .subscribe({
-          next: (createdUser: CreatedUserResponse) => {
-            this.loadUsers();
-            console.info(
-              'Usuario creado correctamente. Contraseña temporal:',
-              createdUser.temporary_password,
-            );
-          },
-          error: (error: unknown) => {
-            const message = this.userService.getErrorMessage(error);
-            if (typeof window !== 'undefined') {
-              window.alert(message);
-            } else {
-              console.error(message);
-            }
-          },
-        });
-    });
+    //   this.userService
+    //     .createUser({
+    //       name: result.name,
+    //       email: result.email,
+    //       role_id: result.roleId,
+    //     })
+    //     .subscribe({
+    //       next: (createdUser: CreatedUserResponse) => {
+    //         this.loadUsers();
+    //         console.info(
+    //           'Usuario creado correctamente. Contraseña temporal:',
+    //           createdUser.temporary_password,
+    //         );
+    //       },
+    //       error: (error: unknown) => {
+    //         const message = this.userService.getErrorMessage(error);
+    //         if (typeof window !== 'undefined') {
+    //           window.alert(message);
+    //         } else {
+    //           console.error(message);
+    //         }
+    //       },
+    //     });
+    // });
   }
 
   protected openEditDialog(user: UserRow): void {
@@ -181,22 +256,19 @@ export class UsersComponent implements OnInit {
       UserFormDialogComponent,
       UserFormDialogData,
       UserFormDialogValue
-    >(
-      UserFormDialogComponent,
-      {
-        disableClose: true,
-        data: {
-          roles: this.roles,
-          mode: 'edit',
-          user: {
-            name: user.name,
-            email: user.email,
-            roleId: user.roleId,
-            status: user.isActive,
-          },
+    >(UserFormDialogComponent, {
+      disableClose: true,
+      data: {
+        roles: this.roles,
+        mode: 'edit',
+        user: {
+          name: user.name,
+          email: user.email,
+          roleId: user.roleId,
+          status: user.isActive,
         },
       },
-    );
+    });
 
     dialogRef.afterClosed().subscribe((result: UserFormDialogValue | undefined) => {
       if (!result) {
@@ -208,11 +280,7 @@ export class UsersComponent implements OnInit {
   }
 
   protected openDeleteDialog(user: UserRow): void {
-    const dialogRef = this.dialog.open<
-      UserDeleteDialogComponent,
-      UserDeleteDialogData,
-      boolean
-    >(
+    const dialogRef = this.dialog.open<UserDeleteDialogComponent, UserDeleteDialogData, boolean>(
       UserDeleteDialogComponent,
       {
         disableClose: true,
@@ -270,8 +338,6 @@ export class UsersComponent implements OnInit {
           current.id === updatedRow.id ? updatedRow : current,
         );
 
-        this.updatePaginationAfterDataChange(this.users.length);
-
         this.formAlert = {
           type: 'success',
           title: 'Cambios guardados',
@@ -290,7 +356,6 @@ export class UsersComponent implements OnInit {
 
   private removeUserEntry(userId: number): void {
     this.users = this.users.filter((user) => user.id !== userId);
-    this.updatePaginationAfterDataChange(this.users.length);
   }
 
   protected trackByEmail(_: number, user: UserRow): string {
@@ -335,32 +400,15 @@ export class UsersComponent implements OnInit {
     this.userService.getUsers().subscribe({
       next: (users: UserResponse[]) => {
         this.users = users.map((user) => this.mapToUserRow(user));
-        this.updatePaginationAfterDataChange(this.users.length);
         this.usersLoading = false;
       },
       error: (error: unknown) => {
         this.users = [];
         this.usersError = this.userService.getErrorMessage(error);
-        this.updatePaginationAfterDataChange(this.users.length);
         this.usersLoading = false;
         console.error(this.usersError);
       },
     });
-  }
-
-  private updatePaginationAfterDataChange(totalItems: number): void {
-    const totalPages = this.calculateTotalPages(totalItems);
-    if (this.currentPage > totalPages) {
-      this.currentPage = totalPages;
-    }
-
-    if (this.currentPage < 1) {
-      this.currentPage = 1;
-    }
-  }
-
-  private calculateTotalPages(totalItems: number): number {
-    return totalItems > 0 ? Math.ceil(totalItems / this.pageSize) : 1;
   }
 
   private mapToUserRow(user: UserResponse): UserRow {
@@ -409,7 +457,7 @@ export class UsersComponent implements OnInit {
       return this.getRoleLabel(null);
     }
 
-    return role.name?.trim() || role.alias?.trim()  || this.getRoleLabel(role.id ?? null);
+    return role.name?.trim() || role.alias?.trim() || this.getRoleLabel(role.id ?? null);
   }
 
   private getStatusLabel(isActive: boolean): string {
