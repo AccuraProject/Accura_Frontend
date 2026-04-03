@@ -50,6 +50,7 @@ export interface UserFormDialogInitialValue {
 export class UserFormDialogComponent {
   protected roles: UserRoleOption[] = [];
   protected isEditMode = false;
+  protected isActive = true;
   protected title = 'Crear Nuevo Usuario';
   protected description = 'Completa los datos del nuevo usuario para agregarlo a la plataforma.';
   protected actionLabel = 'Crear Usuario';
@@ -64,7 +65,7 @@ export class UserFormDialogComponent {
   readonly userForm = this.fb.group({
     name: this.fb.nonNullable.control('', [Validators.required, Validators.minLength(3)]),
     email: this.fb.nonNullable.control('', [Validators.required, Validators.email]),
-    roleId: this.fb.control<number | null>(null, [Validators.required]),
+    roleId: this.fb.control<number | null>({ value: null, disabled: true }, [Validators.required]),
     status: this.fb.control<boolean | null>(true),
   });
 
@@ -78,6 +79,7 @@ export class UserFormDialogComponent {
     if (!value) {
       this.roles = [];
       this.isEditMode = false;
+      this.isActive = true;
       this.title = 'Crear nuevo usuario';
       this.description = 'Completa los datos del nuevo usuario para agregarlo a la plataforma.';
       this.actionLabel = 'Crear usuario';
@@ -95,11 +97,7 @@ export class UserFormDialogComponent {
       : 'Completa los datos del nuevo usuario para agregarlo a la plataforma.';
     this.actionLabel = this.isEditMode ? 'Guardar cambios' : 'Crear usuario';
 
-    console.log(value);
-
     const initialValue = value.user ?? this.getEmptyForm();
-
-    console.log(initialValue);
 
     this.userForm.reset({
       name: initialValue.name,
@@ -108,12 +106,20 @@ export class UserFormDialogComponent {
       status: initialValue.status ?? true,
     });
 
+    this.isActive = !!initialValue.status;
+
     if (this.isEditMode) {
-      // this.userForm.controls.email.disable({ emitEvent: false });
       this.userForm.controls.status.addValidators([Validators.required]);
     } else {
-      // this.userForm.controls.email.enable({ emitEvent: false });
       this.userForm.controls.status.clearValidators();
+    }
+    
+    if(this.isActive){
+      this.userForm.controls.name.enable({ emitEvent: false });
+      this.userForm.controls.email.enable({ emitEvent: false });
+    }else{
+      this.userForm.controls.name.disable({ emitEvent: false });
+      this.userForm.controls.email.disable({ emitEvent: false });
     }
 
     this.userForm.controls.status.updateValueAndValidity({ emitEvent: false });

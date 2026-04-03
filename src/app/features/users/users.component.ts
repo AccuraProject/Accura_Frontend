@@ -155,6 +155,7 @@ export class UsersComponent implements OnInit {
         const payload: UpdateUserPayload = {
           name: user.name,
           role_id: user.roleId,
+          email: user.email,
           is_active: user.status,
         };
 
