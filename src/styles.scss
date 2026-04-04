@@ -39,7 +39,7 @@
   --font-weight-semibold: 600;
   --font-weight-bold: 700;
 
-  --card-shadow: 0px 4px 30px rgba(221, 224, 255, .54);
+  --card-shadow: 0px 4px 30px rgba(221, 224, 255, 0.54);
 
   --surface-card: var(--p-content-background);
   --surface-border: var(--p-content-border-color);
@@ -92,7 +92,7 @@ a {
 //   color: var(--p-primary-color);
 // }
 
-.p-datatable-header{
+.p-datatable-header {
   padding: 0.75rem 0 !important;
 }
 
@@ -189,13 +189,13 @@ a {
 
 .page-header__title {
   font-weight: 700;
-  color: #111827;
+  color: var(--p-surface-900);
 }
 
 .page-header__subtitle {
   margin: 0.75rem 0 0;
   font-size: 0.95rem;
-  color: #475569;
+  color: var(--p-surface-600);
 }
 
 .page-header__cta {
@@ -305,6 +305,12 @@ a {
   display: grid;
   grid-template-columns: 1fr;
   gap: 1.5rem;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1rem;
 }
 
 .modal__hint {

@@ -156,7 +156,7 @@ export class UsersComponent implements OnInit {
         .subscribe({
           next: () => {
             this.loadUsers();
-            this.toast.success('Usuario creado exitosamente');
+            this.toast.success('Usuario creado exitosamente.');
             this.closeUserDialog();
           },
           error: (error: unknown) => {
@@ -189,7 +189,7 @@ export class UsersComponent implements OnInit {
                 current.id === updatedRow.id ? updatedRow : current,
               );
 
-              this.toast.success('Usuario actualizado exitosamente');
+              this.toast.success('Usuario actualizado exitosamente.');
               this.closeUserDialog();
             },
             error: (error: unknown) => {
@@ -218,7 +218,7 @@ export class UsersComponent implements OnInit {
       .subscribe({
         next: () => {
           this.removeUserEntry(userId);
-          this.toast.success('Usuario eliminado exitosamente');
+          this.toast.success('Usuario eliminado exitosamente.');
         },
         error: (error: unknown) => {
           const message = this.userService.getErrorMessage(error);
@@ -230,7 +230,7 @@ export class UsersComponent implements OnInit {
   handleResetPassword(userId: number): void {
     this.userService.resetManagedUserPassword(userId).subscribe({
       next: () => {
-        this.toast.success('La contraseña fue restablecida y enviada al correo del usuario');
+        this.toast.success('La contraseña fue restablecida y enviada al correo del usuario.');
       },
       error: (error: unknown) => {
         const message = this.userService.getErrorMessage(error);

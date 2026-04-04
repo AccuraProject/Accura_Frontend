@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   AbstractControl,
@@ -7,7 +7,7 @@ import {
   ReactiveFormsModule,
   ValidationErrors,
   ValidatorFn,
-  Validators
+  Validators,
 } from '@angular/forms';
 import { FormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -16,11 +16,11 @@ import { Store } from '@ngrx/store';
 
 import { UserService } from '../../core/services/user.service';
 import { selectSessionUser } from '../../core/store/session/session.selectors';
-import {
-  CurrentUserResponse,
-  UpdateUserPayload,
-} from '../../core/models/user.model';
+import { CurrentUserResponse, UpdateUserPayload } from '../../core/models/user.model';
 import { SessionActions } from '../../core/store/session/session.actions';
+import { TextFieldComponent } from '../../shared/components/ui/field/text-field/text-field';
+import { ButtonComponent } from '../../shared/components/ui/button/button';
+import { ToastService } from '../../shared/services/toast.service';
 
 export interface ManagedUser {
   id: number;
@@ -35,15 +35,23 @@ export interface ManagedUser {
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, TextFieldComponent, ButtonComponent],
   templateUrl: './settings.component.html',
-  styleUrl: './settings.component.scss'
+  styleUrl: './settings.component.scss',
 })
 export class SettingsComponent {
-  protected readonly personalInfoForm: FormGroup;
+  private readonly fb = inject(FormBuilder);
+
+  readonly personalInfoForm = this.fb.nonNullable.group({
+    fullName: ['', [Validators.required, Validators.minLength(3)]],
+    role: [{ value: '', disabled: true }, [Validators.required]],
+    email: [{ value: '', disabled: true }, [Validators.required, Validators.email]],
+  });
+
   protected readonly changePasswordForm: FormGroup;
 
   protected personalInfoAlert: PersonalInfoAlert | null = null;
+  readonly isSubmittingPersonalInfo = signal(false);
   protected personalInfoSubmitting = false;
   protected changePasswordAlert: ChangePasswordAlert | null = null;
   protected changePasswordSubmitting = false;
@@ -62,23 +70,17 @@ export class SettingsComponent {
   private changePasswordSubmitted = false;
 
   constructor(
-    private readonly formBuilder: FormBuilder,
     private readonly userService: UserService,
-    private readonly store: Store
+    private readonly store: Store,
+    private readonly toast: ToastService,
   ) {
-    this.personalInfoForm = this.formBuilder.group({
-      fullName: ['', [Validators.required, Validators.minLength(3)]],
-      role: [{ value: '', disabled: true }],
-      email: ['', [Validators.required, Validators.email]]
-    });
-
-    this.changePasswordForm = this.formBuilder.group({
+    this.changePasswordForm = this.fb.group({
       currentPassword: ['', Validators.required],
       newPassword: ['', [Validators.required, Validators.minLength(8)]],
       confirmPassword: [
         '',
-        [Validators.required, Validators.minLength(8), this.confirmPasswordValidator()]
-      ]
+        [Validators.required, Validators.minLength(8), this.confirmPasswordValidator()],
+      ],
     });
 
     this.changePasswordForm
@@ -103,8 +105,8 @@ export class SettingsComponent {
 
     return this.users.filter((user) =>
       [user.name, user.email, user.role, user.status].some((value) =>
-        value.toLowerCase().includes(query)
-      )
+        value.toLowerCase().includes(query),
+      ),
     );
   }
 
@@ -150,8 +152,12 @@ export class SettingsComponent {
     this.currentPage = 1;
   }
 
-  protected submitPersonalInfo(): void {
-    this.personalInfoSubmitted = true;
+  protected onSubmitPersonalInfo(): void {
+    if (this.isSubmittingPersonalInfo()) {
+      return;
+    }
+
+    this.isSubmittingPersonalInfo.set(true);
 
     if (this.personalInfoForm.invalid) {
       this.personalInfoForm.markAllAsTouched();
@@ -159,58 +165,29 @@ export class SettingsComponent {
     }
 
     if (!this.currentUser) {
-      this.personalInfoAlert = {
-        type: 'error',
-        title: 'No se pudo actualizar la información',
-        message: 'No se encontró información del usuario en sesión. Inténtalo nuevamente.',
-      };
+      this.toast.warn('No se encontró información del usuario en sesión. Inténtalo nuevamente.');
       return;
     }
 
+    const rawVlue = this.personalInfoForm.getRawValue();
+
     const payload: UpdateUserPayload = {
-      name: this.personalInfoForm.get('fullName')?.value?.trim() ?? ''
+      name: rawVlue.fullName.trim(),
     };
-
-    if (!this.userIsClient(this.currentUser)) {
-      payload.email = this.personalInfoForm.get('email')?.value?.trim() ?? '';
-    }
-
-    this.personalInfoSubmitting = true;
-    this.personalInfoAlert = null;
 
     this.userService
       .updateUser(this.currentUser.id, payload)
-      .pipe(finalize(() => (this.personalInfoSubmitting = false)))
+      .pipe(finalize(() => this.isSubmittingPersonalInfo.set(false)))
       .subscribe({
         next: (user) => {
           this.currentUser = user;
           this.store.dispatch(SessionActions.loadCurrentUserSuccess({ user }));
-
-          this.personalInfoForm.patchValue(
-            {
-              fullName: user.name,
-              email: user.email
-            },
-            { emitEvent: false }
-          );
-          this.personalInfoForm.get('role')?.setValue(user.role.alias, { emitEvent: false });
-          this.personalInfoForm.markAsPristine();
-          this.personalInfoForm.markAsUntouched();
-          this.personalInfoSubmitted = false;
-
-          this.personalInfoAlert = {
-            type: 'success',
-            title: 'Cambios guardados',
-            message: 'Tu información personal se actualizó correctamente.'
-          };
+          this.toast.success('Tu información personal se actualizó correctamente.');
         },
         error: (error: unknown) => {
-          this.personalInfoAlert = {
-            type: 'error',
-            title: 'No se pudo actualizar la información',
-            message: this.userService.getErrorMessage(error)
-          };
-        }
+          const message = this.userService.getErrorMessage(error);
+          this.toast.error(message);
+        },
       });
   }
 
@@ -226,14 +203,14 @@ export class SettingsComponent {
       this.changePasswordAlert = {
         type: 'error',
         title: 'No se pudo actualizar la contraseña',
-        message: 'No se encontró información del usuario en sesión. Inténtalo nuevamente.'
+        message: 'No se encontró información del usuario en sesión. Inténtalo nuevamente.',
       };
       return;
     }
 
     const payload: UpdateUserPayload = {
       current_password: this.changePasswordForm.get('currentPassword')?.value ?? '',
-      password: this.changePasswordForm.get('newPassword')?.value ?? ''
+      password: this.changePasswordForm.get('newPassword')?.value ?? '',
     };
 
     this.changePasswordSubmitting = true;
@@ -255,53 +232,21 @@ export class SettingsComponent {
           this.changePasswordAlert = {
             type: 'success',
             title: 'Contraseña actualizada',
-            message: 'Tu contraseña se actualizó correctamente.'
+            message: 'Tu contraseña se actualizó correctamente.',
           };
         },
         error: (error: unknown) => {
           this.changePasswordAlert = {
             type: 'error',
             title: 'No se pudo actualizar la contraseña',
-            message: this.userService.getErrorMessage(error)
+            message: this.userService.getErrorMessage(error),
           };
-        }
+        },
       });
   }
 
-  protected trackByUserId(_: number, user: ManagedUser): number {
-    return user.id;
-  }
-
-  protected userInitials(user: ManagedUser): string {
-    return user.name
-      .split(' ')
-      .filter((part) => !!part)
-      .map((part) => part[0])
-      .join('')
-      .slice(0, 2)
-      .toUpperCase();
-  }
-
-  protected roleClass(role: string): string {
-    switch (role) {
-      case 'Administrador':
-        return 'badge--admin';
-      default:
-        return 'badge--client';
-    }
-  }
-
-  protected statusClass(status: string): string {
-    switch (status) {
-      case 'Activo':
-        return 'badge--active';
-      default:
-        return 'badge--inactive';
-    }
-  }
-
   protected showChangePasswordError(
-    controlName: 'currentPassword' | 'newPassword' | 'confirmPassword'
+    controlName: 'currentPassword' | 'newPassword' | 'confirmPassword',
   ): boolean {
     const control = this.changePasswordForm.get(controlName);
     if (!control) {
@@ -313,7 +258,7 @@ export class SettingsComponent {
 
   protected hasChangePasswordError(
     controlName: 'currentPassword' | 'newPassword' | 'confirmPassword',
-    errorCode: string
+    errorCode: string,
   ): boolean {
     const control = this.changePasswordForm.get(controlName);
     if (!control) {
@@ -353,21 +298,6 @@ export class SettingsComponent {
     this.manageUsersAlert = null;
   }
 
-  private updatePaginationAfterDataChange(totalItems: number): void {
-    const totalPages = this.calculateTotalPages(totalItems);
-    if (this.currentPage > totalPages) {
-      this.currentPage = totalPages;
-    }
-
-    if (this.currentPage < 1) {
-      this.currentPage = 1;
-    }
-  }
-
-  private calculateTotalPages(totalItems: number): number {
-    return totalItems > 0 ? Math.ceil(totalItems / this.pageSize) : 1;
-  }
-
   private handleCurrentUserChange(user: CurrentUserResponse | null): void {
     this.currentUser = user;
     this.personalInfoSubmitted = false;
@@ -386,9 +316,9 @@ export class SettingsComponent {
       {
         fullName: user.name,
         email: user.email,
-        role: user.role.name
+        role: user.role.name,
       },
-      { emitEvent: false }
+      { emitEvent: false },
     );
     this.personalInfoForm.markAsPristine();
     this.personalInfoForm.markAsUntouched();
@@ -410,7 +340,7 @@ export class SettingsComponent {
         return null;
       }
 
-    return newPassword === confirmPassword ? null : { passwordMismatch: true };
+      return newPassword === confirmPassword ? null : { passwordMismatch: true };
     };
   }
 
