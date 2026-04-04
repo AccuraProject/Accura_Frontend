@@ -17,9 +17,9 @@ import { CommonModule } from '@angular/common';
     MessageModule,
     FloatLabelModule,
     IconFieldModule,
-    InputIconModule
+    InputIconModule,
   ],
-  templateUrl: './password-field.html'
+  templateUrl: './password-field.html',
 })
 export class PasswordFieldComponent {
   @Input() label?: string;
@@ -69,18 +69,35 @@ export class PasswordFieldComponent {
   get errorText(): string {
     if (!this.control || !this.control.errors) return '';
 
-    if (this.control.errors['required']) return 'La contraseña es requerida.';
+    const errors = this.control.errors;
+    const value = this.control.value ?? '';
 
-    if (this.control.errors['minlength']) {
-      return `Mínimo ${this.control.errors['minlength'].requiredLength} caracteres.`;
+    if (errors['required']) return 'La contraseña es obligatoria.';
+
+    if (errors['minlength']) {
+      return `Mínimo ${errors['minlength'].requiredLength} caracteres.`;
     }
 
-    if (this.control.errors['maxlength']) {
-      return `Máximo ${this.control.errors['maxlength'].requiredLength} caracteres.`;
+    if (errors['maxlength']) {
+      return `Máximo ${errors['maxlength'].requiredLength} caracteres.`;
     }
 
-    if (this.control.errors['pattern']) {
-      return 'Formato inválido.';
+    if (errors['pattern']) {
+      if (!/[a-z]/.test(value)) {
+        return 'Al menos una letra minúscula.';
+      }
+
+      if (!/[A-Z]/.test(value)) {
+        return 'Al menos una letra mayúscula.';
+      }
+
+      if (!/\d/.test(value)) {
+        return 'Al menos un número.';
+      }
+
+      if (!/[^a-zA-Z0-9]/.test(value)) {
+        return 'Al menos un carácter especial.';
+      }
     }
 
     return this.errorMessage ?? 'Campo inválido.';

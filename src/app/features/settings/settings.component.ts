@@ -57,7 +57,17 @@ export class SettingsComponent {
 
   readonly changePasswordForm = this.fb.group({
     currentPassword: ['', Validators.required],
-    newPassword: ['', [Validators.required, Validators.minLength(8)]],
+    newPassword: [
+      '',
+      [
+        Validators.required,
+        Validators.minLength(8),
+        Validators.pattern(/[a-z]/), // al menos una minúscula
+        Validators.pattern(/[A-Z]/), // al menos una mayúscula
+        Validators.pattern(/[0-9]/), // al menos un número
+        Validators.pattern(/[^a-zA-Z0-9]/), // al menos un carácter especial
+      ],
+    ],
     confirmPassword: [
       '',
       [Validators.required, Validators.minLength(8), this.confirmPasswordValidator()],
@@ -147,22 +157,17 @@ export class SettingsComponent {
 
     const payload: UpdateUserPayload = {
       current_password: rawVlue.currentPassword ?? '',
-      password: rawVlue.newPassword ?? ''
+      new_password: rawVlue.newPassword ?? '',
     };
 
     this.userService
-      .updateUser(this.currentUser.id, payload)
+      .changePassword(payload)
       .pipe(finalize(() => this.isSubmittingChangePassword.set(false)))
       .subscribe({
         next: (user) => {
           this.currentUser = user;
           this.store.dispatch(SessionActions.loadCurrentUserSuccess({ user }));
           this.toast.success('Tu contraseña se actualizó correctamente.');
-
-          // this.changePasswordForm.reset();
-          // this.changePasswordForm.markAsPristine();
-          // this.changePasswordForm.markAsUntouched();
-          // this.changePasswordSubmitted = false;
         },
         error: (error: unknown) => {
           const message = this.userService.getErrorMessage(error);

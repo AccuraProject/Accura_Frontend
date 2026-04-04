@@ -116,6 +116,26 @@ export class UserService {
     );
   }
 
+  changePassword(payload: UpdateUserPayload): Observable<CurrentUserResponse> {
+    return this.store.select(selectSessionState).pipe(
+      take(1),
+      switchMap((session) => {
+        if (!session.accessToken) {
+          return throwError(() => new Error('No hay un token de autenticación disponible.'));
+        }
+
+        const tokenType = session.tokenType ?? 'Bearer';
+        const headers = new HttpHeaders({
+          Authorization: `${tokenType} ${session.accessToken}`,
+        });
+
+        return this.http.put<CurrentUserResponse>(`${this.baseUrl}/users/me/password`, payload, {
+          headers,
+        });
+      }),
+    );
+  }
+
   resetPassword(userId: number, payload: ResetPasswordPayload): Observable<void> {
     return this.store.select(selectSessionState).pipe(
       take(1),

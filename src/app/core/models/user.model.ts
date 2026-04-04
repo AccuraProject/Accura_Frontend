@@ -39,6 +39,7 @@ export interface UpdateUserPayload {
   email?: string;
   password?: string;
   current_password?: string;
+  new_password?: string;
   role_id?: number;
   is_active?: boolean;
 }

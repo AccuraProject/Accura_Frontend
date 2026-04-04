@@ -49,26 +49,3 @@
     }
   }
 }
-
-.settings-form__alert {
-  display: block;
-}
-
-.settings-form__alert .modal__alert {
-  align-items: flex-start;
-  gap: 1rem;
-}
-
-.settings-form__alert-close {
-  margin-left: auto;
-  align-self: flex-start;
-  background: transparent;
-  color: inherit;
-  width: 32px;
-  height: 32px;
-}
-
-.settings-form__alert-close:hover {
-  background: rgba(255, 255, 255, 0.2);
-  color: inherit;
-}
