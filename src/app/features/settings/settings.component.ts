@@ -10,23 +10,15 @@ import {
   Validators
 } from '@angular/forms';
 import { FormsModule } from '@angular/forms';
-import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { finalize } from 'rxjs';
 import { Store } from '@ngrx/store';
 
-import {
-  SettingsManageUserDialogComponent,
-  SettingsManageUserDialogResult
-} from './settings-manage-user-dialog.component';
 import { UserService } from '../../core/services/user.service';
 import { selectSessionUser } from '../../core/store/session/session.selectors';
 import {
   CurrentUserResponse,
   UpdateUserPayload,
-  UserResponse,
-  UserRole,
-  UserDetail,
 } from '../../core/models/user.model';
 import { SessionActions } from '../../core/store/session/session.actions';
 
@@ -43,7 +35,7 @@ export interface ManagedUser {
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule, MatDialogModule],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule],
   templateUrl: './settings.component.html',
   styleUrl: './settings.component.scss'
 })
@@ -68,11 +60,9 @@ export class SettingsComponent {
   private currentUser: CurrentUserResponse | null = null;
   private personalInfoSubmitted = false;
   private changePasswordSubmitted = false;
-  private manageUsersLoaded = false;
 
   constructor(
     private readonly formBuilder: FormBuilder,
-    private readonly dialog: MatDialog,
     private readonly userService: UserService,
     private readonly store: Store
   ) {
@@ -278,33 +268,6 @@ export class SettingsComponent {
       });
   }
 
-  protected openManageDialog(user: ManagedUser): void {
-    if (!this.canManageUsers) {
-      return;
-    }
-
-    this.dialog
-      .open(SettingsManageUserDialogComponent, {
-        width: '540px',
-        data: { user },
-        autoFocus: false
-      })
-      .afterClosed()
-      .subscribe((result: SettingsManageUserDialogResult | undefined) => {
-        if (!result) {
-          return;
-        }
-
-        if (result.action === 'email') {
-          this.updateManagedUserEmail(result.user.id, result.email);
-        }
-
-        if (result.action === 'reset-password') {
-          this.resetManagedUserPassword(result.user.id);
-        }
-      });
-  }
-
   protected trackByUserId(_: number, user: ManagedUser): number {
     return user.id;
   }
@@ -390,30 +353,6 @@ export class SettingsComponent {
     this.manageUsersAlert = null;
   }
 
-  private loadUsers(): void {
-    if (!this.canManageUsers) {
-      return;
-    }
-
-    this.manageUsersLoaded = true;
-
-    this.userService.getUsers().subscribe({
-      next: (users: UserResponse[]) => {
-        this.users = users.map((user) => this.mapToManagedUser(user));
-        this.updatePaginationAfterDataChange(this.users.length);
-      },
-      error: (error: unknown) => {
-        const message = this.userService.getErrorMessage(error);
-        if (typeof window !== 'undefined') {
-          window.alert(message);
-        } else {
-          console.error(message);
-        }
-        this.manageUsersLoaded = false;
-      }
-    });
-  }
-
   private updatePaginationAfterDataChange(totalItems: number): void {
     const totalPages = this.calculateTotalPages(totalItems);
     if (this.currentPage > totalPages) {
@@ -429,106 +368,6 @@ export class SettingsComponent {
     return totalItems > 0 ? Math.ceil(totalItems / this.pageSize) : 1;
   }
 
-  private updateManagedUserEmail(userId: number, email: string): void {
-    const trimmedEmail = email.trim();
-
-    if (!trimmedEmail) {
-      return;
-    }
-
-    this.manageUsersAlert = null;
-
-    this.userService.updateUser(userId, { email: trimmedEmail }).subscribe({
-      next: (updatedUser) => {
-        const managedUser = this.mapToManagedUser(updatedUser);
-        this.users = this.users.map((user) =>
-          user.id === userId ? { ...user, ...managedUser } : user
-        );
-        this.updatePaginationAfterDataChange(this.users.length);
-        this.manageUsersAlert = {
-          type: 'success',
-          title: 'Correo actualizado',
-          message: 'El correo electrónico se actualizó correctamente.'
-        };
-      },
-      error: (error: unknown) => {
-        this.manageUsersAlert = {
-          type: 'error',
-          title: 'No se pudo actualizar el correo electrónico',
-          message: this.userService.getErrorMessage(error)
-        };
-      }
-    });
-  }
-
-  private resetManagedUserPassword(userId: number): void {
-    this.manageUsersAlert = null;
-
-    this.userService.resetManagedUserPassword(userId).subscribe({
-      next: () => {
-        this.manageUsersAlert = {
-          type: 'success',
-          title: 'Contraseña reseteada',
-          message:
-            'Se generó una nueva contraseña y se envió al correo del usuario seleccionado.'
-        };
-      },
-      error: (error: unknown) => {
-        this.manageUsersAlert = {
-          type: 'error',
-          title: 'No se pudo resetear la contraseña',
-          message: this.userService.getErrorMessage(error)
-        };
-      }
-    });
-  }
-
-  private mapToManagedUser(user: UserDetail): ManagedUser {
-    return {
-      id: user.id,
-      name: user.name,
-      username: this.getUsernameFromEmail(user.email),
-      email: user.email,
-      role: this.getRoleDisplayName(user.role),
-      status: this.getStatusLabel(user.is_active),
-      createdAt: this.formatDate(user.created_at)
-    };
-  }
-
-  private getUsernameFromEmail(email: string): string {
-    if (!email) {
-      return '';
-    }
-
-    const [username] = email.split('@');
-    return username?.trim() || email;
-  }
-
-  private getRoleDisplayName(role?: UserRole | null): string {
-    if (!role) {
-      return 'Sin rol';
-    }
-
-    return role.name?.trim() || role.alias?.trim() || 'Sin rol';
-  }
-
-  private getStatusLabel(isActive: boolean): string {
-    return isActive ? 'Activo' : 'Inactivo';
-  }
-
-  private formatDate(value: string | null | undefined): string {
-    if (!value) {
-      return '';
-    }
-
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) {
-      return '';
-    }
-
-    return new Intl.DateTimeFormat('es-ES').format(date);
-  }
-
   private handleCurrentUserChange(user: CurrentUserResponse | null): void {
     this.currentUser = user;
     this.personalInfoSubmitted = false;
@@ -537,22 +376,10 @@ export class SettingsComponent {
     this.changePasswordAlert = null;
     this.manageUsersAlert = null;
 
-    this.canManageUsers = this.userCanManageUsers(user);
-
-    if (!this.canManageUsers) {
-      this.users = [];
-      this.manageUsersLoaded = false;
-      this.updatePaginationAfterDataChange(this.users.length);
-    }
-
     if (!user) {
       this.personalInfoForm.reset({ fullName: '', email: '', role: '' });
       this.changePasswordForm.reset();
       return;
-    }
-
-    if (this.canManageUsers && !this.manageUsersLoaded) {
-      this.loadUsers();
     }
 
     this.personalInfoForm.patchValue(
@@ -585,20 +412,6 @@ export class SettingsComponent {
 
     return newPassword === confirmPassword ? null : { passwordMismatch: true };
     };
-  }
-
-  private userCanManageUsers(user: CurrentUserResponse | null): boolean {
-    if (!user?.role) {
-      return false;
-    }
-
-    const alias = user.role.alias?.toLowerCase();
-    if (alias) {
-      return alias === 'admin';
-    }
-
-    const name = user.role.name?.toLowerCase();
-    return name === 'administrador';
   }
 
   private userIsClient(user: CurrentUserResponse | null): boolean {
