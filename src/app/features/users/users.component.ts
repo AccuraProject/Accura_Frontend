@@ -22,6 +22,7 @@ import { PageActionsComponent } from '../../shared/components/ui/page-actions/pa
 import { CardModule } from 'primeng/card';
 import { DataTableComponent } from '../../shared/components/data/data-table/data-table';
 import { ToastService } from '../../shared/services/toast.service';
+import { ConfirmService } from '../../shared/services/confirm.service';
 
 interface UserRow {
   id: number;
@@ -95,6 +96,7 @@ export class UsersComponent implements OnInit {
     private readonly dialog: MatDialog,
     private readonly userService: UserService,
     private readonly toast: ToastService,
+    private readonly confirm: ConfirmService,
   ) {}
 
   public ngOnInit(): void {
@@ -119,7 +121,11 @@ export class UsersComponent implements OnInit {
   onDeleteUsers(): void {
     if (!this.selectedUser) return;
 
-    console.log('Eliminar usuarios', this.selectedUser);
+    const user = this.selectedUser;
+
+    this.confirm.confirmDelete(() => {
+      this.handleDeleteUser(user.id);
+    });
   }
 
   onRowSelect(user: UserRow) {
@@ -177,6 +183,19 @@ export class UsersComponent implements OnInit {
     }
   }
 
+  handleDeleteUser(userId: number): void {
+    this.userService.deleteUser(userId).subscribe({
+      next: () => {
+        this.removeUserEntry(userId);
+        this.toast.success('Usuario eliminado exitosamente');
+      },
+      error: (error: unknown) => {
+        const message = this.userService.getErrorMessage(error);
+        this.toast.error(message);
+      },
+    });
+  }
+
   handleCancelUserDialog(): void {
     console.log('cancelado');
   }
@@ -205,49 +224,6 @@ export class UsersComponent implements OnInit {
         status: user.isActive,
       },
     };
-  }
-
-  protected openDeleteDialog(user: UserRow): void {
-    const dialogRef = this.dialog.open<UserDeleteDialogComponent, UserDeleteDialogData, boolean>(
-      UserDeleteDialogComponent,
-      {
-        disableClose: true,
-        data: {
-          name: user.name,
-          email: user.email,
-        },
-      },
-    );
-
-    dialogRef.afterClosed().subscribe((shouldDelete: boolean | undefined) => {
-      if (!shouldDelete) {
-        return;
-      }
-
-      this.formAlert = null;
-
-      this.userService.deleteUser(user.id).subscribe({
-        next: () => {
-          this.removeUserEntry(user.id);
-          this.formAlert = {
-            type: 'success',
-            title: 'Usuario eliminado',
-            message: 'El usuario se eliminó correctamente.',
-          };
-        },
-        error: (error: unknown) => {
-          this.formAlert = {
-            type: 'error',
-            title: 'No se pudo eliminar al usuario',
-            message: this.userService.getErrorMessage(error),
-          };
-        },
-      });
-    });
-  }
-
-  protected closeAlert(): void {
-    this.formAlert = null;
   }
 
   private removeUserEntry(userId: number): void {
