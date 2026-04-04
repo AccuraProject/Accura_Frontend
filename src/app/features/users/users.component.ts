@@ -187,20 +187,25 @@ export class UsersComponent implements OnInit {
   }
 
   handleDeleteUser(userId: number): void {
-    this.userService.deleteUser(userId).subscribe({
-      next: () => {
-        this.removeUserEntry(userId);
-        this.toast.success('Usuario eliminado exitosamente');
-      },
-      error: (error: unknown) => {
-        const message = this.userService.getErrorMessage(error);
-        this.toast.error(message);
-      },
-    });
-  }
+    this.usersLoading = true;
 
-  protected onSearchChange(): void {
-    this.currentPage = 1;
+    this.userService
+      .deleteUser(userId)
+      .pipe(
+        finalize(() => {
+          this.usersLoading = false;
+        }),
+      )
+      .subscribe({
+        next: () => {
+          this.removeUserEntry(userId);
+          this.toast.success('Usuario eliminado exitosamente');
+        },
+        error: (error: unknown) => {
+          const message = this.userService.getErrorMessage(error);
+          this.toast.error(message);
+        },
+      });
   }
 
   protected openCreateDialog(): void {

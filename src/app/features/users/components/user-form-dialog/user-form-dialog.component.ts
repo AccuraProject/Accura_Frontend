@@ -127,7 +127,6 @@ export class UserFormDialogComponent {
   }
 
   protected submit(): void {
-    console.log(this.loading);
     if (this.loading) {
       return;
     }
