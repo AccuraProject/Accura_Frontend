@@ -87,6 +87,10 @@ export class UsersComponent implements OnInit {
     this.loadUsers();
   }
 
+  get isResetPasswordDisabled(): boolean {
+    return !this.selectedUser || !this.selectedUser.isActive;
+  }
+
   onCreateUser(): void {
     this.isEditing = false;
     this.openCreateDialog();
@@ -109,6 +113,19 @@ export class UsersComponent implements OnInit {
     this.confirm.confirmDelete(() => {
       this.handleDeleteUser(user.id);
     });
+  }
+
+  onResetPassword(): void {
+    if (!this.selectedUser || !this.selectedUser.isActive) return;
+
+    const user = this.selectedUser;
+
+    this.confirm.confirmAction(
+      () => this.handleResetPassword(user.id),
+      `Se generará una nueva contraseña para <b>${user.name}</b> y se enviará a su correo registrado. ¿Deseas continuar?`,
+      'Restablecer contraseña',
+      'Restablecer',
+    );
   }
 
   onRowSelect(user: UserRow) {
@@ -160,6 +177,7 @@ export class UsersComponent implements OnInit {
           .updateUser(this.selectedUser.id, payload)
           .pipe(
             finalize(() => {
+              this.selectedUser = null;
               this.userDialogLoading = false;
               this.cdr.markForCheck();
             }),
@@ -193,6 +211,7 @@ export class UsersComponent implements OnInit {
       .deleteUser(userId)
       .pipe(
         finalize(() => {
+          this.selectedUser = null;
           this.usersLoading = false;
         }),
       )
@@ -206,6 +225,18 @@ export class UsersComponent implements OnInit {
           this.toast.error(message);
         },
       });
+  }
+
+  handleResetPassword(userId: number): void {
+    this.userService.resetManagedUserPassword(userId).subscribe({
+      next: () => {
+        this.toast.success('La contraseña fue restablecida y enviada al correo del usuario');
+      },
+      error: (error: unknown) => {
+        const message = this.userService.getErrorMessage(error);
+        this.toast.error(message);
+      },
+    });
   }
 
   protected openCreateDialog(): void {

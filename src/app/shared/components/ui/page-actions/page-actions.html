@@ -4,8 +4,9 @@
       @if (showCreate) {
         <app-button
           [label]="createLabel"
-          icon="pi pi-plus"
+          [icon]="createIcon"
           variant="secondary"
+          [disabled]="disableCreate"
           (clicked)="onCreate()"
         ></app-button>
       }
@@ -13,7 +14,7 @@
       @if (showEdit) {
         <app-button
           [label]="editLabel"
-          icon="pi pi-pencil"
+          [icon]="editIcon"
           variant="secondary"
           [outlined]="true"
           [disabled]="disableEdit"
@@ -24,11 +25,22 @@
       @if (showDelete) {
         <app-button
           [label]="deleteLabel"
-          icon="pi pi-trash"
+          [icon]="deleteIcon"
           variant="secondary"
           [outlined]="true"
           [disabled]="disableDelete"
           (clicked)="onDelete()"
+        ></app-button>
+      }
+
+      @if (showExtraAction) {
+        <app-button
+          [label]="extraActionLabel"
+          [icon]="extraActionIcon"
+          variant="secondary"
+          [outlined]="true"
+          [disabled]="disableExtraAction"
+          (clicked)="onExtraAction()"
         ></app-button>
       }
     </div>
@@ -38,8 +50,9 @@
     @if (showExport) {
       <app-button
         [label]="exportLabel"
-        icon="pi pi-upload"
+        [icon]="exportIcon"
         variant="secondary"
+        [disabled]="disableExport"
         (clicked)="onExport()"
       ></app-button>
     }

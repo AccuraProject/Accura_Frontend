@@ -13,11 +13,16 @@
     [showCreate]="true"
     [showEdit]="true"
     [showDelete]="true"
+    [showExtraAction]="true"
+    extraActionIcon="pi pi-refresh"
+    extraActionLabel="Restablecer contraseña"
     [disableEdit]="!selectedUser"
     [disableDelete]="!selectedUser"
+    [disableExtraAction]="isResetPasswordDisabled"
     (create)="onCreateUser()"
     (edit)="onEditUser()"
     (delete)="onDeleteUsers()"
+    (extraAction)="onResetPassword()"
   ></app-page-actions>
 
   <!-- Tabla de usuarios -->

@@ -25,5 +25,5 @@ export class ConfirmDialogComponent {
   @Input() closable = true;
   @Input() closeOnEscape = true;
   @Input() dismissableMask = true;
-  @Input() styleClass = 'w-full max-w-md';
+  @Input() styleClass = '';
 }

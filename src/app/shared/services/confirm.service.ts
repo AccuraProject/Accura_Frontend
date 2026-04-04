@@ -71,24 +71,21 @@ export class ConfirmService {
     onAccept: () => void,
     message = '¿Deseas continuar con esta acción?',
     header = 'Confirmación',
+    acceptLabel = 'Continuar',
   ): void {
     this.show({
       header,
       message,
       icon: 'pi pi-exclamation-triangle',
-      acceptLabel: 'Continuar',
+      acceptLabel,
       rejectLabel: 'Cancelar',
       defaultFocus: 'reject',
-      rejectButtonStyleClass: 'p-button-text',
+      rejectButtonStyleClass: 'p-button-outlined p-button-secondary',
       onAccept,
     });
   }
 
-  alert(
-    message: string,
-    header = 'Información',
-    onAccept?: () => void,
-  ): void {
+  alert(message: string, header = 'Información', onAccept?: () => void): void {
     this.show({
       header,
       message,
