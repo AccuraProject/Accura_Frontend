@@ -42,7 +42,7 @@ export interface UserFormDialogInitialValue {
     SelectModule,
     DialogShellComponent,
     TextFieldComponent,
-    SelectFieldComponent
+    SelectFieldComponent,
   ],
   templateUrl: './user-form-dialog.component.html',
   styleUrls: ['./user-form-dialog.component.scss'],
@@ -75,6 +75,7 @@ export class UserFormDialogComponent {
   @Output() saveUser = new EventEmitter<UserFormDialogValue>();
   @Output() cancelDialog = new EventEmitter<void>();
 
+  @Input() loading = false;
   @Input() set data(value: UserFormDialogData | null) {
     if (!value) {
       this.roles = [];
@@ -113,11 +114,11 @@ export class UserFormDialogComponent {
     } else {
       this.userForm.controls.status.clearValidators();
     }
-    
-    if(this.isActive){
+
+    if (this.isActive) {
       this.userForm.controls.name.enable({ emitEvent: false });
       this.userForm.controls.email.enable({ emitEvent: false });
-    }else{
+    } else {
       this.userForm.controls.name.disable({ emitEvent: false });
       this.userForm.controls.email.disable({ emitEvent: false });
     }
@@ -126,6 +127,11 @@ export class UserFormDialogComponent {
   }
 
   protected submit(): void {
+    console.log(this.loading);
+    if (this.loading) {
+      return;
+    }
+
     if (this.userForm.invalid) {
       this.userForm.markAllAsTouched();
       return;
@@ -151,10 +157,13 @@ export class UserFormDialogComponent {
     };
 
     this.saveUser.emit(payload);
-    this.close();
   }
 
   protected cancel(): void {
+    if (this.loading) {
+      return;
+    }
+
     this.cancelDialog.emit();
     this.close();
   }

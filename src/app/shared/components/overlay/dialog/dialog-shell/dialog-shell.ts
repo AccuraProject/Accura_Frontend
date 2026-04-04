@@ -35,12 +35,20 @@ export class DialogShellComponent {
   @Output() save = new EventEmitter<void>();
 
   onHide(): void {
+    if (this.loading) {
+      return;
+    }
+
     this.visible = false;
     this.visibleChange.emit(false);
     this.cancel.emit();
   }
 
   onCancel(): void {
+    if (this.loading) {
+      return;
+    }
+
     this.visible = false;
     this.visibleChange.emit(false);
     this.cancel.emit();

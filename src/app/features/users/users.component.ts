@@ -1,28 +1,21 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import { MatMenuModule } from '@angular/material/menu';
 import {
   UserFormDialogComponent,
   UserFormDialogData,
   UserFormDialogValue,
   UserRoleOption,
 } from './components/user-form-dialog/user-form-dialog.component';
-import { UserDeleteDialogComponent, UserDeleteDialogData } from './user-delete-dialog.component';
 
 import { UserService } from '../../core/services/user.service';
-import {
-  CreatedUserResponse,
-  UpdateUserPayload,
-  UserResponse,
-  UserRole,
-} from '../../core/models/user.model';
+import { UpdateUserPayload, UserResponse, UserRole } from '../../core/models/user.model';
 import { PageActionsComponent } from '../../shared/components/ui/page-actions/page-actions';
 import { CardModule } from 'primeng/card';
 import { DataTableComponent } from '../../shared/components/data/data-table/data-table';
 import { ToastService } from '../../shared/services/toast.service';
 import { ConfirmService } from '../../shared/services/confirm.service';
+import { finalize } from 'rxjs';
 
 interface UserRow {
   id: number;
@@ -35,20 +28,12 @@ interface UserRow {
   createdAt: string;
 }
 
-interface UsersAlert {
-  type: 'success' | 'error';
-  title: string;
-  message: string;
-}
-
 @Component({
   selector: 'app-users',
   standalone: true,
   imports: [
     CommonModule,
     FormsModule,
-    MatDialogModule,
-    MatMenuModule,
     PageActionsComponent,
     DataTableComponent,
     CardModule,
@@ -58,9 +43,8 @@ interface UsersAlert {
   styleUrl: './users.component.scss',
 })
 export class UsersComponent implements OnInit {
+  private readonly cdr = inject(ChangeDetectorRef);
   protected searchTerm = '';
-
-  protected formAlert: UsersAlert | null = null;
 
   protected readonly roles: UserRoleOption[] = [
     // { id: 1, label: 'Administrador' },
@@ -84,6 +68,7 @@ export class UsersComponent implements OnInit {
   ];
 
   protected userDialogVisible = false;
+  protected userDialogLoading = false;
 
   userDialogData: UserFormDialogData = {
     roles: [],
@@ -93,7 +78,6 @@ export class UsersComponent implements OnInit {
   protected isEditing = false;
 
   constructor(
-    private readonly dialog: MatDialog,
     private readonly userService: UserService,
     private readonly toast: ToastService,
     private readonly confirm: ConfirmService,
@@ -114,7 +98,6 @@ export class UsersComponent implements OnInit {
 
     const user = this.selectedUser;
 
-    console.log('Editar usuario', user);
     this.openEditDialog(user);
   }
 
@@ -130,15 +113,16 @@ export class UsersComponent implements OnInit {
 
   onRowSelect(user: UserRow) {
     this.selectedUser = user;
-    console.log('Usuario seleccionado', user);
   }
 
   onRowUnselect() {
     this.selectedUser = null;
-    console.log('Deseleccionado');
   }
 
   handleSaveUser(user: UserFormDialogValue): void {
+    this.userDialogLoading = true;
+    this.cdr.markForCheck();
+
     if (!this.isEditing) {
       this.userService
         .createUser({
@@ -146,10 +130,17 @@ export class UsersComponent implements OnInit {
           email: user.email,
           role_id: user.roleId,
         })
+        .pipe(
+          finalize(() => {
+            this.userDialogLoading = false;
+            this.cdr.markForCheck();
+          }),
+        )
         .subscribe({
           next: () => {
             this.loadUsers();
             this.toast.success('Usuario creado exitosamente');
+            this.closeUserDialog();
           },
           error: (error: unknown) => {
             const message = this.userService.getErrorMessage(error);
@@ -165,20 +156,32 @@ export class UsersComponent implements OnInit {
           is_active: user.status,
         };
 
-        this.userService.updateUser(this.selectedUser.id, payload).subscribe({
-          next: (updatedUser: UserResponse) => {
-            const updatedRow = this.mapToUserRow(updatedUser);
-            this.users = this.users.map((current) =>
-              current.id === updatedRow.id ? updatedRow : current,
-            );
+        this.userService
+          .updateUser(this.selectedUser.id, payload)
+          .pipe(
+            finalize(() => {
+              this.userDialogLoading = false;
+              this.cdr.markForCheck();
+            }),
+          )
+          .subscribe({
+            next: (updatedUser: UserResponse) => {
+              const updatedRow = this.mapToUserRow(updatedUser);
+              this.users = this.users.map((current) =>
+                current.id === updatedRow.id ? updatedRow : current,
+              );
 
-            this.toast.success('Usuario actualizado exitosamente');
-          },
-          error: (error: unknown) => {
-            const message = this.userService.getErrorMessage(error);
-            this.toast.error(message);
-          },
-        });
+              this.toast.success('Usuario actualizado exitosamente');
+              this.closeUserDialog();
+            },
+            error: (error: unknown) => {
+              const message = this.userService.getErrorMessage(error);
+              this.toast.error(message);
+            },
+          });
+      } else {
+        this.userDialogLoading = false;
+        this.cdr.markForCheck();
       }
     }
   }
@@ -194,10 +197,6 @@ export class UsersComponent implements OnInit {
         this.toast.error(message);
       },
     });
-  }
-
-  handleCancelUserDialog(): void {
-    console.log('cancelado');
   }
 
   protected onSearchChange(): void {
@@ -226,39 +225,17 @@ export class UsersComponent implements OnInit {
     };
   }
 
+  protected closeUserDialog(): void {
+    this.userDialogVisible = false;
+    this.userDialogLoading = false;
+    this.userDialogData = {
+      roles: this.roles,
+      mode: 'create',
+    };
+  }
+
   private removeUserEntry(userId: number): void {
     this.users = this.users.filter((user) => user.id !== userId);
-  }
-
-  protected trackByEmail(_: number, user: UserRow): string {
-    return user.email;
-  }
-
-  protected getInitials(name: string): string {
-    return name
-      .split(' ')
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((part) => part[0]?.toUpperCase() ?? '')
-      .join('');
-  }
-
-  protected roleClass(role: string): string {
-    switch (role) {
-      case 'Administrador':
-        return 'badge--admin';
-      default:
-        return 'badge--client';
-    }
-  }
-
-  protected statusClass(status: string): string {
-    switch (status) {
-      case 'Activo':
-        return 'badge--active';
-      default:
-        return 'badge--inactive';
-    }
   }
 
   private loadUsers(): void {

@@ -62,7 +62,7 @@ export class ConfirmService {
       rejectLabel: 'Cancelar',
       defaultFocus: 'reject',
       acceptButtonStyleClass: 'p-button-danger',
-      rejectButtonStyleClass: 'p-button-secondary',
+      rejectButtonStyleClass: 'p-button-outlined p-button-secondary',
       onAccept,
     });
   }

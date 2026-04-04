@@ -5,7 +5,7 @@
   [draggable]="draggable"
   [resizable]="resizable"
   [dismissableMask]="dismissableMask"
-  [closeOnEscape]="closeOnEscape"
+  [closeOnEscape]="loading ? false : closeOnEscape"
   [style]="{ width: width }"
   [breakpoints]="{ '960px': '75vw', '640px': '95vw' }"
   (onHide)="onHide()"
@@ -28,6 +28,7 @@
         rounded
         severity="secondary"
         aria-label="Cerrar"
+        [disabled]="loading"
         (click)="onCancel()"
       ></p-button>
     </div>
@@ -43,7 +44,8 @@
         type="button"
         [label]="cancelLabel"
         severity="secondary"
-        text
+        [disabled]="loading"
+        [outlined]="true"
         (click)="onCancel()"
       ></p-button>
 
