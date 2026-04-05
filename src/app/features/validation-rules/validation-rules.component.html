@@ -7,37 +7,45 @@
       procesos.
     </p>
   </div>
-  <button class="page-header__cta" type="button" (click)="openCreateDialog()">
+  <!-- <button class="page-header__cta" type="button" (click)="openCreateDialog()">
     <span class="material-symbols-rounded" aria-hidden="true">add</span>
     Crear Regla
-  </button>
+  </button> -->
 </section>
 
-<section class="validation-summary">
-  <article class="summary-card">
-    <header>
-      <p>Total de Reglas</p>
-      <span class="material-symbols-rounded" aria-hidden="true">auto_awesome</span>
-    </header>
-    <strong>{{ totalRules }}</strong>
-    <span>Reglas configuradas</span>
-  </article>
-  <article class="summary-card summary-card--accent">
-    <header>
-      <p>Reglas Activas</p>
-      <span class="material-symbols-rounded" aria-hidden="true">task_alt</span>
-    </header>
-    <strong>{{ activeRules }}</strong>
-    <span>Disponibles para validar</span>
-  </article>
-  <article class="summary-card">
-    <header>
-      <p>Tipos de Datos</p>
-      <span class="material-symbols-rounded" aria-hidden="true">category</span>
-    </header>
-    <strong>{{ dataTypesCount }}</strong>
-    <span>Categorías cubiertas</span>
-  </article>
+<section class="stats-container">
+  <div class="stats-card">
+    <div class="stats-card__header">
+      <h3>Total de reglas</h3>
+      <i class="pi pi-sparkles"></i>
+    </div>
+    <div class="stats-card__body">
+      <strong>{{ totalRules }}</strong>
+      <div>Reglas configuradas</div>
+    </div>
+  </div>
+
+  <div class="stats-card">
+    <div class="stats-card__header">
+      <h3>Reglas activas</h3>
+      <i class="pi pi-check-circle"></i>
+    </div>
+    <div class="stats-card__body">
+      <strong>{{ activeRules }}</strong>
+      <div>Disponibles para validar</div>
+    </div>
+  </div>
+
+  <div class="stats-card">
+    <div class="stats-card__header">
+      <h3>Tipos de datos</h3>
+      <i class="pi pi-objects-column"></i>
+    </div>
+    <div class="stats-card__body">
+      <strong>{{ dataTypesCount }}</strong>
+      <div>Categorías cubiertas</div>
+    </div>
+  </div>
 </section>
 
 <section class="validation-panel">
