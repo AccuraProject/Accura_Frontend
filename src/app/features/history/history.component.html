@@ -24,51 +24,29 @@
   }
 </section>
 
-<section class="history-panel">
-  <header class="history-panel__header">
-    <div>
-      <h2>Historial de Archivos</h2>
-      <p>
-        Consulta los archivos cargados recientemente y revisa los resultados obtenidos en el proceso
-        de validación.
-      </p>
-    </div>
-    <div class="history-panel__actions">
-      <label class="history-panel__search">
-        <span class="material-symbols-rounded" aria-hidden="true">search</span>
-        <input
-          type="search"
-          name="search"
-          placeholder="Buscar por archivo, plantilla o usuario..."
-          [(ngModel)]="searchTerm"
-          (ngModelChange)="onFiltersChanged()"
-        />
-      </label>
-      <label class="history-panel__filter">
-        <span>Plantilla</span>
-        <select [(ngModel)]="templateFilter" (ngModelChange)="onFiltersChanged()" name="template">
-          <option *ngFor="let option of templateOptions" [ngValue]="option">{{ option }}</option>
-        </select>
-      </label>
-      <label class="history-panel__filter">
-        <span>Estado</span>
-        <select [(ngModel)]="statusFilter" (ngModelChange)="onFiltersChanged()" name="status">
-          <option *ngFor="let option of statusOptions" [ngValue]="option">{{ option }}</option>
-        </select>
-      </label>
-    </div>
-  </header>
+<div class="card">
+  <app-page-actions
+    [showCreate]="false"
+    [showEdit]="false"
+    [showDelete]="false"
+    [showExtraAction]="true"
+    extraActionIcon="pi pi-eye"
+    extraActionLabel="Ver detalle"
+    [disableExtraAction]="isViewDetailDisabled"
+    (extraAction)="onViewDetail()"
+  ></app-page-actions>
 
-  <div *ngIf="isLoading" class="history-table__state">
-    <span class="material-symbols-rounded" aria-hidden="true">hourglass_top</span>
-    <p>Cargando historial de cargas...</p>
-  </div>
+  <app-data-table
+    [columns]="columns"
+    [value]="historyRecords"
+    [selection]="selectedRecord"
+    [loading]="isTableLoading()"
+    (rowSelect)="onRowSelect($event)"
+    (rowUnselect)="onRowUnselect()"
+  ></app-data-table>
+</div>
 
-  <div *ngIf="hasError" class="history-table__state history-table__state--error">
-    <span class="material-symbols-rounded" aria-hidden="true">error</span>
-    <p>No se pudieron obtener los registros. Intenta nuevamente más tarde.</p>
-  </div>
-
+<!-- <section class="history-panel">
   <div class="history-table__wrapper" *ngIf="!isLoading && !hasError && filteredRecords as records">
     <div class="history-table__scroll">
       <table class="history-table">
@@ -168,4 +146,4 @@
       </div>
     </div>
   </div>
-</section>
+</section> -->

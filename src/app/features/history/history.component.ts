@@ -1,22 +1,26 @@
-import { Component, DestroyRef, OnInit, inject } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Store } from '@ngrx/store';
 import { ActivatedRoute, Router } from '@angular/router';
-import { HistoryDetailDialogComponent, HistoryDetailDialogData } from './history-detail-dialog.component';
+import {
+  HistoryDetailDialogComponent,
+  HistoryDetailDialogData,
+} from './history-detail-dialog.component';
 import { LoadsService } from '../../core/services/loads.service';
 import { LoadDetailResponseItem } from '../../core/models/load-detail.model';
 import { NotificationService } from '../../core/services/notification.service';
-import { NotificationUpdatesEvent, NotificationUpdatesLoadEvent } from '../../core/models/notification.model';
+import {
+  NotificationUpdatesEvent,
+  NotificationUpdatesLoadEvent,
+} from '../../core/models/notification.model';
 import { selectIsUser } from '../../core/store/session/session.selectors';
+import { PageActionsComponent } from '../../shared/components/ui/page-actions/page-actions';
+import { DataTableComponent } from '../../shared/components/data/data-table/data-table';
 
-type HistoryStatus =
-  | 'Procesando'
-  | 'Validado exitosamente'
-  | 'Validado con errores'
-  | 'Fallido';
+type HistoryStatus = 'Procesando' | 'Validado exitosamente' | 'Validado con errores' | 'Fallido';
 
 type HistoryFilter = 'Todos los estados' | HistoryStatus;
 
@@ -53,9 +57,9 @@ interface MetricSummary {
 @Component({
   selector: 'app-history',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatDialogModule],
+  imports: [CommonModule, FormsModule, MatDialogModule, PageActionsComponent, DataTableComponent],
   templateUrl: './history.component.html',
-  styleUrl: './history.component.scss'
+  styleUrl: './history.component.scss',
 })
 export class HistoryComponent implements OnInit {
   private readonly dialog = inject(MatDialog);
@@ -79,7 +83,19 @@ export class HistoryComponent implements OnInit {
     'Procesando',
     'Validado exitosamente',
     'Validado con errores',
-    'Fallido'
+    'Fallido',
+  ];
+
+  protected selectedRecord: HistoryRecord | null = null;
+  readonly isTableLoading = signal(false);
+
+  columns = [
+    { field: 'fileName', header: 'Archivo' },
+    { field: 'templateName', header: 'Plantilla' },
+    { field: 'uploadedAt', header: 'Fecha de Carga' },
+    { field: 'uploadedBy', header: 'Cargado por' },
+    { field: 'validatedRows', header: 'Filas Procesadas' },
+    { field: 'status', header: 'Estado' },
   ];
 
   protected templateOptions: TemplateFilter[] = ['Todas las plantillas'];
@@ -102,36 +118,54 @@ export class HistoryComponent implements OnInit {
         this.updateMetrics(this.historyRecords);
       });
 
-    this.route.queryParamMap
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((params) => {
-        const loadId = params.get('loadId');
-        this.pendingLoadId = loadId;
-        this.shouldOpenPendingLoad = !!loadId;
+    this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
+      const loadId = params.get('loadId');
+      this.pendingLoadId = loadId;
+      this.shouldOpenPendingLoad = !!loadId;
 
-        if (this.shouldOpenPendingLoad) {
-          this.tryOpenPendingLoad();
-        }
-      });
+      if (this.shouldOpenPendingLoad) {
+        this.tryOpenPendingLoad();
+      }
+    });
 
     this.listenToRealtimeUpdates();
     this.fetchHistoryRecords();
+  }
+
+  get isViewDetailDisabled(): boolean {
+    return !this.selectedRecord || this.selectedRecord.status == 'Procesando';
+  }
+
+  onViewDetail(): void {
+    if (!this.selectedRecord || this.selectedRecord.status == 'Procesando') return;
+
+    const record = this.selectedRecord;
+  }
+
+  onRowSelect(record: HistoryRecord) {
+    this.selectedRecord = record;
+  }
+
+  onRowUnselect() {
+    this.selectedRecord = null;
   }
 
   protected get filteredRecords(): HistoryRecord[] {
     const term = this.searchTerm.trim().toLowerCase();
 
     return this.historyRecords.filter((record) => {
-      const matchesSearch = !term
-        || record.fileName.toLowerCase().includes(term)
-        || record.templateName.toLowerCase().includes(term)
-        || record.uploadedBy.toLowerCase().includes(term);
+      const matchesSearch =
+        !term ||
+        record.fileName.toLowerCase().includes(term) ||
+        record.templateName.toLowerCase().includes(term) ||
+        record.uploadedBy.toLowerCase().includes(term);
 
       const matchesStatus =
         this.statusFilter === 'Todos los estados' || record.status === this.statusFilter;
 
       const matchesTemplate =
-        this.templateFilter === 'Todas las plantillas' || record.templateName === this.templateFilter;
+        this.templateFilter === 'Todas las plantillas' ||
+        record.templateName === this.templateFilter;
 
       return matchesSearch && matchesStatus && matchesTemplate;
     });
@@ -219,15 +253,15 @@ export class HistoryComponent implements OnInit {
       errorRows: record.errorRows,
       successRate: record.successRate,
       processingTime: record.processingTime,
-      validationStartedAt: record.validationStartedAt
+      validationStartedAt: record.validationStartedAt,
     };
 
     this.dialog.open<HistoryDetailDialogComponent, HistoryDetailDialogData, void>(
       HistoryDetailDialogComponent,
       {
         data: dialogData,
-        panelClass: 'history-detail-dialog'
-      }
+        panelClass: 'history-detail-dialog',
+      },
     );
   }
 
@@ -255,7 +289,7 @@ export class HistoryComponent implements OnInit {
         error: () => {
           this.hasError = true;
           this.isLoading = false;
-        }
+        },
       });
   }
 
@@ -274,13 +308,13 @@ export class HistoryComponent implements OnInit {
     const detail: LoadDetailResponseItem = {
       load: event.data.load,
       template: event.data.template ?? null,
-      user: event.data.user ?? null
+      user: event.data.user ?? null,
     };
 
     const record = this.mapToHistoryRecord(detail);
     const updatedRecords = [...this.historyRecords];
     const existingIndex = updatedRecords.findIndex(
-      (item) => (record.loadId && item.loadId === record.loadId) || item.id === record.id
+      (item) => (record.loadId && item.loadId === record.loadId) || item.id === record.id,
     );
 
     if (existingIndex >= 0) {
@@ -290,7 +324,7 @@ export class HistoryComponent implements OnInit {
     }
 
     const sortedRecords = updatedRecords.sort(
-      (a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime()
+      (a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime(),
     );
 
     this.historyRecords = sortedRecords;
@@ -306,7 +340,7 @@ export class HistoryComponent implements OnInit {
     }
 
     const record = this.historyRecords.find(
-      (item) => item.loadId === this.pendingLoadId || item.id === this.pendingLoadId
+      (item) => item.loadId === this.pendingLoadId || item.id === this.pendingLoadId,
     );
 
     if (!record) {
@@ -323,7 +357,7 @@ export class HistoryComponent implements OnInit {
       relativeTo: this.route,
       queryParams: { loadId: null },
       queryParamsHandling: 'merge',
-      replaceUrl: true
+      replaceUrl: true,
     });
 
     this.pendingLoadId = null;
@@ -369,11 +403,14 @@ export class HistoryComponent implements OnInit {
       errorRows,
       successRate,
       processingTime: this.formatProcessingTime(load.started_at, load.finished_at),
-      validationStartedAt: load.started_at ?? load.created_at
+      validationStartedAt: load.started_at ?? load.created_at,
     };
   }
 
-  private resolveUserInfo(user: LoadDetailResponseItem['user']): { displayName: string; initials: string } {
+  private resolveUserInfo(user: LoadDetailResponseItem['user']): {
+    displayName: string;
+    initials: string;
+  } {
     if (!user) {
       return { displayName: 'Desconocido', initials: '?' };
     }
@@ -387,7 +424,8 @@ export class HistoryComponent implements OnInit {
         .filter((part) => part.length > 0);
 
       const firstName = nameParts[0] ?? '';
-      const surname = nameParts.slice(1).find((part) => !NAME_CONNECTORS.has(part.toLowerCase())) ?? '';
+      const surname =
+        nameParts.slice(1).find((part) => !NAME_CONNECTORS.has(part.toLowerCase())) ?? '';
 
       const firstInitial = firstName.charAt(0).toUpperCase();
       const secondInitial = surname.charAt(0).toUpperCase();
@@ -395,7 +433,7 @@ export class HistoryComponent implements OnInit {
 
       return {
         displayName: trimmedName,
-        initials
+        initials,
       };
     }
 
@@ -405,7 +443,7 @@ export class HistoryComponent implements OnInit {
 
       return {
         displayName: user.email,
-        initials: firstInitial || '?'
+        initials: firstInitial || '?',
       };
     }
 
@@ -493,7 +531,10 @@ export class HistoryComponent implements OnInit {
     const templateNames = Array.from(new Set(records.map((record) => record.templateName))).sort();
     this.templateOptions = ['Todas las plantillas', ...templateNames];
 
-    if (!templateNames.includes(this.templateFilter) && this.templateFilter !== 'Todas las plantillas') {
+    if (
+      !templateNames.includes(this.templateFilter) &&
+      this.templateFilter !== 'Todas las plantillas'
+    ) {
       this.templateFilter = 'Todas las plantillas';
     }
   }
@@ -510,8 +551,8 @@ export class HistoryComponent implements OnInit {
         description: 'Archivos procesados este mes',
         trend: totalLoads > 0 ? 'Actividad reciente' : 'Sin registros',
         isPositive: totalLoads > 0,
-        icon: 'pi-file-arrow-up'
-      }
+        icon: 'pi-file-arrow-up',
+      },
     ];
 
     if (this.displayActiveUsersMetric) {
@@ -521,7 +562,7 @@ export class HistoryComponent implements OnInit {
         description: 'Usuarios cargando archivos',
         trend: activeUsers > 0 ? 'Usuarios activos' : 'Sin registros',
         isPositive: activeUsers > 0,
-        icon: 'pi-users'
+        icon: 'pi-users',
       });
     }
 
@@ -531,7 +572,7 @@ export class HistoryComponent implements OnInit {
       description: 'Volumen de filas validadas',
       trend: totalRows > 0 ? 'Validaciones completadas' : 'Sin registros',
       isPositive: totalRows > 0,
-      icon: 'pi-table'
+      icon: 'pi-table',
     });
 
     this.metrics = metrics;
@@ -545,8 +586,8 @@ export class HistoryComponent implements OnInit {
         description: 'Archivos procesados este mes',
         trend: 'Sin registros',
         isPositive: false,
-        icon: 'pi-file-arrow-up'
-      }
+        icon: 'pi-file-arrow-up',
+      },
     ];
 
     if (this.displayActiveUsersMetric) {
@@ -556,7 +597,7 @@ export class HistoryComponent implements OnInit {
         description: 'Usuarios cargando archivos',
         trend: 'Sin registros',
         isPositive: false,
-        icon: 'pi-users'
+        icon: 'pi-users',
       });
     }
 
@@ -566,7 +607,7 @@ export class HistoryComponent implements OnInit {
       description: 'Volumen de filas validadas',
       trend: 'Sin registros',
       isPositive: false,
-      icon: 'pi-table'
+      icon: 'pi-table',
     });
 
     return metrics;
