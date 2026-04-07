@@ -9,17 +9,19 @@
   </div>
 </section>
 
-<section class="history-metrics">
-  <article class="metric-card" *ngFor="let metric of metrics">
-    <header>
-      <span class="material-symbols-rounded" aria-hidden="true">{{ metric.icon }}</span>
-      <span class="metric-card__trend" [class.metric-card__trend--positive]="metric.isPositive">{{
-        metric.trend
-      }}</span>
-    </header>
-    <strong>{{ metric.value }}</strong>
-    <p class="metric-card__label">{{ metric.label }}</p>
-  </article>
+<section class="stats-container">
+  @for (metric of metrics; track $index) {
+    <div class="stats-card">
+      <div class="stats-card__header">
+        <h3>{{ metric.label }}</h3>
+        <i class="pi {{ metric.icon }}"></i>
+      </div>
+      <div class="stats-card__body">
+        <strong>{{ metric.value }}</strong>
+        <div>{{ metric.description }}</div>
+      </div>
+    </div>
+  }
 </section>
 
 <section class="history-panel">
@@ -98,7 +100,7 @@
             </td>
             <td>
               <span class="history-table__date">{{
-                record.uploadedAt | date : 'dd/MM/yyyy, HH:mm'
+                record.uploadedAt | date: 'dd/MM/yyyy, HH:mm'
               }}</span>
             </td>
             <td>

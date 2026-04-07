@@ -510,7 +510,7 @@ export class HistoryComponent implements OnInit {
         description: 'Archivos procesados este mes',
         trend: totalLoads > 0 ? 'Actividad reciente' : 'Sin registros',
         isPositive: totalLoads > 0,
-        icon: 'upload_file'
+        icon: 'pi-file-arrow-up'
       }
     ];
 
@@ -521,7 +521,7 @@ export class HistoryComponent implements OnInit {
         description: 'Usuarios cargando archivos',
         trend: activeUsers > 0 ? 'Usuarios activos' : 'Sin registros',
         isPositive: activeUsers > 0,
-        icon: 'group'
+        icon: 'pi-users'
       });
     }
 
@@ -531,7 +531,7 @@ export class HistoryComponent implements OnInit {
       description: 'Volumen de filas validadas',
       trend: totalRows > 0 ? 'Validaciones completadas' : 'Sin registros',
       isPositive: totalRows > 0,
-      icon: 'table_rows'
+      icon: 'pi-table'
     });
 
     this.metrics = metrics;
@@ -545,7 +545,7 @@ export class HistoryComponent implements OnInit {
         description: 'Archivos procesados este mes',
         trend: 'Sin registros',
         isPositive: false,
-        icon: 'upload_file'
+        icon: 'pi-file-arrow-up'
       }
     ];
 
@@ -556,7 +556,7 @@ export class HistoryComponent implements OnInit {
         description: 'Usuarios cargando archivos',
         trend: 'Sin registros',
         isPositive: false,
-        icon: 'group'
+        icon: 'pi-users'
       });
     }
 
@@ -566,7 +566,7 @@ export class HistoryComponent implements OnInit {
       description: 'Volumen de filas validadas',
       trend: 'Sin registros',
       isPositive: false,
-      icon: 'table_rows'
+      icon: 'pi-table'
     });
 
     return metrics;
