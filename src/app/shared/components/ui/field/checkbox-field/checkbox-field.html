@@ -1,0 +1,23 @@
+<div class="flex flex-col gap-1">
+  <div style="display: flex; align-items: center; gap: 0.5rem;">
+    <p-checkbox
+      [inputId]="computedInputId"
+      [formControl]="control"
+      [binary]="true"
+      [required]="required"
+      [invalid]="showError"
+    />
+    
+    @if (label) {
+      <label [for]="computedInputId" class="cursor-pointer select-none">
+        {{ label }}
+      </label>
+    }
+  </div>
+
+  @if (showError) {
+    <p-message severity="error" variant="simple" size="small" styleClass="field-error-message">
+      {{ errorText }}
+    </p-message>
+  }
+</div>

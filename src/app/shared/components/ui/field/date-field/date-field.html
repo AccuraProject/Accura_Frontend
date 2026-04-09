@@ -1,0 +1,50 @@
+<div class="flex flex-col gap-1">
+  @if (label) {
+    <p-floatlabel variant="on">
+      <p-datepicker
+        [inputId]="computedInputId"
+        [formControl]="control"
+        [showIcon]="showIcon"
+        [iconDisplay]="'input'"
+        [dateFormat]="dateFormat"
+        [showTime]="showTime"
+        [hourFormat]="hourFormat"
+        [disabled]="disabled"
+        [readonlyInput]="readonly"
+        [minDate]="minDate"
+        [maxDate]="maxDate"
+        [fluid]="fluid"
+        [invalid]="showError"
+      />
+
+      <label [for]="computedInputId">
+        {{ label }}
+      </label>
+    </p-floatlabel>
+  }
+
+  @if (!label) {
+    <p-datepicker
+      [inputId]="computedInputId"
+      [formControl]="control"
+      [placeholder]="placeholder"
+      [showIcon]="showIcon"
+      [iconDisplay]="'input'"
+      [dateFormat]="dateFormat"
+      [showTime]="showTime"
+      [hourFormat]="hourFormat"
+      [disabled]="disabled"
+      [readonlyInput]="readonly"
+      [minDate]="minDate"
+      [maxDate]="maxDate"
+      [fluid]="fluid"
+      [invalid]="showError"
+    />
+  }
+
+  @if (showError) {
+    <p-message severity="error" variant="simple" size="small" styleClass="field-error-message">
+      {{ errorText }}
+    </p-message>
+  }
+</div>

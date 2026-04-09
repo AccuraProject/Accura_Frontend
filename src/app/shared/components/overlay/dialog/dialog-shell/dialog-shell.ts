@@ -31,6 +31,8 @@ export class DialogShellComponent {
   @Input() dismissableMask = false;
   @Input() closeOnEscape = true;
 
+  @Input() showFooter = true;
+
   @Output() cancel = new EventEmitter<void>();
   @Output() save = new EventEmitter<void>();
 
