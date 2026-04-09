@@ -5,17 +5,24 @@
     variant="secondary"
     [outlined]="true"
     type="button"
-    [disabled]="true"
+    [disabled]="!columns.length"
+    (clicked)="downloadTemplate()"
   ></app-button>
+
+  <input #fileInput type="file" accept=".xlsx,.xls" hidden (change)="onFileSelected($event)" />
+
   <app-button
     label="Importar desde Excel"
     icon="pi pi-upload"
     variant="secondary"
     [outlined]="true"
     type="button"
-    [disabled]="true"
+    [loading]="isImporting"
+    [disabled]="!columns.length"
+    (clicked)="fileInput.click()"
   ></app-button>
 </div>
+
 <div class="rule-table-editor__wrapper">
   <p-table [value]="rows" scrollable="true" scrollHeight="300px">
     <ng-template pTemplate="header">
@@ -34,19 +41,17 @@
         }
 
         <td style="text-align: center">
-          <app-button
-            icon="pi pi-trash"
-            [iconOnly]="true"
-            variant="danger"
-            [text]="true"
+          <button
+            pButton
             type="button"
-            (clicked)="removeRow(rowIndex)"
-          ></app-button>
+            icon="pi pi-trash"
+            class="p-button-text p-button-danger"
+            (click)="removeRow(rowIndex)"
+          ></button>
         </td>
       </tr>
     </ng-template>
 
-    <!-- 🔥 fila de draft -->
     <ng-template pTemplate="footer">
       <tr>
         @for (column of columns; track column) {

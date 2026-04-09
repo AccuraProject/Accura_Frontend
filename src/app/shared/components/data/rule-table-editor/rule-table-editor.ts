@@ -1,17 +1,28 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  EventEmitter,
+  Input,
+  OnChanges,
+  Output,
+  SimpleChanges,
+  ViewChild,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { InputTextModule } from 'primeng/inputtext';
-import { ButtonComponent } from '../../ui/button/button';
 import { TableModule } from 'primeng/table';
+import * as XLSX from 'xlsx';
+import { ButtonComponent } from '../../ui/button/button';
 import { ToastService } from '../../../services/toast.service';
+import { ButtonModule } from 'primeng/button';
 
 type RuleTableMode = 'standard' | 'unique-row' | 'dependency';
 
 @Component({
   selector: 'app-rule-table-editor',
   standalone: true,
-  imports: [CommonModule, FormsModule, TableModule, ButtonComponent, InputTextModule],
+  imports: [CommonModule, FormsModule, TableModule, ButtonComponent, InputTextModule, ButtonModule],
   templateUrl: './rule-table-editor.html',
   styleUrl: './rule-table-editor.scss',
 })
@@ -21,6 +32,10 @@ export class RuleTableEditorComponent implements OnChanges {
   @Input() mode: RuleTableMode = 'standard';
 
   @Output() rowsChange = new EventEmitter<Record<string, string>[]>();
+
+  @ViewChild('fileInput') fileInput?: ElementRef<HTMLInputElement>;
+
+  isImporting = false;
 
   draftRow: Record<string, string> = {};
 
@@ -37,74 +52,186 @@ export class RuleTableEditorComponent implements OnChanges {
   }
 
   addRow(): void {
-    if (!this.canAddRow) {
+    if (this.isImporting || !this.canAddRow) {
       return;
     }
 
     const newRow = this.buildNormalizedDraftRow();
+    const nextRows = this.getRowsAfterInsert(this.rows, newRow);
 
-    if (this.mode === 'dependency') {
-      this.addDependencyRow(newRow);
-      return;
+    if (!this.areRowsCollectionsEqual(this.rows, nextRows)) {
+      this.rowsChange.emit(nextRows);
     }
 
-    if (this.mode === 'unique-row') {
-      this.addUniqueRow(newRow);
-      return;
-    }
-
-    this.rowsChange.emit([...this.rows, newRow]);
     this.resetDraftRow();
   }
 
   removeRow(index: number): void {
-    this.rowsChange.emit(this.rows.filter((_, i) => i !== index));
-  }
-
-  private addUniqueRow(newRow: Record<string, string>): void {
-    const alreadyExists = this.rows.some((row) => this.areRowsEqual(row, newRow));
-
-    if (alreadyExists) {
-      this.toast.warn('Este elemento ya se encuentra en la lista.');
+    console.log(this.isImporting);
+    if (this.isImporting) {
       return;
     }
 
-    this.rowsChange.emit([...this.rows, newRow]);
-    this.resetDraftRow();
+    this.rowsChange.emit(this.rows.filter((_, i) => i !== index));
   }
 
-  private addDependencyRow(newRow: Record<string, string>): void {
+  downloadTemplate(): void {
+    if (!this.columns.length) {
+      return;
+    }
+
+    const exportRows = this.rows.map((row) =>
+      this.columns.reduce(
+        (acc, column) => {
+          acc[column] = row[column] ?? '';
+          return acc;
+        },
+        {} as Record<string, string>,
+      ),
+    );
+
+    const worksheet = XLSX.utils.json_to_sheet(exportRows, {
+      header: this.columns,
+      skipHeader: false,
+    });
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Plantilla');
+
+    const fileName = this.buildTemplateFileName();
+    XLSX.writeFile(workbook, fileName);
+  }
+
+  async onFileSelected(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    this.isImporting = true;
+
+    try {
+      const importedRows = await this.readExcelFile(file);
+
+      let nextRows: Record<string, string>[] = [];
+
+      for (const row of importedRows) {
+        nextRows = this.getRowsAfterInsert(nextRows, row);
+      }
+
+      if (!this.areRowsCollectionsEqual(this.rows, nextRows)) {
+        this.rowsChange.emit(nextRows);
+      }
+    } finally {
+      this.isImporting = false;
+      this.toast.success('Se cargaron los datos correctamente.');
+
+      if (input) {
+        input.value = '';
+      }
+    }
+  }
+
+  private async readExcelFile(file: File): Promise<Record<string, string>[]> {
+    const buffer = await file.arrayBuffer();
+    const workbook = XLSX.read(buffer, { type: 'array' });
+    const firstSheetName = workbook.SheetNames[0];
+
+    if (!firstSheetName) {
+      return [];
+    }
+
+    const worksheet = workbook.Sheets[firstSheetName];
+    const rawRows = XLSX.utils.sheet_to_json<Record<string, unknown>>(worksheet, {
+      defval: '',
+    });
+
+    return rawRows
+      .map((rawRow) => this.normalizeImportedRow(rawRow))
+      .filter((row) => this.isRowComplete(row));
+  }
+
+  private normalizeImportedRow(rawRow: Record<string, unknown>): Record<string, string> {
+    return this.columns.reduce(
+      (acc, column) => {
+        const value = rawRow[column];
+        acc[column] = typeof value === 'string' ? value.trim() : String(value ?? '').trim();
+        return acc;
+      },
+      {} as Record<string, string>,
+    );
+  }
+
+  private isRowComplete(row: Record<string, string>): boolean {
+    return this.columns.every((column) => (row[column] ?? '').trim().length > 0);
+  }
+
+  private getRowsAfterInsert(
+    currentRows: Record<string, string>[],
+    newRow: Record<string, string>,
+  ): Record<string, string>[] {
+    if (this.mode === 'dependency') {
+      return this.insertDependencyRow(currentRows, newRow);
+    }
+
+    if (this.mode === 'unique-row') {
+      return this.insertUniqueRow(currentRows, newRow);
+    }
+
+    return [...currentRows, newRow];
+  }
+
+  private insertUniqueRow(
+    currentRows: Record<string, string>[],
+    newRow: Record<string, string>,
+  ): Record<string, string>[] {
+    const alreadyExists = currentRows.some((row) => this.areRowsEqual(row, newRow));
+    if (alreadyExists) {
+      if (!this.isImporting) {
+        this.toast.warn('El elemento ya existe en la lista.');
+      }
+      return currentRows;
+    }
+
+    return [...currentRows, newRow];
+  }
+
+  private insertDependencyRow(
+    currentRows: Record<string, string>[],
+    newRow: Record<string, string>,
+  ): Record<string, string>[] {
     const [sourceColumn, targetColumn] = this.columns;
 
     if (!sourceColumn || !targetColumn) {
-      return;
+      return currentRows;
     }
 
     const sourceValue = newRow[sourceColumn];
     const targetValue = newRow[targetColumn];
 
-    const existingIndex = this.rows.findIndex(
+    const existingIndex = currentRows.findIndex(
       (row) => this.normalizeValue(row[sourceColumn]) === this.normalizeValue(sourceValue),
     );
 
     if (existingIndex === -1) {
       const normalizedNewTargets = this.splitDependencyValues(targetValue);
 
-      if (normalizedNewTargets.length === 0) {
-        return;
+      if (!normalizedNewTargets.length) {
+        return currentRows;
       }
 
-      const rowToInsert = {
-        ...newRow,
-        [targetColumn]: normalizedNewTargets.join(', '),
-      };
-
-      this.rowsChange.emit([...this.rows, rowToInsert]);
-      this.resetDraftRow();
-      return;
+      return [
+        ...currentRows,
+        {
+          ...newRow,
+          [targetColumn]: normalizedNewTargets.join(', '),
+        },
+      ];
     }
 
-    const updatedRows = [...this.rows];
+    const updatedRows = [...currentRows];
     const existingRow = { ...updatedRows[existingIndex] };
 
     const existingTargetValues = this.splitDependencyValues(existingRow[targetColumn]);
@@ -118,16 +245,17 @@ export class RuleTableEditorComponent implements OnChanges {
       (value) => !existingNormalizedSet.has(this.normalizeValue(value)),
     );
 
-    if (valuesToAdd.length === 0) {
-      this.toast.warn('Este elemento ya se encuentra en la lista.');
-      return;
+    if (!valuesToAdd.length) {
+      if (!this.isImporting) {
+        this.toast.warn('El elemento ya existe en la lista.');
+      }
+      return currentRows;
     }
 
     existingRow[targetColumn] = [...existingTargetValues, ...valuesToAdd].join(', ');
     updatedRows[existingIndex] = existingRow;
 
-    this.rowsChange.emit(updatedRows);
-    this.resetDraftRow();
+    return updatedRows;
   }
 
   private buildNormalizedDraftRow(): Record<string, string> {
@@ -144,6 +272,17 @@ export class RuleTableEditorComponent implements OnChanges {
     return this.columns.every(
       (column) => this.normalizeValue(rowA[column]) === this.normalizeValue(rowB[column]),
     );
+  }
+
+  private areRowsCollectionsEqual(
+    rowsA: Record<string, string>[],
+    rowsB: Record<string, string>[],
+  ): boolean {
+    if (rowsA.length !== rowsB.length) {
+      return false;
+    }
+
+    return rowsA.every((row, index) => this.areRowsEqual(row, rowsB[index] ?? {}));
   }
 
   private splitDependencyValues(value: string | undefined): string[] {
@@ -167,6 +306,11 @@ export class RuleTableEditorComponent implements OnChanges {
 
   private normalizeValue(value: string | undefined): string {
     return (value ?? '').trim();
+  }
+
+  private buildTemplateFileName(): string {
+    const base = this.columns.length ? this.columns.join('_') : 'plantilla';
+    return `${base.replace(/\s+/g, '_').toLowerCase()}.xlsx`;
   }
 
   private resetDraftRow(): void {
