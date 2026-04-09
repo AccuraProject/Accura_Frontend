@@ -1,10 +1,10 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
-import { HttpErrorResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 
 import {
+  RuleFormDialogData,
   ValidationRuleFormDialogComponent,
   ValidationRuleFormDialogData,
   ValidationRuleFormDialogResult,
@@ -16,18 +16,33 @@ import {
 } from './validation-rule-delete-dialog.component';
 import {
   VALIDATION_RULE_AI_SCHEMA,
-  RulePayload,
-  RuleExample,
   describeRuleConfig as describeRuleConfigUtil,
-  extractAiPayloads,
   getExampleEntries as getExampleEntriesUtil,
-  normalizeAiPayload,
   DEFAULT_RULE_ERROR_MESSAGE,
 } from './validation-rule-ai.utils';
 import { ValidationRulesService } from './validation-rules.service';
+import { PageActionsComponent } from '../../shared/components/ui/page-actions/page-actions';
+import { ConfirmService } from '../../shared/services/confirm.service';
+import { DataTableComponent } from '../../shared/components/data/data-table/data-table';
+import { RuleExample, RulePayload, RuleResponse } from './models/rule.model';
+import { RuleFormDialogComponent } from './components/rule-form-dialog/rule-form-dialog.component';
 
 interface AiRuleOption {
   id: string;
+  payload: RulePayload;
+}
+
+interface RuleRow {
+  id: number;
+  name: string;
+  dataType: string;
+  mandatory: string;
+  status: string;
+  description: string;
+  header: string[];
+  headerRule: string[];
+  example: RuleExample;
+  ruleConfig: Record<string, unknown>;
   payload: RulePayload;
 }
 
@@ -36,29 +51,35 @@ interface ValidationRule {
   name: string;
   dataType: string;
   mandatory: boolean;
-  status: 'Activa' | 'Inactiva';
+  status: string;
   description: string;
   header: string[];
   headerRule: string[];
   example: RuleExample;
   ruleConfig: Record<string, unknown>;
-  source: 'manual' | 'ia';
   payload: RulePayload;
 }
 
 @Component({
   selector: 'app-validation-rules',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatDialogModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    MatDialogModule,
+    PageActionsComponent,
+    DataTableComponent,
+    RuleFormDialogComponent,
+  ],
   templateUrl: './validation-rules.component.html',
   styleUrl: './validation-rules.component.scss',
 })
 export class ValidationRulesComponent implements OnInit {
   protected searchTerm = '';
 
-  protected rules: ValidationRule[] = [];
+  protected rules: RuleRow[] = [];
   protected rulesLoading = false;
-  protected ruleLoadError: string | null = null;
+  protected rulesError: string | null = null;
 
   protected aiRuleOptions: AiRuleOption[] = [];
   protected selectedAiRuleId: string | null = null;
@@ -72,110 +93,207 @@ export class ValidationRulesComponent implements OnInit {
   protected readonly pageSize = 10;
   protected currentPage = 1;
 
+  columns = [
+    { field: 'name', header: 'Nombre' },
+    { field: 'dataType', header: 'Tipo de dato' },
+    { field: 'mandatory', header: 'Obligatoria' },
+    { field: 'status', header: 'Estado' },
+  ];
+
+  protected ruleDialogVisible = false;
+  protected ruleDialogLoading = false;
+
+  ruleDialogData: RuleFormDialogData = {
+    mode: 'create',
+  };
+
+  protected selectedRule: RuleRow | null = null;
+
+  protected isEditing = false;
+
   private readonly aiRuleSchema = VALIDATION_RULE_AI_SCHEMA;
 
   constructor(
     private readonly dialog: MatDialog,
-    private readonly validationRulesService: ValidationRulesService
+    private readonly validationRulesService: ValidationRulesService,
+    private readonly confirm: ConfirmService,
   ) {}
 
   async ngOnInit(): Promise<void> {
-    await this.loadRules();
+    this.loadRules();
   }
 
-  private async loadRules(): Promise<void> {
+  onCreateRule(): void {
+    this.isEditing = false;
+    this.openCreateDialog();
+  }
+
+  onEditRule(): void {
+    this.isEditing = true;
+    if (!this.selectedRule) return;
+
+    const user = this.selectedRule;
+
+    this.openEditDialog(user);
+  }
+
+  onDeleteRule(): void {
+    if (!this.selectedRule) return;
+
+    const user = this.selectedRule;
+
+    this.confirm.confirmDelete(() => {
+      // this.handleDeleteUser(user.id);
+    });
+  }
+
+  onRowSelect(rule: RuleRow) {
+    this.selectedRule = rule;
+  }
+
+  onRowUnselect() {
+    this.selectedRule = null;
+  }
+
+  handleSaveUser(rule: unknown): void {
+    // this.userDialogLoading = true;
+    // this.cdr.markForCheck();
+    // if (!this.isEditing) {
+    //   this.userService
+    //     .createUser({
+    //       name: user.name,
+    //       email: user.email,
+    //       role_id: user.roleId,
+    //     })
+    //     .pipe(
+    //       finalize(() => {
+    //         this.userDialogLoading = false;
+    //         this.cdr.markForCheck();
+    //       }),
+    //     )
+    //     .subscribe({
+    //       next: () => {
+    //         this.loadUsers();
+    //         this.toast.success('Usuario creado exitosamente.');
+    //         this.closeUserDialog();
+    //       },
+    //       error: (error: unknown) => {
+    //         const message = this.userService.getErrorMessage(error);
+    //         this.toast.error(message);
+    //       },
+    //     });
+    // } else {
+    //   if (this.selectedUser) {
+    //     const payload: UpdateUserPayload = {
+    //       name: user.name,
+    //       role_id: user.roleId,
+    //       email: user.email,
+    //       is_active: user.status,
+    //     };
+    //     this.userService
+    //       .updateUser(this.selectedUser.id, payload)
+    //       .pipe(
+    //         finalize(() => {
+    //           this.selectedUser = null;
+    //           this.userDialogLoading = false;
+    //           this.cdr.markForCheck();
+    //         }),
+    //       )
+    //       .subscribe({
+    //         next: (updatedUser: UserResponse) => {
+    //           const updatedRow = this.mapToUserRow(updatedUser);
+    //           this.users = this.users.map((current) =>
+    //             current.id === updatedRow.id ? updatedRow : current,
+    //           );
+    //           this.toast.success('Usuario actualizado exitosamente.');
+    //           this.closeUserDialog();
+    //         },
+    //         error: (error: unknown) => {
+    //           const message = this.userService.getErrorMessage(error);
+    //           this.toast.error(message);
+    //         },
+    //       });
+    //   } else {
+    //     this.userDialogLoading = false;
+    //     this.cdr.markForCheck();
+    //   }
+    // }
+  }
+
+  private loadRules(): void {
     if (this.rulesLoading) {
       return;
     }
 
     this.rulesLoading = true;
-    this.ruleLoadError = null;
+    this.rulesError = null;
 
-    try {
-      const data = await this.validationRulesService.fetchRules();
-
-      this.rules = this.parseRuleListResponse(data);
-      this.updatePaginationAfterDataChange(this.rules.length);
-    } catch (error) {
-      console.error('[ValidationRules] Error al obtener las reglas:', error);
-      this.ruleLoadError = this.getErrorMessage(error);
-      this.rules = [];
-      this.updatePaginationAfterDataChange(this.rules.length);
-    } finally {
-      this.rulesLoading = false;
-    }
-  }
-
-  private updatePaginationAfterDataChange(totalItems: number): void {
-    const totalPages = this.calculateTotalPages(totalItems);
-    if (this.currentPage > totalPages) {
-      this.currentPage = totalPages;
-    }
-
-    if (this.currentPage < 1) {
-      this.currentPage = 1;
-    }
-  }
-
-  private calculateTotalPages(totalItems: number): number {
-    return totalItems > 0 ? Math.ceil(totalItems / this.pageSize) : 1;
-  }
-
-  protected get filteredRules(): ValidationRule[] {
-    const term = this.searchTerm.trim().toLowerCase();
-    if (!term) {
-      return this.rules;
-    }
-
-    return this.rules.filter((rule) => {
-      return (
-        rule.name.toLowerCase().includes(term) ||
-        rule.dataType.toLowerCase().includes(term) ||
-        rule.status.toLowerCase().includes(term)
-      );
+    this.validationRulesService.getRules().subscribe({
+      next: (rules: RuleResponse[]) => {
+        this.rules = rules.map((rule) => this.mapToRuleRow(rule));
+        this.rulesLoading = false;
+      },
+      error: (error: unknown) => {
+        this.rules = [];
+        this.rulesError = this.validationRulesService.getErrorMessage(error);
+        this.rulesLoading = false;
+        console.error(this.rulesError);
+      },
     });
   }
 
-  protected get paginatedRules(): ValidationRule[] {
-    const startIndex = (this.currentPage - 1) * this.pageSize;
-    return this.filteredRules.slice(startIndex, startIndex + this.pageSize);
+  private mapToRuleRow(ruleResponse: RuleResponse): RuleRow {
+    const payload = ruleResponse.rule;
+
+    return this.createRuleRow(
+      ruleResponse.id,
+      payload['Nombre de la regla'],
+      payload['Tipo de dato'],
+      payload['Campo obligatorio'],
+      ruleResponse.is_active,
+      payload['Descripción'],
+      payload.Header,
+      payload['Header rule'],
+      payload['Ejemplo'],
+      payload['Regla'],
+      payload,
+    );
   }
 
-  protected get totalPages(): number {
-    const total = Math.ceil(this.filteredRules.length / this.pageSize);
-    return total > 0 ? total : 1;
+  private createRuleRow(
+    id: number,
+    name: string,
+    dataType: string,
+    mandatory: boolean,
+    isActive: boolean,
+    description: string,
+    header: string[],
+    headerRule: string[],
+    example: RuleExample,
+    ruleConfig: Record<string, unknown>,
+    payload: RulePayload,
+  ): RuleRow {
+    return {
+      id,
+      name,
+      dataType,
+      mandatory: this.getMandatoryLabel(mandatory),
+      status: this.getStatusLabel(isActive),
+      description,
+      header,
+      headerRule,
+      example,
+      ruleConfig,
+      payload,
+    };
   }
 
-  protected get pageStart(): number {
-    if (this.filteredRules.length === 0) {
-      return 0;
-    }
-
-    return (this.currentPage - 1) * this.pageSize + 1;
+  private getMandatoryLabel(mandatory: boolean): string {
+    return mandatory ? 'Sí' : 'No';
   }
 
-  protected get pageEnd(): number {
-    if (this.filteredRules.length === 0) {
-      return 0;
-    }
-
-    return Math.min(this.filteredRules.length, this.currentPage * this.pageSize);
-  }
-
-  protected goToPreviousPage(): void {
-    if (this.currentPage > 1) {
-      this.currentPage -= 1;
-    }
-  }
-
-  protected goToNextPage(): void {
-    if (this.currentPage < this.totalPages) {
-      this.currentPage += 1;
-    }
-  }
-
-  protected onSearchChange(): void {
-    this.currentPage = 1;
+  private getStatusLabel(isActive: boolean): string {
+    return isActive ? 'Activo' : 'Inactivo';
   }
 
   protected get totalRules(): number {
@@ -183,7 +301,7 @@ export class ValidationRulesComponent implements OnInit {
   }
 
   protected get activeRules(): number {
-    return this.rules.filter((rule) => rule.status === 'Activa').length;
+    return this.rules.filter((rule) => rule.status === 'Activo').length;
   }
 
   protected get dataTypesCount(): number {
@@ -198,234 +316,92 @@ export class ValidationRulesComponent implements OnInit {
     return this.aiRuleOptions[0];
   }
 
-  private parseRuleListResponse(data: unknown): ValidationRule[] {
-    if (Array.isArray(data)) {
-      return data
-        .map((item) => this.parseRuleItem(item))
-        .filter((rule): rule is ValidationRule => rule !== null);
-    }
-
-    if (data && typeof data === 'object') {
-      const record = data as Record<string, unknown>;
-      const collectionKeys = ['items', 'rules', 'data'];
-
-      for (const key of collectionKeys) {
-        const collection = record[key];
-        if (Array.isArray(collection)) {
-          return collection
-            .map((item) => this.parseRuleItem(item))
-            .filter((rule): rule is ValidationRule => rule !== null);
-        }
-      }
-
-      const single = this.parseRuleItem(record);
-      return single ? [single] : [];
-    }
-
-    return [];
-  }
-
-  private parseRuleItem(entry: unknown): ValidationRule | null {
-    if (!entry || typeof entry !== 'object') {
-      return null;
-    }
-
-    const record = entry as Record<string, unknown>;
-    const payloadCandidate = record['payload'] ?? record['rule'] ?? entry;
-    const payload = this.tryCoercePayload(payloadCandidate);
-
-    if (!payload) {
-      return null;
-    }
-
-    const status = this.toStatus(record['is_active'], record['status']);
-    const source = this.toSource(record['source']);
-    const id = this.sanitizeString(record['id']) ?? this.generateId();
-
-    return this.buildRuleFromPayload(payload, status, source, id);
-  }
-
-  private tryCoercePayload(value: unknown): RulePayload | null {
-    if (!value || typeof value !== 'object') {
-      return null;
-    }
-
-    const record = value as Record<string, unknown>;
-    const name = this.sanitizeString(record['Nombre de la regla']);
-    const dataType = this.sanitizeString(record['Tipo de dato']);
-    const errorMessage =
-      this.sanitizeString(record['Mensaje de error']) ?? DEFAULT_RULE_ERROR_MESSAGE;
-    const description = this.sanitizeString(record['Descripción']) ?? '';
-
-    if (!name || !dataType) {
-      return null;
-    }
-
-    const header = this.sanitizeStringArray(record['Header']);
-
-    if (header.length === 0) {
-      header.push('Plantilla Global');
-    }
-
-    const headerRule = this.sanitizeStringArray(record['Header rule']);
-
-    const example =
-      record['Ejemplo'] &&
-      typeof record['Ejemplo'] === 'object' &&
-      !Array.isArray(record['Ejemplo'])
-        ? (record['Ejemplo'] as RuleExample)
-        : {};
-
-    const ruleConfig =
-      record['Regla'] && typeof record['Regla'] === 'object' && !Array.isArray(record['Regla'])
-        ? (record['Regla'] as Record<string, unknown>)
-        : {};
-
-    const mandatorySource = record['Campo obligatorio'];
-    const mandatory =
-      typeof mandatorySource === 'boolean' ? mandatorySource : this.toBoolean(mandatorySource);
-
-    return {
-      'Nombre de la regla': name,
-      'Tipo de dato': dataType,
-      'Campo obligatorio': mandatory,
-      Header: header,
-      'Header rule': headerRule,
-      'Mensaje de error': errorMessage,
-      Descripción: description,
-      Ejemplo: example,
-      Regla: ruleConfig,
-    };
-  }
-
-  private toStatus(isActiveValue: unknown, fallbackValue?: unknown): ValidationRule['status'] {
-    if (typeof isActiveValue === 'boolean') {
-      return isActiveValue ? 'Activa' : 'Inactiva';
-    }
-
-    const isActiveText = this.sanitizeString(isActiveValue)?.toLowerCase();
-    if (isActiveText) {
-      const truthyValues = ['true', '1', 'si', 'sí', 'yes', 'activo', 'activa'];
-      const falsyValues = ['false', '0', 'no', 'inactivo', 'inactiva'];
-
-      if (truthyValues.includes(isActiveText)) {
-        return 'Activa';
-      }
-
-      if (falsyValues.includes(isActiveText)) {
-        return 'Inactiva';
-      }
-    }
-
-    const fallbackText = this.sanitizeString(fallbackValue)?.toLowerCase();
-    return fallbackText === 'inactiva' || fallbackText === 'borrador' ? 'Inactiva' : 'Activa';
-  }
-
-  private toSource(value: unknown): 'manual' | 'ia' {
-    const text = this.sanitizeString(value)?.toLowerCase();
-    return text === 'ia' ? 'ia' : 'manual';
-  }
-
   protected openCreateDialog(): void {
-    const dialogRef = this.dialog.open<
-      ValidationRuleFormDialogComponent,
-      ValidationRuleFormDialogData,
-      ValidationRuleFormDialogSubmitResult
-    >(ValidationRuleFormDialogComponent, {
-      disableClose: true,
-      width: '92vw',
-      maxWidth: '1240px',
-      maxHeight: '95vh',
-      panelClass: 'validation-rule-dialog',
-      data: {
-        mode: 'create',
-      },
-    });
+    this.ruleDialogVisible = true;
+    this.ruleDialogData = {
+      mode: 'create',
+    };
+    // const dialogRef = this.dialog.open<
+    //   ValidationRuleFormDialogComponent,
+    //   ValidationRuleFormDialogData,
+    //   ValidationRuleFormDialogSubmitResult
+    // >(ValidationRuleFormDialogComponent, {
+    //   disableClose: true,
+    //   width: '92vw',
+    //   maxWidth: '1240px',
+    //   maxHeight: '95vh',
+    //   panelClass: 'validation-rule-dialog',
+    //   data: {
+    //     mode: 'create',
+    //   },
+    // });
 
-    dialogRef
-      .afterClosed()
-      .subscribe((result: ValidationRuleFormDialogSubmitResult | undefined) => {
-        if (!result) {
-          return;
-        }
+    // dialogRef
+    //   .afterClosed()
+    //   .subscribe((result: ValidationRuleFormDialogSubmitResult | undefined) => {
+    //     if (!result) {
+    //       return;
+    //     }
 
-        this.addRule(result);
-      });
+    //     this.addRule(result);
+    //   });
   }
 
-  protected openEditDialog(rule: ValidationRule): void {
-    const dialogRef = this.dialog.open<
-      ValidationRuleFormDialogComponent,
-      ValidationRuleFormDialogData,
-      ValidationRuleFormDialogSubmitResult
-    >(ValidationRuleFormDialogComponent, {
-      disableClose: true,
-      width: '92vw',
-      maxWidth: '1240px',
-      maxHeight: '95vh',
-      panelClass: 'validation-rule-dialog',
-      data: {
-        mode: 'edit',
-        rule: this.toDialogResult(rule),
-        payload: rule.payload,
-      },
-    });
-
-    dialogRef
-      .afterClosed()
-      .subscribe((result: ValidationRuleFormDialogSubmitResult | undefined) => {
-        if (!result) {
-          return;
-        }
-
-        this.updateRule(rule.id, result);
-      });
-  }
-
-  protected openDeleteDialog(rule: ValidationRule): void {
-    const dialogRef = this.dialog.open<
-      ValidationRuleDeleteDialogComponent,
-      ValidationRuleDeleteDialogData,
-      boolean
-    >(ValidationRuleDeleteDialogComponent, {
-      disableClose: true,
-      data: {
-        name: rule.name,
-      },
-    });
-
-    dialogRef.afterClosed().subscribe((shouldDelete: boolean | undefined) => {
-      if (!shouldDelete) {
-        return;
-      }
-
-      this.removeRule(rule.id);
-    });
-  }
-
-  protected trackByRuleId(_: number, rule: ValidationRule): string {
-    return rule.id;
+  protected openEditDialog(rule: RuleRow): void {
+    //   const dialogRef = this.dialog.open<
+    //     ValidationRuleFormDialogComponent,
+    //     ValidationRuleFormDialogData,
+    //     ValidationRuleFormDialogSubmitResult
+    //   >(ValidationRuleFormDialogComponent, {
+    //     disableClose: true,
+    //     width: '92vw',
+    //     maxWidth: '1240px',
+    //     maxHeight: '95vh',
+    //     panelClass: 'validation-rule-dialog',
+    //     data: {
+    //       mode: 'edit',
+    //       rule: this.toDialogResult(rule),
+    //       payload: rule.payload,
+    //     },
+    //   });
+    //   dialogRef
+    //     .afterClosed()
+    //     .subscribe((result: ValidationRuleFormDialogSubmitResult | undefined) => {
+    //       if (!result) {
+    //         return;
+    //       }
+    //       this.updateRule(rule.id, result);
+    //     });
+    // }
+    // protected openDeleteDialog(rule: ValidationRule): void {
+    //   const dialogRef = this.dialog.open<
+    //     ValidationRuleDeleteDialogComponent,
+    //     ValidationRuleDeleteDialogData,
+    //     boolean
+    //   >(ValidationRuleDeleteDialogComponent, {
+    //     disableClose: true,
+    //     data: {
+    //       name: rule.name,
+    //     },
+    //   });
+    //   dialogRef.afterClosed().subscribe((shouldDelete: boolean | undefined) => {
+    //     if (!shouldDelete) {
+    //       return;
+    //     }
+    //     this.removeRule(rule.id);
+    //   });
   }
 
   protected trackByAiOptionId(_: number, option: AiRuleOption): string {
     return option.id;
   }
 
-  protected mandatoryLabel(rule: ValidationRule): string {
-    return rule.mandatory ? 'Sí' : 'No';
-  }
-
-  protected statusClass(status: ValidationRule['status']): string {
-    return status === 'Activa' ? 'badge--active' : 'badge--inactive';
-  }
-
   protected applyAiRule(option: AiRuleOption): void {
-    console.log('[ValidationRules] Payload listo para enviar (IA):', option.payload);
-    const payloadClone = JSON.parse(JSON.stringify(option.payload)) as RulePayload;
-    const rule = this.buildRuleFromPayload(payloadClone, 'Inactiva', 'ia');
-    this.rules = [rule, ...this.rules];
-    this.updatePaginationAfterDataChange(this.rules.length);
-    this.persistRule(payloadClone, false).catch(() => undefined);
+    // console.log('[ValidationRules] Payload listo para enviar (IA):', option.payload);
+    // const payloadClone = JSON.parse(JSON.stringify(option.payload)) as RulePayload;
+    // const rule = this.buildRuleFromPayload(payloadClone, 'Inactiva', 'ia');
+    // this.rules = [rule, ...this.rules];
+    // this.persistRule(payloadClone, false).catch(() => undefined);
   }
 
   protected describeRuleConfig(payload: RulePayload): string[] {
@@ -437,43 +413,34 @@ export class ValidationRulesComponent implements OnInit {
   }
 
   private addRule(result: ValidationRuleFormDialogSubmitResult): void {
-    const payload = JSON.parse(JSON.stringify(result.payload)) as RulePayload;
-    console.log('[ValidationRules] Payload listo para enviar (manual):', payload);
-    const entry = this.buildRuleFromPayload(payload, result.status, 'manual');
-    this.rules = [entry, ...this.rules];
-    this.updatePaginationAfterDataChange(this.rules.length);
-    this.persistRule(payload, result.status === 'Activa')
-      .then(() => this.loadRules())
-      .catch(() => undefined);
+    // const payload = JSON.parse(JSON.stringify(result.payload)) as RulePayload;
+    // console.log('[ValidationRules] Payload listo para enviar (manual):', payload);
+    // const entry = this.buildRuleFromPayload(payload, result.status, 'manual');
+    // this.rules = [entry, ...this.rules];
+    // this.persistRule(payload, result.status === 'Activa')
+    //   .then(() => this.loadRules())
+    //   .catch(() => undefined);
   }
 
   private updateRule(ruleId: string, result: ValidationRuleFormDialogSubmitResult): void {
-    const payloadClone = JSON.parse(JSON.stringify(result.payload)) as RulePayload;
-
-    this.rules = this.rules.map((rule) => {
-      if (rule.id !== ruleId) {
-        return rule;
-      }
-
-      return this.buildRuleFromPayload(payloadClone, result.status, rule.source, rule.id);
-    });
-    this.updatePaginationAfterDataChange(this.rules.length);
-
-    this.persistRule(payloadClone, result.status === 'Activa', ruleId).catch(() => undefined);
+    // const payloadClone = JSON.parse(JSON.stringify(result.payload)) as RulePayload;
+    // this.rules = this.rules.map((rule) => {
+    //   if (rule.id !== ruleId) {
+    //     return rule;
+    //   }
+    //   return this.buildRuleFromPayload(payloadClone, result.status, rule.source, rule.id);
+    // });
+    // this.persistRule(payloadClone, result.status === 'Activa', ruleId).catch(() => undefined);
   }
 
   private removeRule(ruleId: string): void {
-    const previousRules = [...this.rules];
-    this.rules = this.rules.filter((rule) => rule.id !== ruleId);
-    this.updatePaginationAfterDataChange(this.rules.length);
-
-    this.ruleSyncError = null;
-
-    void this.validationRulesService.deleteRule(ruleId).catch((error) => {
-      this.rules = previousRules;
-      this.updatePaginationAfterDataChange(this.rules.length);
-      this.handleRuleSyncError(error);
-    });
+    // const previousRules = [...this.rules];
+    // this.rules = this.rules.filter((rule) => rule.id !== ruleId);
+    // this.ruleSyncError = null;
+    // void this.validationRulesService.deleteRule(ruleId).catch((error) => {
+    //   this.rules = previousRules;
+    //   this.handleRuleSyncError(error);
+    // });
   }
 
   private generateId(): string {
@@ -484,43 +451,42 @@ export class ValidationRulesComponent implements OnInit {
     payload: RulePayload,
     status: ValidationRule['status'],
     source: 'manual' | 'ia',
-    currentId?: string
-  ): ValidationRule {
-    const clone = JSON.parse(JSON.stringify(payload)) as RulePayload;
-    const header = this.sanitizeStringArray(clone.Header);
-    if (header.length === 0) {
-      header.push('Plantilla Global');
-    }
-    const headerRule = this.sanitizeStringArray(clone['Header rule']);
-    const example =
-      clone['Ejemplo'] && typeof clone['Ejemplo'] === 'object' && !Array.isArray(clone['Ejemplo'])
-        ? (clone['Ejemplo'] as RuleExample)
-        : {};
-    const ruleConfig =
-      clone['Regla'] && typeof clone['Regla'] === 'object' && !Array.isArray(clone['Regla'])
-        ? (clone['Regla'] as Record<string, unknown>)
-        : {};
-
-    return {
-      id: currentId ?? this.generateId(),
-      name: clone['Nombre de la regla'],
-      dataType: clone['Tipo de dato'],
-      mandatory: clone['Campo obligatorio'],
-      status,
-      description: clone['Descripción'],
-      header,
-      headerRule,
-      example,
-      ruleConfig,
-      source,
-      payload: clone,
-    };
+    currentId?: string,
+  ) {
+    // const clone = JSON.parse(JSON.stringify(payload)) as RulePayload;
+    // const header = this.sanitizeStringArray(clone.Header);
+    // if (header.length === 0) {
+    //   header.push('Plantilla Global');
+    // }
+    // const headerRule = this.sanitizeStringArray(clone['Header rule']);
+    // const example =
+    //   clone['Ejemplo'] && typeof clone['Ejemplo'] === 'object' && !Array.isArray(clone['Ejemplo'])
+    //     ? (clone['Ejemplo'] as RuleExample)
+    //     : {};
+    // const ruleConfig =
+    //   clone['Regla'] && typeof clone['Regla'] === 'object' && !Array.isArray(clone['Regla'])
+    //     ? (clone['Regla'] as Record<string, unknown>)
+    //     : {};
+    // return {
+    //   id: currentId ?? this.generateId(),
+    //   name: clone['Nombre de la regla'],
+    //   dataType: clone['Tipo de dato'],
+    //   mandatory: clone['Campo obligatorio'],
+    //   status,
+    //   description: clone['Descripción'],
+    //   header,
+    //   headerRule,
+    //   example,
+    //   ruleConfig,
+    //   source,
+    //   payload: clone,
+    // };
   }
 
   private async persistRule(
     payload: RulePayload,
     isActive: boolean,
-    ruleId?: string
+    ruleId?: string,
   ): Promise<void> {
     try {
       if (ruleId) {
@@ -536,61 +502,22 @@ export class ValidationRulesComponent implements OnInit {
 
   private handleRuleSyncError(error: unknown): void {
     console.error('[ValidationRules] Error al sincronizar la regla:', error);
-    this.ruleSyncError = this.getErrorMessage(error);
+    // this.ruleSyncError = this.getErrorMessage(error);
   }
 
-  private sanitizeStringArray(value: unknown): string[] {
-    if (!Array.isArray(value)) {
-      return [];
-    }
-
-    return (value as unknown[])
-      .map((item) => (typeof item === 'string' ? item.trim() : ''))
-      .filter((item, index, array) => item.length > 0 && array.indexOf(item) === index);
-  }
-
-  private sanitizeString(value: unknown): string | null {
-    if (typeof value === 'string') {
-      return value.trim();
-    }
-
-    if (typeof value === 'number' || typeof value === 'boolean') {
-      return String(value);
-    }
-
-    return null;
-  }
-
-  private toBoolean(value: unknown): boolean {
-    if (typeof value === 'boolean') {
-      return value;
-    }
-
-    if (typeof value === 'string') {
-      const normalized = value.trim().toLowerCase();
-      return ['true', '1', 'si', 'sí', 'yes'].includes(normalized);
-    }
-
-    if (typeof value === 'number') {
-      return value !== 0;
-    }
-
-    return false;
-  }
-
-  private toDialogResult(rule: ValidationRule): ValidationRuleFormDialogResult {
-    return {
-      name: rule.name,
-      dataType: rule.dataType,
-      mandatory: rule.mandatory,
-      status: rule.status,
-      description: rule.description,
-      primaryHeader: rule.header[0] ?? 'Plantilla Global',
-      secondaryHeaders: rule.header.slice(1),
-      headerRule: [...rule.headerRule],
-      exampleEntries: this.buildDialogExamples(rule.payload),
-      ruleConfig: JSON.parse(JSON.stringify(rule.ruleConfig)) as Record<string, unknown>,
-    };
+  private toDialogResult(rule: ValidationRule) {
+    // return {
+    //   name: rule.name,
+    //   dataType: rule.dataType,
+    //   mandatory: rule.mandatory,
+    //   status: rule.status,
+    //   description: rule.description,
+    //   primaryHeader: rule.header[0] ?? 'Plantilla Global',
+    //   secondaryHeaders: rule.header.slice(1),
+    //   headerRule: [...rule.headerRule],
+    //   exampleEntries: this.buildDialogExamples(rule.payload),
+    //   ruleConfig: JSON.parse(JSON.stringify(rule.ruleConfig)) as Record<string, unknown>,
+    // };
   }
 
   private buildDialogExamples(payload: RulePayload): Array<{ key: string; value: string }> {
@@ -624,55 +551,5 @@ export class ValidationRulesComponent implements OnInit {
         value: invalidEntry?.value ?? fallback[0]?.value ?? entries[1]?.value ?? '',
       },
     ];
-  }
-
-  private getErrorMessage(error: unknown): string {
-    if (error instanceof HttpErrorResponse) {
-      if (typeof error.error === 'string' && error.error.trim().length > 0) {
-        return error.error;
-      }
-
-      if (error.error?.detail) {
-        return String(error.error.detail);
-      }
-
-      if (typeof error.error === 'object' && error.error !== null) {
-        try {
-          return JSON.stringify(error.error, null, 2);
-        } catch (_) {
-          // Ignorar y continuar con el flujo inferior.
-        }
-      }
-
-      if (error.status === 0) {
-        return 'No se pudo establecer conexión con el servidor.';
-      }
-
-      if (error.status === 401) {
-        return 'No estás autorizado para realizar esta acción.';
-      }
-
-      if (error.message) {
-        return error.message;
-      }
-
-      return 'No se pudo completar la solicitud. Inténtalo nuevamente.';
-    }
-
-    if (error instanceof Error && error.message) {
-      return error.message;
-    }
-
-    if (typeof error === 'string' && error.trim().length > 0) {
-      return error;
-    }
-
-    try {
-      return JSON.stringify(error, null, 2);
-    } catch (_) {
-      return 'No se pudo completar la solicitud. Inténtalo nuevamente.';
-    }
-
-    return 'No se pudo completar la solicitud. Inténtalo nuevamente.';
   }
 }

@@ -38,24 +38,26 @@
     <ng-content></ng-content>
   </div>
 
-  <ng-template pTemplate="footer">
-    <div class="dialog-shell__actions">
-      <p-button
-        type="button"
-        [label]="cancelLabel"
-        severity="secondary"
-        [disabled]="loading"
-        [outlined]="true"
-        (click)="onCancel()"
-      ></p-button>
+  @if (showFooter) {
+    <ng-template pTemplate="footer">
+      <div class="dialog-shell__actions">
+        <p-button
+          type="button"
+          [label]="cancelLabel"
+          severity="secondary"
+          [disabled]="loading"
+          [outlined]="true"
+          (click)="onCancel()"
+        ></p-button>
 
-      <p-button
-        type="button"
-        [label]="saveLabel"
-        [disabled]="saveDisabled"
-        [loading]="loading"
-        (click)="onSave()"
-      ></p-button>
-    </div>
-  </ng-template>
+        <p-button
+          type="button"
+          [label]="saveLabel"
+          [disabled]="saveDisabled"
+          [loading]="loading"
+          (click)="onSave()"
+        ></p-button>
+      </div>
+    </ng-template>
+  }
 </p-dialog>

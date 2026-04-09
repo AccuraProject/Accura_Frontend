@@ -1,19 +1,7 @@
-export type RuleExample = Record<string, unknown>;
+import { RuleExample, RulePayload } from "./models/rule.model";
 
 export const DEFAULT_RULE_ERROR_MESSAGE =
   'La validación no proporcionó un mensaje de error específico.';
-
-export interface RulePayload {
-  'Nombre de la regla': string;
-  'Tipo de dato': string;
-  'Campo obligatorio': boolean;
-  Header: string[];
-  'Header rule': string[];
-  'Mensaje de error': string;
-  'Descripción': string;
-  'Ejemplo': RuleExample;
-  'Regla': Record<string, unknown>;
-}
 
 export interface RuleTableData {
   columns: string[];

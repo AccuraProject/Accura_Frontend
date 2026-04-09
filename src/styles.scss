@@ -198,6 +198,15 @@ a {
   color: var(--p-surface-600);
 }
 
+.card {
+  background: var(--surface-card);
+  border: 1px solid var(--surface-border);
+  padding: 2rem;
+  margin-bottom: 2rem;
+  box-shadow: var(--card-shadow);
+  border-radius: 12px;
+}
+
 .page-header__cta {
   display: inline-flex;
   align-items: center;

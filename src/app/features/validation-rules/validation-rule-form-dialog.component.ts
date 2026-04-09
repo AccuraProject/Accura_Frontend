@@ -11,8 +11,6 @@ import { environment } from '../../../environments/environment';
 import { selectSessionState, SessionState } from '../../core/store/session/session.reducer';
 import {
   VALIDATION_RULE_AI_SCHEMA,
-  RulePayload,
-  RuleExample,
   describeRuleConfig as describeRuleConfigUtil,
   extractAiPayloads,
   generateDefaultRuleConfig,
@@ -20,6 +18,7 @@ import {
   normalizeAiPayload,
   DEFAULT_RULE_ERROR_MESSAGE
 } from './validation-rule-ai.utils';
+import { RuleExample, RulePayload } from './models/rule.model';
 
 export interface ValidationRuleFormDialogResult {
   name: string;
@@ -36,6 +35,12 @@ export interface ValidationRuleFormDialogResult {
 
 export interface ValidationRuleFormDialogSubmitResult extends ValidationRuleFormDialogResult {
   payload: RulePayload;
+}
+
+export interface RuleFormDialogData {
+  mode: 'create' | 'edit';
+  rule?: ValidationRuleFormDialogResult;
+  payload?: RulePayload;
 }
 
 export interface ValidationRuleFormDialogData {

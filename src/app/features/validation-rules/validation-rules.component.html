@@ -7,10 +7,6 @@
       procesos.
     </p>
   </div>
-  <!-- <button class="page-header__cta" type="button" (click)="openCreateDialog()">
-    <span class="material-symbols-rounded" aria-hidden="true">add</span>
-    Crear Regla
-  </button> -->
 </section>
 
 <section class="stats-container">
@@ -48,133 +44,32 @@
   </div>
 </section>
 
-<section class="validation-panel">
-  <header class="validation-panel__header">
-    <div>
-      <h2>Reglas de Validación Globales</h2>
-      <p>Configura reglas que puedes asignar a columnas de plantillas según su tipo de dato.</p>
-    </div>
-    <label class="validation-panel__search">
-      <span class="material-symbols-rounded" aria-hidden="true">search</span>
-      <input
-        type="search"
-        placeholder="Buscar por nombre, tipo, estado o plantilla..."
-        [(ngModel)]="searchTerm"
-        (ngModelChange)="onSearchChange()"
-        name="search"
-      />
-    </label>
-  </header>
+<div class="card">
+  <app-page-actions
+    [showCreate]="true"
+    [showEdit]="true"
+    [showDelete]="true"
+    [disableEdit]="!selectedRule"
+    [disableDelete]="!selectedRule"
+    (create)="onCreateRule()"
+    (edit)="onEditRule()"
+    (delete)="onDeleteRule()"
+  ></app-page-actions>
 
-  <div class="validation-table__state" *ngIf="rulesLoading">
-    <span class="material-symbols-rounded" aria-hidden="true">hourglass_top</span>
-    <p>Cargando reglas configuradas...</p>
-  </div>
+  <!-- Tabla de reglas -->
+  <app-data-table
+    [columns]="columns"
+    [value]="rules"
+    [selection]="selectedRule"
+    [loading]="rulesLoading"
+    (rowSelect)="onRowSelect($event)"
+    (rowUnselect)="onRowUnselect()"
+  ></app-data-table>
+</div>
 
-  <div
-    class="validation-table__state validation-table__state--error"
-    *ngIf="!rulesLoading && ruleLoadError"
-  >
-    <span class="material-symbols-rounded" aria-hidden="true">error</span>
-    <p>{{ ruleLoadError }}</p>
-  </div>
-
-  <div
-    class="validation-table__state validation-table__state--error"
-    *ngIf="!rulesLoading && !ruleLoadError && ruleSyncError"
-  >
-    <span class="material-symbols-rounded" aria-hidden="true">error</span>
-    <p>{{ ruleSyncError }}</p>
-  </div>
-
-  <ng-container *ngIf="!rulesLoading && !ruleLoadError">
-    <div class="validation-table__wrapper" *ngIf="filteredRules as items">
-      <div class="validation-table__scroll">
-        <table class="validation-table">
-          <thead>
-            <tr>
-              <th>Nombre</th>
-              <th>Tipo de Dato</th>
-              <th>Obligatoria</th>
-              <th>Estado</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let rule of paginatedRules; trackBy: trackByRuleId">
-              <td>
-                <div class="validation-table__name">
-                  <p class="validation-table__title">{{ rule.name }}</p>
-                </div>
-              </td>
-              <td>
-                <span class="validation-table__text">{{ rule.dataType }}</span>
-              </td>
-              <td>
-                <span
-                  class="badge"
-                  [ngClass]="rule.mandatory ? 'badge--active' : 'badge--inactive'"
-                >
-                  {{ mandatoryLabel(rule) }}
-                </span>
-              </td>
-              <td>
-                <span class="badge" [ngClass]="statusClass(rule.status)">{{ rule.status }}</span>
-              </td>
-              <td class="validation-table__actions">
-                <button
-                  class="icon-button icon-button--ghost"
-                  type="button"
-                  (click)="openEditDialog(rule)"
-                  aria-label="Editar"
-                >
-                  <span class="material-symbols-rounded" aria-hidden="true">edit</span>
-                </button>
-                <button
-                  class="icon-button icon-button--danger"
-                  type="button"
-                  (click)="openDeleteDialog(rule)"
-                  aria-label="Eliminar"
-                >
-                  <span class="material-symbols-rounded" aria-hidden="true">delete</span>
-                </button>
-              </td>
-            </tr>
-            <tr *ngIf="items.length === 0">
-              <td colspan="6">
-                <div class="validation-table__empty">
-                  <span class="material-symbols-rounded" aria-hidden="true">search_off</span>
-                  <p>No se encontraron reglas para la búsqueda realizada.</p>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <div class="table-pagination" *ngIf="items.length > 0">
-        <span class="table-pagination__info">
-          Mostrando {{ pageStart }}-{{ pageEnd }} de {{ items.length }}
-        </span>
-        <div class="table-pagination__controls">
-          <button
-            type="button"
-            class="table-pagination__button"
-            (click)="goToPreviousPage()"
-            [disabled]="currentPage === 1"
-          >
-            Anterior
-          </button>
-          <span class="table-pagination__status">Página {{ currentPage }} de {{ totalPages }}</span>
-          <button
-            type="button"
-            class="table-pagination__button"
-            (click)="goToNextPage()"
-            [disabled]="currentPage === totalPages || items.length === 0"
-          >
-            Siguiente
-          </button>
-        </div>
-      </div>
-    </div>
-  </ng-container>
-</section>
+<app-rule-form-dialog
+  [(visible)]="ruleDialogVisible"
+  [data]="ruleDialogData"
+  [loading]="ruleDialogLoading"
+  (saveUser)="handleSaveUser($event)"
+/>

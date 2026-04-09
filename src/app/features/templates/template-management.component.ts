@@ -31,7 +31,8 @@ import {
   TemplateResponse,
   TemplatesService,
 } from './templates.service';
-import { normalizeAiPayload, RulePayload } from '../validation-rules/validation-rule-ai.utils';
+import { normalizeAiPayload } from '../validation-rules/validation-rule-ai.utils';
+import { RulePayload } from '../validation-rules/models/rule.model';
 
 type ManagementTemplateStatus = 'Publicado' | 'Borrador' | 'Inactivo';
 type ClientTemplateStatus = 'Activo' | 'En Revisión';

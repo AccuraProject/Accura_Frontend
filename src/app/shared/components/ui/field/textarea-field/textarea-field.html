@@ -5,30 +5,34 @@
         <p-iconfield [iconPosition]="iconPosition" [ngClass]="{ 'invalid-field': showError }">
           <p-inputicon [class]="icon"></p-inputicon>
 
-          <input
-            pInputText
+          <textarea
+            pTextarea
             [id]="computedInputId"
-            [type]="type"
             [formControl]="control"
+            [placeholder]="placeholder"
             [required]="required"
             [readonly]="readonly"
-            [autocomplete]="autocomplete"
+            [rows]="rows"
+            [cols]="cols"
+            [autoResize]="autoResize"
             [fluid]="fluid"
             [invalid]="showError"
-          />
+          ></textarea>
         </p-iconfield>
       } @else {
-        <input
-          pInputText
+        <textarea
+          pTextarea
           [id]="computedInputId"
-          [type]="type"
           [formControl]="control"
+          [placeholder]="placeholder"
           [required]="required"
           [readonly]="readonly"
-          [autocomplete]="autocomplete"
+          [rows]="rows"
+          [cols]="cols"
+          [autoResize]="autoResize"
           [fluid]="fluid"
           [invalid]="showError"
-        />
+        ></textarea>
       }
 
       <label [for]="computedInputId">
@@ -42,32 +46,34 @@
       <p-iconfield [iconPosition]="iconPosition">
         <p-inputicon [class]="icon"></p-inputicon>
 
-        <input
-          pInputText
+        <textarea
+          pTextarea
           [id]="computedInputId"
-          [type]="type"
           [formControl]="control"
           [placeholder]="placeholder"
           [required]="required"
           [readonly]="readonly"
-          [autocomplete]="autocomplete"
+          [rows]="rows"
+          [cols]="cols"
+          [autoResize]="autoResize"
           [fluid]="fluid"
           [invalid]="showError"
-        />
+        ></textarea>
       </p-iconfield>
     } @else {
-      <input
-        pInputText
+      <textarea
+        pTextarea
         [id]="computedInputId"
-        [type]="type"
         [formControl]="control"
         [placeholder]="placeholder"
         [required]="required"
         [readonly]="readonly"
-        [autocomplete]="autocomplete"
+        [rows]="rows"
+        [cols]="cols"
+        [autoResize]="autoResize"
         [fluid]="fluid"
         [invalid]="showError"
-      />
+      ></textarea>
     }
   }
 
