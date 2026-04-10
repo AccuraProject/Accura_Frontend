@@ -1,7 +1,6 @@
 import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Store } from '@ngrx/store';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -16,11 +15,20 @@ import { selectIsUser } from '../../core/store/session/session.selectors';
 import { PageActionsComponent } from '../../shared/components/ui/page-actions/page-actions';
 import { DataTableComponent } from '../../shared/components/data/data-table/data-table';
 import { formatDate } from '../../shared/utils/date-util';
-import { HistoryDetailDialogComponent, HistoryDetailDialogData } from './components/history-detail-dialog.component';
+import { formatNumber } from '../../shared/utils/number-util';
+import {
+  HistoryDetailDialogComponent,
+  HistoryDetailDialogData,
+} from './components/history-detail-dialog.component';
 
 type HistoryStatus = 'Procesando' | 'Validado exitosamente' | 'Validado con errores' | 'Fallido';
 
-const NAME_CONNECTORS = new Set(['de', 'del', 'la', 'las', 'los', 'y']);
+const STATUS_SET = new Set<HistoryStatus>([
+  'Procesando',
+  'Validado exitosamente',
+  'Validado con errores',
+  'Fallido',
+]);
 
 interface HistoryRecord {
   id: string;
@@ -68,7 +76,6 @@ const EMPTY_HISTORY_DETAIL: HistoryDetailDialogData = {
   imports: [
     CommonModule,
     FormsModule,
-    MatDialogModule,
     PageActionsComponent,
     DataTableComponent,
     HistoryDetailDialogComponent,
@@ -77,7 +84,6 @@ const EMPTY_HISTORY_DETAIL: HistoryDetailDialogData = {
   styleUrl: './history.component.scss',
 })
 export class HistoryComponent implements OnInit {
-  private readonly dialog = inject(MatDialog);
   private readonly loadsService = inject(LoadsService);
   private readonly notificationService = inject(NotificationService);
   private readonly destroyRef = inject(DestroyRef);
@@ -118,7 +124,6 @@ export class HistoryComponent implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((isUser) => {
         this.displayActiveUsersMetric = !isUser;
-        this.updateMetrics(this.historyRecords);
       });
 
     this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
@@ -140,7 +145,6 @@ export class HistoryComponent implements OnInit {
   }
 
   onViewDetail(): void {
-    console.log('Selected record:', this.selectedRecord);
     if (!this.selectedRecord || this.selectedRecord.status == 'Procesando') return;
 
     this.detailDialogData = {
@@ -180,6 +184,7 @@ export class HistoryComponent implements OnInit {
       next: (records: LoadDetailResponseItem[]) => {
         this.historyRecords = records.map((record) => this.mapToHistoryRecord(record));
         this.isTableLoading.set(false);
+        this.updateMetrics(this.historyRecords);
       },
       error: (error: unknown) => {
         this.historyRecords = [];
@@ -187,10 +192,6 @@ export class HistoryComponent implements OnInit {
         this.isTableLoading.set(false);
       },
     });
-  }
-
-  protected canViewRecordDetail(record: HistoryRecord): boolean {
-    return record.status !== 'Procesando';
   }
 
   protected statusBadgeClass(status: HistoryStatus): string {
@@ -206,35 +207,6 @@ export class HistoryComponent implements OnInit {
       default:
         return 'badge';
     }
-  }
-
-  protected openRecordDetail(record: HistoryRecord): void {
-    if (!this.canViewRecordDetail(record)) {
-      return;
-    }
-
-    const dialogData: HistoryDetailDialogData = {
-      loadId: record.loadId,
-      fileName: record.fileName,
-      templateName: record.templateName,
-      status: record.status,
-      uploadedAt: record.uploadedAt,
-      processedBy: record.uploadedBy,
-      totalRows: record.totalRows,
-      validatedRows: record.validatedRows,
-      errorRows: record.errorRows,
-      successRate: record.successRate,
-      processingTime: record.processingTime,
-      validationStartedAt: record.validationStartedAt,
-    };
-
-    this.dialog.open<HistoryDetailDialogComponent, HistoryDetailDialogData, void>(
-      HistoryDetailDialogComponent,
-      {
-        data: dialogData,
-        panelClass: 'history-detail-dialog',
-      },
-    );
   }
 
   private listenToRealtimeUpdates(): void {
@@ -290,7 +262,6 @@ export class HistoryComponent implements OnInit {
     }
 
     this.shouldOpenPendingLoad = false;
-    this.openRecordDetail(record);
     this.clearPendingLoadQueryParam();
   }
 
@@ -332,57 +303,7 @@ export class HistoryComponent implements OnInit {
   }
 
   private mapStatus(status: string | null | undefined): HistoryStatus {
-    const normalized = status
-      ? status
-          .normalize('NFD')
-          .replace(/[\u0300-\u036f]/g, '')
-          .toLowerCase()
-          .replace(/_/g, ' ')
-          .replace(/\s+/g, ' ')
-          .trim()
-      : '';
-
-    switch (normalized) {
-      case 'validado exitosamente':
-      case 'validado exitoso':
-      case 'validado correctamente':
-      case 'success':
-      case 'successful':
-      case 'completed':
-      case 'completed successfully':
-      case 'finished':
-      case 'completado':
-        return 'Validado exitosamente';
-      case 'validado con errores':
-      case 'con errores':
-      case 'with errors':
-      case 'completed with errors':
-      case 'partial success':
-      case 'partial':
-      case 'completado con errores':
-        return 'Validado con errores';
-      case 'fallido':
-      case 'failed':
-      case 'error':
-      case 'errores criticos':
-      case 'cancelado':
-      case 'cancelled':
-      case 'canceled':
-      case 'aborted':
-      case 'stopped':
-        return 'Fallido';
-      case 'procesando':
-      case 'en proceso':
-      case 'processing':
-      case 'in progress':
-      case 'in_progress':
-      case 'pending':
-      case 'queued':
-      case 'validando':
-      case 'validating':
-      default:
-        return 'Procesando';
-    }
+    return STATUS_SET.has(status as HistoryStatus) ? (status as HistoryStatus) : 'Procesando';
   }
 
   private formatProcessingTime(startedAt: string | null, finishedAt: string | null): string {
@@ -416,7 +337,7 @@ export class HistoryComponent implements OnInit {
     const metrics: MetricSummary[] = [
       {
         label: 'Total de Cargas',
-        value: totalLoads.toLocaleString('es-ES'),
+        value: formatNumber(totalLoads),
         description: 'Archivos procesados este mes',
         trend: totalLoads > 0 ? 'Actividad reciente' : 'Sin registros',
         isPositive: totalLoads > 0,
@@ -427,7 +348,7 @@ export class HistoryComponent implements OnInit {
     if (this.displayActiveUsersMetric) {
       metrics.push({
         label: 'Usuarios Activos',
-        value: activeUsers.toLocaleString('es-ES'),
+        value: formatNumber(activeUsers),
         description: 'Usuarios cargando archivos',
         trend: activeUsers > 0 ? 'Usuarios activos' : 'Sin registros',
         isPositive: activeUsers > 0,
@@ -437,7 +358,7 @@ export class HistoryComponent implements OnInit {
 
     metrics.push({
       label: 'Filas Procesadas',
-      value: totalRows.toLocaleString('es-ES'),
+      value: formatNumber(totalRows),
       description: 'Volumen de filas validadas',
       trend: totalRows > 0 ? 'Validaciones completadas' : 'Sin registros',
       isPositive: totalRows > 0,
