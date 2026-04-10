@@ -31,14 +31,14 @@ export interface HistoryDetailDialogData {
   selector: 'app-history-detail-dialog',
   standalone: true,
   imports: [CommonModule, MatDialogModule, DatePipe, DecimalPipe, PercentPipe],
-  templateUrl: './history-detail-dialog.component.html',
-  styleUrl: './history-detail-dialog.component.scss'
+  templateUrl: './history-detail-dialog.component.v1.html',
+  styleUrl: './history-detail-dialog.component.v1.scss'
 })
-export class HistoryDetailDialogComponent {
+export class HistoryDetailDialogComponentV1 {
   private readonly loadsService = inject(LoadsService);
 
   constructor(
-    private readonly dialogRef: MatDialogRef<HistoryDetailDialogComponent>,
+    private readonly dialogRef: MatDialogRef<HistoryDetailDialogComponentV1>,
     @Inject(MAT_DIALOG_DATA) protected readonly data: HistoryDetailDialogData
   ) {}
 

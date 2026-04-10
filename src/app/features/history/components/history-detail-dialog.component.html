@@ -1,0 +1,106 @@
+<app-dialog-shell
+  [(visible)]="visible"
+  [title]="title"
+  [description]="description"
+  [showFooter]="false"
+>
+  <div class="history-detail">
+
+    <!-- HEADER -->
+    <p-card>
+      <div class="hd-header">
+        <div class="hd-icon">
+          <i class="pi pi-file" style="font-size: 1.5rem;"></i>
+        </div>
+
+        <div class="hd-info">
+          <div class="hd-title">
+            {{ detailDialogData.fileName }}
+          </div>
+          <div class="hd-subtitle">
+            {{ detailDialogData.templateName }}
+          </div>
+        </div>
+
+        <p-tag
+          [value]="detailDialogData.status"
+          [severity]="getStatusSeverity(detailDialogData.status)"
+        ></p-tag>
+      </div>
+    </p-card>
+
+    <!-- INFO GRID -->
+    <div class="hd-grid">
+      <p-card>
+        <div class="hd-label">Fecha de carga</div>
+        <div class="hd-value">{{ detailDialogData.uploadedAt }}</div>
+      </p-card>
+
+      <p-card>
+        <div class="hd-label">Procesado por</div>
+        <div class="hd-value">{{ detailDialogData.processedBy }}</div>
+      </p-card>
+
+      <p-card>
+        <div class="hd-label">Inicio de validación</div>
+        <div class="hd-value">{{ detailDialogData.validationStartedAt }}</div>
+      </p-card>
+
+      <p-card>
+        <div class="hd-label">Tiempo total</div>
+        <div class="hd-value">{{ detailDialogData.processingTime }}</div>
+      </p-card>
+    </div>
+
+    <!-- RESUMEN -->
+    <div class="hd-section-title">Resumen de validación</div>
+
+    <div class="hd-grid hd-grid--summary">
+      <p-card>
+        <div class="hd-label">Filas procesadas</div>
+        <div class="hd-value hd-value--strong">
+          {{ detailDialogData.totalRows }}
+        </div>
+      </p-card>
+
+      <p-card>
+        <div class="hd-label">Filas validadas</div>
+        <div class="hd-value hd-value--strong">
+          {{ detailDialogData.validatedRows }}
+        </div>
+      </p-card>
+
+      <p-card>
+        <div class="hd-label">Filas con errores</div>
+        <div class="hd-value hd-value--strong">
+          {{ detailDialogData.errorRows }}
+        </div>
+      </p-card>
+    </div>
+
+    <!-- MENSAJE -->
+    @if (detailDialogData.errorRows > 0) {
+      <p-message severity="warn" [closable]="false">
+        Se detectaron {{ detailDialogData.errorRows }} filas con errores.
+      </p-message>
+    }
+
+    <p-divider></p-divider>
+
+    <!-- ACTIONS -->
+    <div class="hd-actions">
+      <p-button
+        label="Descargar reporte"
+        icon="pi pi-download"
+        severity="secondary"
+      ></p-button>
+
+      <p-button
+        label="Descargar archivo"
+        icon="pi pi-paperclip"
+        [outlined]="true"
+      ></p-button>
+    </div>
+
+  </div>
+</app-dialog-shell>

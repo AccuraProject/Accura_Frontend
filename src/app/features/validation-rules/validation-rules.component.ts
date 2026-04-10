@@ -317,10 +317,11 @@ export class ValidationRulesComponent implements OnInit {
   }
 
   protected openCreateDialog(): void {
-    this.ruleDialogVisible = true;
     this.ruleDialogData = {
       mode: 'create',
     };
+    
+    this.ruleDialogVisible = true;
     // const dialogRef = this.dialog.open<
     //   ValidationRuleFormDialogComponent,
     //   ValidationRuleFormDialogData,

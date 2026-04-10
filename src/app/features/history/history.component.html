@@ -46,6 +46,10 @@
   ></app-data-table>
 </div>
 
+<app-history-detail-dialog
+  [(visible)]="detailDialogVisible"
+  [data]="detailDialogData"
+/>
 <!-- <section class="history-panel">
   <div class="history-table__wrapper" *ngIf="!isLoading && !hasError && filteredRecords as records">
     <div class="history-table__scroll">

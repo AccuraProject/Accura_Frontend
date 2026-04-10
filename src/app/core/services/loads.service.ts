@@ -1,4 +1,4 @@
-import { HttpClient, HttpHeaders, HttpResponse } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpHeaders, HttpResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, switchMap, take, throwError } from 'rxjs';
 import { Store } from '@ngrx/store';
@@ -63,5 +63,41 @@ export class LoadsService {
         });
       })
     );
+  }
+
+  getErrorMessage(error: unknown): string {
+    if (error instanceof HttpErrorResponse) {
+      const err = error.error;
+
+      if (typeof err === 'string' && err.trim().length > 0) {
+        return err;
+      }
+
+      if (err?.detail) {
+        if (typeof err.detail === 'string') {
+          return err.detail;
+        }
+
+        if (Array.isArray(err.detail) || typeof err.detail === 'object') {
+          console.warn('Error detail no controlado:', err.detail);
+          return 'Ocurrió un error inesperado. Contacta al soporte o intenta nuevamente.';
+        }
+      }
+
+      // Sin conexión
+      if (error.status === 0) {
+        return 'No se pudo establecer conexión con el servidor.';
+      }
+
+      // No autorizado
+      if (error.status === 401) {
+        return 'No estás autorizado para realizar esta acción.';
+      }
+
+      // Error genérico backend
+      return 'No se pudo completar la solicitud. Inténtalo nuevamente.';
+    }
+
+    return 'Ha ocurrido un error desconocido al procesar la solicitud.';
   }
 }
