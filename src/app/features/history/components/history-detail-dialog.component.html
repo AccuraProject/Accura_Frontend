@@ -5,12 +5,11 @@
   [showFooter]="false"
 >
   <div class="history-detail">
-
     <!-- HEADER -->
     <p-card>
       <div class="hd-header">
         <div class="hd-icon">
-          <i class="pi pi-file" style="font-size: 1.5rem;"></i>
+          <i class="pi pi-file-excel" style="font-size: 1.5rem"></i>
         </div>
 
         <div class="hd-info">
@@ -53,7 +52,7 @@
     </div>
 
     <!-- RESUMEN -->
-    <div class="hd-section-title">Resumen de validación</div>
+    <h3 class="hd-section-title">Resumen de validación</h3>
 
     <div class="hd-grid hd-grid--summary">
       <p-card>
@@ -89,18 +88,21 @@
 
     <!-- ACTIONS -->
     <div class="hd-actions">
-      <p-button
+      <app-button
+        label="Descargar archivo"
+        icon="pi pi-download"
+        [outlined]="true"
+        [loading]="isLoadingSource()"
+        [disabled]="isLoadingReport() || isLoadingSource()"
+        (clicked)="onDownloadSource()"
+      ></app-button>
+      <app-button
         label="Descargar reporte"
         icon="pi pi-download"
-        severity="secondary"
-      ></p-button>
-
-      <p-button
-        label="Descargar archivo"
-        icon="pi pi-paperclip"
-        [outlined]="true"
-      ></p-button>
+        [loading]="isLoadingReport()"
+        [disabled]="isLoadingReport() || isLoadingSource()"
+        (clicked)="onDownloadReport()"
+      ></app-button>
     </div>
-
   </div>
 </app-dialog-shell>

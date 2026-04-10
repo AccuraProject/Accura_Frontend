@@ -20,7 +20,6 @@
   justify-content: center;
   background: var(--p-primary-50);
   color: var(--p-primary-color);
-  font-size: 1.25rem;
 }
 
 .hd-info {
@@ -29,7 +28,7 @@
 }
 
 .hd-title {
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   font-size: 1rem;
   color: var(--p-text-color);
   word-break: break-word;
@@ -54,27 +53,25 @@
 
 /* CARD CONTENT */
 .hd-label {
-  font-size: 0.85rem;
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   color: var(--p-text-muted-color);
   margin-bottom: 0.4rem;
 }
 
 .hd-value {
-  font-size: 0.95rem;
   color: var(--p-text-color);
 }
 
 .hd-value--strong {
   font-size: 1.5rem;
-  font-weight: 700;
+  font-weight: var(--font-weight-semibold);
 }
 
 /* SECTION */
 .hd-section-title {
-  font-weight: 700;
-  font-size: 0.95rem;
+  font-weight: var(--font-weight-semibold);
   color: var(--p-text-color);
+  margin: 0;
 }
 
 /* ACTIONS */
