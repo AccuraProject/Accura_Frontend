@@ -96,6 +96,11 @@ a {
   padding: 0.75rem 0 !important;
 }
 
+.p-fieldset-toggle-button {
+  font-family: 'Poppins', sans-serif;
+  color: var(--p-content-color);
+}
+
 .toolbar-menubutton.p-button {
   display: inline-flex;
   align-items: center;
@@ -223,7 +228,7 @@ a {
         color: var(--p-primary-color);
       }
 
-      i{
+      i {
         font-size: 1.25rem;
         color: var(--p-primary-color);
       }

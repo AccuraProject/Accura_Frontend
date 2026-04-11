@@ -22,6 +22,11 @@ const MyPreset = definePreset(Aura, {
       root: {
         fontWeight: '400'
       }
+    },
+    fieldset: {
+      root: {
+        padding: '1.125rem',
+      }
     }
   }
 });

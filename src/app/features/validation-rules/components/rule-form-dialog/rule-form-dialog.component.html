@@ -16,7 +16,7 @@
       <p-step-panel [value]="1">
         <ng-template #content>
           <form class="form" [formGroup]="aiForm" (ngSubmit)="submitAiForm()">
-            <div class="form-stack">
+            <div class="form-body">
               <app-textarea-field
                 inputId="description"
                 label="Descripción"
@@ -51,13 +51,8 @@
       <p-step-panel [value]="2">
         <ng-template #content>
           <form class="form" [formGroup]="ruleForm" (ngSubmit)="submitRuleForm()">
-            <div class="form-stack">
-              <div class="form-section">
-                <div class="form-section__header">
-                  <h4>Configuración general</h4>
-                  <p>Completa los datos básicos de la regla.</p>
-                </div>
-
+            <div class="form-body">
+              <p-fieldset legend="Configuración general" [toggleable]="true">
                 <div class="form-section__body form-grid">
                   <app-text-field
                     inputId="name"
@@ -102,166 +97,186 @@
                     ></app-textarea-field>
                   </div>
                 </div>
-              </div>
+              </p-fieldset>
+
               <div class="form-section">
-                <div class="form-section__header">
-                  <h4>Configuración avanzada</h4>
-                  <p>Personaliza los parámetros según el tipo de dato.</p>
-                </div>
-                <div class="form-section__body form-grid">
-                  @switch (ruleForm.controls.dataType.value) {
-                    @case ('Texto') {
-                      <app-number-field
-                        inputId="rule-textMin"
-                        label="Logitud mínima"
-                        [control]="getRuleControl('Logitud mínima')"
-                        [min]="0"
-                        [showButtons]="true"
-                      ></app-number-field>
+                <p-fieldset legend="Configuración avanzada" [toggleable]="true">
+                  <div class="form-section__body form-grid">
+                    @switch (ruleForm.controls.dataType.value) {
+                      @case ('Texto') {
+                        <app-number-field
+                          inputId="rule-textMin"
+                          label="Logitud mínima"
+                          [control]="getRuleControl('Logitud mínima')"
+                          [min]="0"
+                          [showButtons]="true"
+                        ></app-number-field>
 
-                      <app-number-field
-                        inputId="rule-textMax"
-                        label="Logitud máxima"
-                        [control]="getRuleControl('Logitud máxima')"
-                        [min]="0"
-                        [showButtons]="true"
-                      ></app-number-field>
-                    }
-                    @case ('Número') {
-                      <app-number-field
-                        inputId="rule-numbertMin"
-                        label="Valor mínimo"
-                        [control]="getRuleControl('Valor mínimo')"
-                        [minFractionDigits]="0"
-                        [maxFractionDigits]="10"
-                      ></app-number-field>
+                        <app-number-field
+                          inputId="rule-textMax"
+                          label="Logitud máxima"
+                          [control]="getRuleControl('Logitud máxima')"
+                          [min]="0"
+                          [showButtons]="true"
+                        ></app-number-field>
+                      }
+                      @case ('Número') {
+                        <app-number-field
+                          inputId="rule-numbertMin"
+                          label="Valor mínimo"
+                          [control]="getRuleControl('Valor mínimo')"
+                          [minFractionDigits]="0"
+                          [maxFractionDigits]="10"
+                        ></app-number-field>
 
-                      <app-number-field
-                        inputId="rule-numberMax"
-                        label="Valor máximo"
-                        [control]="getRuleControl('Valor máximo')"
-                        [minFractionDigits]="0"
-                        [maxFractionDigits]="6"
-                      ></app-number-field>
+                        <app-number-field
+                          inputId="rule-numberMax"
+                          label="Valor máximo"
+                          [control]="getRuleControl('Valor máximo')"
+                          [minFractionDigits]="0"
+                          [maxFractionDigits]="6"
+                        ></app-number-field>
 
-                      <app-number-field
-                        inputId="rule-numberDecimals"
-                        label="Número de decimales"
-                        [control]="getRuleControl('Número de decimales')"
-                        [min]="0"
-                        [max]="6"
-                        [showButtons]="true"
-                      ></app-number-field>
-                    }
-                    @case ('Documento') {
-                      <app-number-field
-                        inputId="rule-documentMin"
-                        label="Logitud mínima"
-                        [control]="getRuleControl('Logitud mínima')"
-                        [min]="1"
-                        [showButtons]="true"
-                      ></app-number-field>
+                        <app-number-field
+                          inputId="rule-numberDecimals"
+                          label="Número de decimales"
+                          [control]="getRuleControl('Número de decimales')"
+                          [min]="0"
+                          [max]="6"
+                          [showButtons]="true"
+                        ></app-number-field>
+                      }
+                      @case ('Documento') {
+                        <app-number-field
+                          inputId="rule-documentMin"
+                          label="Logitud mínima"
+                          [control]="getRuleControl('Logitud mínima')"
+                          [min]="1"
+                          [showButtons]="true"
+                        ></app-number-field>
 
-                      <app-number-field
-                        inputId="rule-documentMax"
-                        label="Logitud máxima"
-                        [control]="getRuleControl('Logitud máxima')"
-                        [min]="1"
-                        [showButtons]="true"
-                      ></app-number-field>
-                    }
-                    @case ('Lista') {
-                      <div class="form-grid__full">
-                        <app-rule-table-editor
-                          [columns]="getTableColumns()"
-                          [rows]="getTableRows()"
-                          mode="unique-row"
-                          (rowsChange)="updateTableRows($event)"
-                        ></app-rule-table-editor>
-                      </div>
-                    }
-                    @case ('Lista compleja') {
-                      <div class="form-grid__full">
-                        <app-rule-table-editor
-                          [columns]="getTableColumns()"
-                          [rows]="getTableRows()"
-                          mode="unique-row"
-                          (rowsChange)="updateTableRows($event)"
-                        ></app-rule-table-editor>
-                      </div>
-                    }
-                    @case ('Teléfono') {
-                      <app-number-field
-                        inputId="rule-phoneMin"
-                        label="Logitud mínima"
-                        [control]="getRuleControl('Logitud mínima')"
-                        [min]="1"
-                        [showButtons]="true"
-                      ></app-number-field>
+                        <app-number-field
+                          inputId="rule-documentMax"
+                          label="Logitud máxima"
+                          [control]="getRuleControl('Logitud máxima')"
+                          [min]="1"
+                          [showButtons]="true"
+                        ></app-number-field>
+                      }
+                      @case ('Lista') {
+                        <div class="form-grid__full">
+                          <app-rule-table-editor
+                            [columns]="getTableColumns()"
+                            [rows]="getTableRows()"
+                            mode="unique-row"
+                            (rowsChange)="updateTableRows($event)"
+                          ></app-rule-table-editor>
+                        </div>
+                      }
+                      @case ('Lista compleja') {
+                        <div class="form-grid__full">
+                          <app-rule-table-editor
+                            [columns]="getTableColumns()"
+                            [rows]="getTableRows()"
+                            mode="unique-row"
+                            (rowsChange)="updateTableRows($event)"
+                          ></app-rule-table-editor>
+                        </div>
+                      }
+                      @case ('Teléfono') {
+                        <app-number-field
+                          inputId="rule-phoneMin"
+                          label="Logitud mínima"
+                          [control]="getRuleControl('Logitud mínima')"
+                          [min]="1"
+                          [showButtons]="true"
+                        ></app-number-field>
 
-                      <app-text-field
-                        inputId="rule-phoneCountry"
-                        type="text"
-                        label="Código de país"
-                        [control]="getRuleControl('Código de país')"
-                      ></app-text-field>
-                    }
-                    @case ('Correo') {
-                      <app-text-field
-                        inputId="rule-emailFormat"
-                        type="text"
-                        label="Formato esperado"
-                        [control]="getRuleControl('Formato esperado')"
-                      ></app-text-field>
+                        <app-text-field
+                          inputId="rule-phoneCountry"
+                          type="text"
+                          label="Código de país"
+                          [control]="getRuleControl('Código de país')"
+                        ></app-text-field>
+                      }
+                      @case ('Correo') {
+                        <app-text-field
+                          inputId="rule-emailFormat"
+                          type="text"
+                          label="Formato esperado"
+                          [control]="getRuleControl('Formato esperado')"
+                        ></app-text-field>
 
-                      <app-number-field
-                        inputId="rule-emailMax"
-                        label="Logitud máxima"
-                        [control]="getRuleControl('Logitud máxima')"
-                        [min]="1"
-                        [showButtons]="true"
-                      ></app-number-field>
-                    }
-                    @case ('Fecha') {
-                      <app-select-field
-                        inputId="rule-dateFormat"
-                        label="Formato"
-                        [control]="getRuleControl('Formato')"
-                        [options]="dateFormatOptions"
-                        optionLabel="label"
-                        optionValue="value"
-                      >
-                      </app-select-field>
+                        <app-number-field
+                          inputId="rule-emailMax"
+                          label="Logitud máxima"
+                          [control]="getRuleControl('Logitud máxima')"
+                          [min]="1"
+                          [showButtons]="true"
+                        ></app-number-field>
+                      }
+                      @case ('Fecha') {
+                        <app-select-field
+                          inputId="rule-dateFormat"
+                          label="Formato"
+                          [control]="getRuleControl('Formato')"
+                          [options]="dateFormatOptions"
+                          optionLabel="label"
+                          optionValue="value"
+                        >
+                        </app-select-field>
 
-                      <app-date-field
-                        inputId="rule-dateMin"
-                        label="Fecha mínima"
-                        [control]="getRuleControl('Fecha mínima')"
-                      ></app-date-field>
+                        <app-date-field
+                          inputId="rule-dateMin"
+                          label="Fecha mínima"
+                          [control]="getRuleControl('Fecha mínima')"
+                        ></app-date-field>
 
-                      <app-date-field
-                        inputId="rule-dateMax"
-                        label="Fecha máxima"
-                        [control]="getRuleControl('Fecha máxima')"
-                      ></app-date-field>
+                        <app-date-field
+                          inputId="rule-dateMax"
+                          label="Fecha máxima"
+                          [control]="getRuleControl('Fecha máxima')"
+                        ></app-date-field>
+                      }
+                      @case ('Dependencia') {
+                        <div class="form-grid__full">
+                          <app-rule-table-editor
+                            [columns]="getTableColumns()"
+                            [rows]="getTableRows()"
+                            mode="dependency"
+                            (rowsChange)="updateTableRows($event)"
+                          ></app-rule-table-editor>
+                        </div>
+                      }
+                      @case ('Validación conjunta') {}
+                      @case ('Duplicados') {}
                     }
-                    @case ('Dependencia') {
-                      <div class="form-grid__full">
-                        <app-rule-table-editor
-                          [columns]="getTableColumns()"
-                          [rows]="getTableRows()"
-                          mode="dependency"
-                          (rowsChange)="updateTableRows($event)"
-                        ></app-rule-table-editor>
-                      </div>
-                    }
-                    @case ('Validación conjunta') {}
-                    @case ('Duplicados') {}
-                  }
-                </div>
+                  </div>
+                </p-fieldset>
+              </div>
+
+              <div class="form-section">
+                <p-fieldset legend="Ejemplos de datos" [toggleable]="true">
+                  <div class="form-stack">
+                    <app-textarea-field
+                      inputId="validExample"
+                      label="Ejemplo válido"
+                      [control]="ruleForm.controls.validExample"
+                      [rows]="5"
+                      [autoResize]="true"
+                    ></app-textarea-field>
+
+                    <app-textarea-field
+                      inputId="invalidExample"
+                      label="Ejemplo inválido"
+                      [control]="ruleForm.controls.invalidExample"
+                      [rows]="5"
+                      [autoResize]="true"
+                    ></app-textarea-field>
+                  </div>
+                </p-fieldset>
               </div>
             </div>
-
             <div class="form-footer">
               <app-button
                 label="Atrás"

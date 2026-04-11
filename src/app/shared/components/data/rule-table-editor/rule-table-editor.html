@@ -14,7 +14,7 @@
   <app-button
     label="Importar desde Excel"
     icon="pi pi-upload"
-    variant="secondary"
+    variant="primary"
     [outlined]="true"
     type="button"
     [loading]="isImporting"
@@ -28,7 +28,7 @@
     <ng-template pTemplate="header">
       <tr>
         @for (column of columns; track column) {
-          <th>{{ column }}</th>
+          <th style="padding: 0.2rem;">{{ column }}</th>
         }
         <th style="text-align: center; width: 80px">Acciones</th>
       </tr>
@@ -37,10 +37,10 @@
     <ng-template pTemplate="body" let-row let-rowIndex="rowIndex">
       <tr>
         @for (column of columns; track column) {
-          <td>{{ row[column] }}</td>
+          <td style="padding: 0.2rem;">{{ row[column] }}</td>
         }
 
-        <td style="text-align: center">
+        <td style="text-align: center; padding: 0.2rem;">
           <button
             pButton
             type="button"
@@ -55,14 +55,14 @@
     <ng-template pTemplate="footer">
       <tr>
         @for (column of columns; track column) {
-          <td>
+          <td style="padding: 0.2rem;">
             <input
               pInputText
               type="text"
               [(ngModel)]="draftRow[column]"
               [placeholder]="'Agregar ' + column.toLowerCase()"
               (keyup.enter)="addRow()"
-              fluid="true"
+              [fluid]="true"
             />
           </td>
         }

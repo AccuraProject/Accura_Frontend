@@ -25,6 +25,7 @@ import { NumberFieldComponent } from '../../../../shared/components/ui/field/num
 import { DateFieldComponent } from '../../../../shared/components/ui/field/date-field/date-field';
 import { generateDefaultRuleConfig } from '../../validation-rule-ai.utils';
 import { RuleTableEditorComponent } from '../../../../shared/components/data/rule-table-editor/rule-table-editor';
+import { FieldsetModule } from 'primeng/fieldset';
 
 interface AiSuggestion {
   id: string;
@@ -74,6 +75,7 @@ export interface SaveRuleFormEvent {
     DateFieldComponent,
     ButtonComponent,
     RuleTableEditorComponent,
+    FieldsetModule,
   ],
   templateUrl: './rule-form-dialog.component.html',
   styleUrls: ['./rule-form-dialog.component.scss'],
@@ -115,6 +117,8 @@ export class RuleFormDialogComponent {
     headerRule: this.fb.control<string[]>([]),
     errorMessage: this.fb.control<string | null>(null),
     example: this.fb.control<RuleExample | null>(null),
+    validExample: this.fb.control<string | null>(null),
+    invalidExample: this.fb.control<string | null>(null),
     rule: this.fb.group({}),
   });
 
@@ -267,6 +271,7 @@ export class RuleFormDialogComponent {
 
   private applyRulePayload(payload: RulePayload, isActive = true): void {
     const dataType = payload['Tipo de dato'] ?? 'Texto';
+    const example = payload['Ejemplo'] ?? {};
 
     this.ruleForm.patchValue({
       name: payload['Nombre de la regla'] ?? null,
@@ -278,6 +283,8 @@ export class RuleFormDialogComponent {
       headerRule: payload['Header rule'] ?? [],
       errorMessage: payload['Mensaje de error'] ?? null,
       example: payload['Ejemplo'] ?? {},
+      validExample: this.stringifyExampleValue(example['Ejemplo válido']),
+      invalidExample: this.stringifyExampleValue(example['Ejemplo inválido']),
     });
 
     this.setRuleConfigByDataType(dataType);
@@ -287,6 +294,36 @@ export class RuleFormDialogComponent {
       this.ruleGroup.patchValue(ruleConfig);
     } else {
       this.ruleGroup.reset({});
+    }
+  }
+
+  private stringifyExampleValue(value: unknown): string {
+    if (value == null) {
+      return '';
+    }
+
+    if (typeof value === 'string') {
+      return value;
+    }
+
+    try {
+      return JSON.stringify(value, null, 2);
+    } catch {
+      return String(value);
+    }
+  }
+
+  private parseExampleValue(value: string | null | undefined): unknown {
+    const trimmed = value?.trim() ?? '';
+
+    if (!trimmed) {
+      return '';
+    }
+
+    try {
+      return JSON.parse(trimmed);
+    } catch {
+      return trimmed;
     }
   }
 
@@ -531,7 +568,10 @@ export class RuleFormDialogComponent {
         'Header rule': rawValue.headerRule ?? [],
         'Mensaje de error': rawValue.errorMessage ?? '',
         Descripción: rawValue.description ?? '',
-        Ejemplo: rawValue.example ?? {},
+        Ejemplo: {
+          'Ejemplo válido': this.parseExampleValue(rawValue.validExample),
+          'Ejemplo inválido': this.parseExampleValue(rawValue.invalidExample),
+        },
         Regla: rawValue.rule,
       },
       isActive: rawValue.status ?? true,
