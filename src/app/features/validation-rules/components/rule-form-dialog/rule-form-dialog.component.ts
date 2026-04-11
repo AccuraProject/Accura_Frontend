@@ -35,6 +35,7 @@ export interface RuleFormDialogData {
   mode: 'create' | 'edit';
   rule?: RuleFormDialogResult;
   payload?: RulePayload;
+  isActive: boolean;
 }
 
 export interface RuleFormDialogResult {
@@ -50,18 +51,9 @@ export interface RuleFormDialogResult {
   ruleConfig: Record<string, unknown>;
 }
 
-export interface UserFormDialogValue {
-  name: string;
-  email: string;
-  roleId: number;
-  status: boolean;
-}
-
-export interface UserFormDialogInitialValue {
-  name: string;
-  email: string;
-  roleId: number | null;
-  status: boolean | null;
+export interface SaveRuleFormEvent {
+  rule: RulePayload;
+  isActive: boolean;
 }
 
 @Component({
@@ -105,8 +97,6 @@ export class RuleFormDialogComponent {
     { label: 'MM-dd-yyyy', value: 'MM-dd-yyyy' },
   ];
 
-  protected manualFormEnabled: boolean = false;
-
   private readonly fb = inject(FormBuilder);
 
   readonly aiForm = this.fb.group({
@@ -136,7 +126,6 @@ export class RuleFormDialogComponent {
   readonly saveLabel = computed(() => 'Crear regla');
 
   readonly isSubmittingAi = signal(false);
-  readonly isSubmittingRule = signal(false);
   protected aiSuggestion: AiSuggestion | null = null;
   protected selectedAiSuggestionId: string | null = null;
 
@@ -150,26 +139,17 @@ export class RuleFormDialogComponent {
   @Input() visible = false;
   @Output() visibleChange = new EventEmitter<boolean>();
 
-  @Output() saveUser = new EventEmitter<UserFormDialogValue>();
+  @Output() saveRule = new EventEmitter<SaveRuleFormEvent>();
   @Output() cancelDialog = new EventEmitter<void>();
 
   @Input() loading = false;
   @Input() set data(value: RuleFormDialogData | null) {
     if (!value) {
-      this.isEditMode = false;
-      this.manualFormEnabled = this.isEditMode;
-      this.isActive = true;
-      this.title = 'Crear nueva regla de validación';
-      this.description =
-        'Define una regla de validación que podrás asignar a columnas de plantillas según su tipo de dato.';
-      this.actionLabel = 'Crear regla';
-      this.userForm.reset(this.getEmptyForm());
-      this.userForm.controls.email.enable({ emitEvent: false });
+      this.resetDialogState();
       return;
     }
 
     this.isEditMode = value.mode === 'edit';
-    this.manualFormEnabled = this.isEditMode;
 
     this.title = this.isEditMode ? 'Editar regla de validación' : 'Crear nueva regla de validación';
     this.description = this.isEditMode
@@ -177,38 +157,55 @@ export class RuleFormDialogComponent {
       : 'Define una regla de validación que podrás asignar a columnas de plantillas según su tipo de dato.';
     this.actionLabel = this.isEditMode ? 'Guardar cambios' : 'Crear regla';
 
-    // const initialValue = value.user ?? this.getEmptyForm();
+    this.aiSuggestion = null;
+    this.selectedAiSuggestionId = null;
+    this.aiForm.reset({ description: null });
 
-    // this.userForm.reset({
-    //   name: initialValue.name,
-    //   email: initialValue.email,
-    //   roleId: initialValue.roleId,
-    //   status: initialValue.status ?? true,
-    // });
+    if (this.isEditMode && value.payload) {
+      this.applyRulePayload(value.payload);
+      this.currentStep.set(2);
+      return;
+    }
 
-    // this.isActive = !!initialValue.status;
-
-    // if (this.isEditMode) {
-    //   this.userForm.controls.status.addValidators([Validators.required]);
-    // } else {
-    //   this.userForm.controls.status.clearValidators();
-    // }
-
-    // if (this.isActive) {
-    //   this.userForm.controls.name.enable({ emitEvent: false });
-    //   this.userForm.controls.email.enable({ emitEvent: false });
-    // } else {
-    //   this.userForm.controls.name.disable({ emitEvent: false });
-    //   this.userForm.controls.email.disable({ emitEvent: false });
-    // }
-
-    // this.userForm.controls.status.updateValueAndValidity({ emitEvent: false });
+    this.resetRuleForm();
+    this.currentStep.set(1);
   }
 
   constructor(
     private readonly validationRulesService: ValidationRulesService,
     private readonly toast: ToastService,
   ) {}
+
+  private resetDialogState(): void {
+    this.isEditMode = false;
+    this.isActive = true;
+    this.title = 'Crear nueva regla de validación';
+    this.description =
+      'Define una regla de validación que podrás asignar a columnas de plantillas según su tipo de dato.';
+    this.actionLabel = 'Crear regla';
+
+    this.aiSuggestion = null;
+    this.selectedAiSuggestionId = null;
+
+    this.aiForm.reset({ description: null });
+    this.resetRuleForm();
+    this.currentStep.set(1);
+  }
+
+  private resetRuleForm(): void {
+    this.ruleForm.reset({
+      name: null,
+      dataType: 'Texto',
+      mandatory: false,
+      status: true,
+      description: null,
+      headers: [],
+      headerRule: [],
+      errorMessage: null,
+      example: {},
+      rule: {},
+    });
+  }
 
   get ruleGroup(): FormGroup {
     return this.ruleForm.get('rule') as FormGroup;
@@ -250,7 +247,7 @@ export class RuleFormDialogComponent {
             payload: structuredClone(payloads[0]),
           };
 
-          this.applyAiPayload(this.aiSuggestion.payload);
+          this.applyRulePayload(this.aiSuggestion.payload);
 
           this.currentStep.set(2);
         },
@@ -268,26 +265,28 @@ export class RuleFormDialogComponent {
     return this.currentStep() !== 2 || this.ruleForm.invalid || this.loading;
   });
 
-  private applyAiPayload(payload: RulePayload): void {
+  private applyRulePayload(payload: RulePayload, isActive = true): void {
     const dataType = payload['Tipo de dato'] ?? 'Texto';
 
     this.ruleForm.patchValue({
       name: payload['Nombre de la regla'] ?? null,
       dataType,
       mandatory: payload['Campo obligatorio'] ?? false,
-      status: true,
+      status: isActive,
       description: payload['Descripción'] ?? null,
       headers: payload['Header'] ?? [],
       headerRule: payload['Header rule'] ?? [],
       errorMessage: payload['Mensaje de error'] ?? null,
-      example: payload['Ejemplo'] ?? null,
+      example: payload['Ejemplo'] ?? {},
     });
 
     this.setRuleConfigByDataType(dataType);
 
-    const aiRule = payload['Regla'];
-    if (aiRule && typeof aiRule === 'object') {
-      this.ruleGroup.patchValue(aiRule);
+    const ruleConfig = payload['Regla'];
+    if (ruleConfig && typeof ruleConfig === 'object') {
+      this.ruleGroup.patchValue(ruleConfig);
+    } else {
+      this.ruleGroup.reset({});
     }
   }
 
@@ -523,16 +522,26 @@ export class RuleFormDialogComponent {
 
     const rawValue = this.ruleForm.getRawValue();
 
-    const payload = {
-      ...rawValue,
-      rule: rawValue.rule,
+    const payload: SaveRuleFormEvent = {
+      rule: {
+        'Nombre de la regla': rawValue.name ?? '',
+        'Tipo de dato': rawValue.dataType ?? '',
+        'Campo obligatorio': rawValue.mandatory ?? true,
+        Header: rawValue.headers ?? [],
+        'Header rule': rawValue.headerRule ?? [],
+        'Mensaje de error': rawValue.errorMessage ?? '',
+        Descripción: rawValue.description ?? '',
+        Ejemplo: rawValue.example ?? {},
+        Regla: rawValue.rule,
+      },
+      isActive: rawValue.status ?? true,
     };
 
-    console.log(payload);
+    this.saveRule.emit(payload);
   }
 
   protected cancel(): void {
-    if (this.loading) {
+    if (this.isSubmittingAi() || this.loading) {
       return;
     }
 
@@ -543,14 +552,5 @@ export class RuleFormDialogComponent {
   private close(): void {
     this.visible = false;
     this.visibleChange.emit(false);
-  }
-
-  private getEmptyForm(): UserFormDialogInitialValue {
-    return {
-      name: '',
-      email: '',
-      roleId: 2,
-      status: true,
-    };
   }
 }

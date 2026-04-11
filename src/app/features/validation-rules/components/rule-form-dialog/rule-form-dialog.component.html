@@ -4,8 +4,9 @@
   [description]="description"
   width="min(92vw, 1240px)"
   [showFooter]="false"
+  (cancel)="cancel()"
 >
-  <p-stepper [value]="currentStep()">
+  <p-stepper [value]="currentStep()" [linear]="true">
     <p-step-list>
       <p-step [value]="1">Generación con IA</p-step>
       <p-step [value]="2">Configuración de la regla</p-step>
@@ -271,10 +272,10 @@
               ></app-button>
 
               <app-button
-                [label]="isSubmittingRule() ? 'Guardando...' : actionLabel"
+                [label]="loading ? 'Guardando...' : actionLabel"
                 type="submit"
-                [loading]="isSubmittingRule()"
-                [disabled]="ruleForm.invalid || isSubmittingRule()"
+                [loading]="loading"
+                [disabled]="ruleForm.invalid || loading"
               ></app-button>
             </div>
           </form>

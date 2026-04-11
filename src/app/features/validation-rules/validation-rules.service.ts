@@ -6,7 +6,11 @@ import { firstValueFrom, map, Observable, switchMap, take, throwError } from 'rx
 import { environment } from '../../../environments/environment';
 import { selectSessionState } from '../../core/store/session/session.reducer';
 import { RulePayload, RuleResponse } from './models/rule.model';
-import { extractAiPayloads, normalizeAiPayload, VALIDATION_RULE_AI_SCHEMA } from './validation-rule-ai.utils';
+import {
+  extractAiPayloads,
+  normalizeAiPayload,
+  VALIDATION_RULE_AI_SCHEMA,
+} from './validation-rule-ai.utils';
 
 @Injectable({ providedIn: 'root' })
 export class ValidationRulesService {
@@ -47,25 +51,62 @@ export class ValidationRulesService {
     );
   }
 
-  async saveRule(rule: RulePayload, isActive: boolean): Promise<void> {
-    const headers = await this.buildAuthHeaders();
-    const body = { rule, is_active: isActive };
-    await firstValueFrom(this.http.post<void>(`${this.baseUrl}/rules/`, body, { headers }));
-  }
+  saveRule(rule: RulePayload, isActive: boolean): Observable<RuleResponse> {
+    return this.store.select(selectSessionState).pipe(
+      take(1),
+      switchMap((session) => {
+        if (!session.accessToken) {
+          return throwError(() => new Error('No hay un token de autenticación disponible.'));
+        }
 
-  async updateRule(ruleId: string, rule: RulePayload, isActive: boolean): Promise<void> {
-    const headers = await this.buildAuthHeaders();
-    const body = { rule, is_active: isActive };
-    const encodedId = encodeURIComponent(ruleId);
-    await firstValueFrom(
-      this.http.put<void>(`${this.baseUrl}/rules/${encodedId}`, body, { headers }),
+        const tokenType = session.tokenType ?? 'Bearer';
+        const headers = new HttpHeaders({
+          Authorization: `${tokenType} ${session.accessToken}`,
+        });
+
+        const body = { rule, is_active: isActive };
+
+        return this.http.post<RuleResponse>(`${this.baseUrl}/rules/`, body, { headers });
+      }),
     );
   }
 
-  async deleteRule(ruleId: string): Promise<void> {
-    const headers = await this.buildAuthHeaders();
-    const encodedId = encodeURIComponent(ruleId);
-    await firstValueFrom(this.http.delete<void>(`${this.baseUrl}/rules/${encodedId}`, { headers }));
+  updateRule(ruleId: number, rule: RulePayload, isActive: boolean): Observable<RuleResponse> {
+    return this.store.select(selectSessionState).pipe(
+      take(1),
+      switchMap((session) => {
+        if (!session.accessToken) {
+          return throwError(() => new Error('No hay un token de autenticación disponible.'));
+        }
+
+        const tokenType = session.tokenType ?? 'Bearer';
+        const headers = new HttpHeaders({
+          Authorization: `${tokenType} ${session.accessToken}`,
+        });
+
+        const body = { rule, is_active: isActive };
+
+        return this.http.put<RuleResponse>(`${this.baseUrl}/rules/${ruleId}`, body, { headers });
+      }),
+    );
+  }
+
+  deleteRule(ruleId: number): Observable<void> {
+    return this.store.select(selectSessionState).pipe(
+      take(1),
+      switchMap((session) => {
+        if (!session.accessToken) {
+          return throwError(() => new Error('No hay un token de autenticación disponible.'));
+        }
+
+        const tokenType = session.tokenType ?? 'Bearer';
+        const headers = new HttpHeaders({
+          Authorization: `${tokenType} ${session.accessToken}`,
+        });
+
+        return this.http.delete<void>(`${this.baseUrl}/rules/${ruleId}`, { headers });
+      }),
+    );
   }
 
   private async buildAuthHeaders(): Promise<HttpHeaders> {

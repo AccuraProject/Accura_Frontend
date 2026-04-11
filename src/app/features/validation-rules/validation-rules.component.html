@@ -71,5 +71,6 @@
   [(visible)]="ruleDialogVisible"
   [data]="ruleDialogData"
   [loading]="ruleDialogLoading"
-  (saveUser)="handleSaveUser($event)"
+  (saveRule)="handleSaveRule($event)"
+  (cancelDialog)="closeRuleDialog()"
 />
