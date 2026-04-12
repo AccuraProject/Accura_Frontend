@@ -1,0 +1,89 @@
+<app-dialog-shell
+  [(visible)]="visible"
+  [title]="title"
+  [description]="description"
+  width="min(92vw, 1240px)"
+  [showFooter]="false"
+  (cancel)="cancel()"
+>
+  <p-stepper [value]="currentStep()" [linear]="true">
+    <p-step-list>
+      <p-step [value]="1">Datos generales</p-step>
+      <p-step [value]="2">Columnas y reglas</p-step>
+    </p-step-list>
+
+    <p-step-panels>
+      <p-step-panel [value]="1">
+        <ng-template #content>
+          <form class="form" [formGroup]="step1Form" (ngSubmit)="submitStep1Form()">
+            <div class="form-stack">
+              <app-text-field
+                inputId="name"
+                type="text"
+                label="Nombre"
+                [control]="step1Form.controls.name"
+              ></app-text-field>
+
+              <app-text-field
+                inputId="tableName"
+                type="text"
+                label="Nombre de la tabla"
+                [control]="step1Form.controls.tableName"
+              ></app-text-field>
+
+              <app-textarea-field
+                inputId="description"
+                label="Descripción"
+                placeholder="Describe la finalidad y alcance de esta plantilla"
+                [control]="step1Form.controls.description"
+                [rows]="5"
+                [autoResize]="true"
+              ></app-textarea-field>
+            </div>
+
+            <div class="form-footer">
+              <app-button
+                label="Cancelar"
+                variant="secondary"
+                [outlined]="true"
+                type="button"
+                (clicked)="cancel()"
+              ></app-button>
+
+              <app-button
+                [label]="isSubmittingStep1() ? 'Guardando...' : 'Continuar'"
+                type="submit"
+                [loading]="isSubmittingStep1()"
+                [disabled]="step1Form.invalid || isSubmittingStep1()"
+              ></app-button>
+            </div>
+          </form>
+        </ng-template>
+      </p-step-panel>
+
+      <p-step-panel [value]="2">
+        <ng-template #content>
+          <form class="form" [formGroup]="step2Form" (ngSubmit)="submitStep2Form()">
+            <div class="form-body"></div>
+            <div class="form-footer">
+              <app-button
+                label="Atrás"
+                variant="secondary"
+                [outlined]="true"
+                type="button"
+                (clicked)="currentStep.set(1)"
+              ></app-button>
+
+              <app-button
+                [label]="loading ? 'Guardando...' : actionLabel"
+                type="submit"
+                [loading]="loading"
+                [disabled]="step2Form.invalid || loading"
+              ></app-button>
+            </div>
+          </form>
+        </ng-template>
+      </p-step-panel>
+    </p-step-panels>
+  </p-stepper>
+</app-dialog-shell>

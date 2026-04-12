@@ -97,6 +97,14 @@ export class ValidationRulesComponent implements OnInit {
     this.loadRules();
   }
 
+  onRowSelect(rule: RuleRow) {
+    this.selectedRule = rule;
+  }
+
+  onRowUnselect() {
+    this.selectedRule = null;
+  }
+
   onCreateRule(): void {
     this.isEditing = false;
     this.openCreateDialog();
@@ -107,8 +115,6 @@ export class ValidationRulesComponent implements OnInit {
     if (!this.selectedRule) return;
 
     const rule = this.selectedRule;
-
-    console.log('OPEN edit');
 
     this.openEditDialog(rule);
   }
@@ -121,14 +127,6 @@ export class ValidationRulesComponent implements OnInit {
     this.confirm.confirmDelete(() => {
       this.handleDeleteRule(rule.id);
     });
-  }
-
-  onRowSelect(rule: RuleRow) {
-    this.selectedRule = rule;
-  }
-
-  onRowUnselect() {
-    this.selectedRule = null;
   }
 
   handleSaveRule(event: SaveRuleFormEvent): void {

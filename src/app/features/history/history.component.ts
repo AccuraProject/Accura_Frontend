@@ -108,8 +108,8 @@ export class HistoryComponent implements OnInit {
   columns = [
     { field: 'fileName', header: 'Archivo' },
     { field: 'templateName', header: 'Plantilla' },
-    { field: 'uploadedAt', header: 'Fecha de Carga' },
     { field: 'uploadedBy', header: 'Cargado por' },
+    { field: 'uploadedAt', header: 'Fecha de Carga' },
     { field: 'validatedRows', header: 'Filas Validadas' },
     { field: 'totalRows', header: 'Filas Procesadas' },
     { field: 'status', header: 'Estado' },

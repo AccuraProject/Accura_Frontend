@@ -64,7 +64,6 @@ export interface SaveRuleFormEvent {
     CommonModule,
     ReactiveFormsModule,
     StepperModule,
-    InputTextModule,
     SelectModule,
     DialogShellComponent,
     TextFieldComponent,
@@ -131,14 +130,6 @@ export class RuleFormDialogComponent {
 
   readonly isSubmittingAi = signal(false);
   protected aiSuggestion: AiSuggestion | null = null;
-  protected selectedAiSuggestionId: string | null = null;
-
-  readonly userForm = this.fb.group({
-    name: this.fb.nonNullable.control('', [Validators.required, Validators.minLength(3)]),
-    email: this.fb.nonNullable.control('', [Validators.required, Validators.email]),
-    roleId: this.fb.control<number | null>({ value: null, disabled: true }, [Validators.required]),
-    status: this.fb.control<boolean | null>(true),
-  });
 
   @Input() visible = false;
   @Output() visibleChange = new EventEmitter<boolean>();
@@ -162,7 +153,6 @@ export class RuleFormDialogComponent {
     this.actionLabel = this.isEditMode ? 'Guardar cambios' : 'Crear regla';
 
     this.aiSuggestion = null;
-    this.selectedAiSuggestionId = null;
     this.aiForm.reset({ description: null });
 
     if (this.isEditMode && value.payload) {
@@ -189,7 +179,6 @@ export class RuleFormDialogComponent {
     this.actionLabel = 'Crear regla';
 
     this.aiSuggestion = null;
-    this.selectedAiSuggestionId = null;
 
     this.aiForm.reset({ description: null });
     this.resetRuleForm();
@@ -234,7 +223,6 @@ export class RuleFormDialogComponent {
 
     this.isSubmittingAi.set(true);
     this.aiSuggestion = null;
-    this.selectedAiSuggestionId = null;
 
     this.validationRulesService
       .generateRuleWithAi(description)
@@ -257,7 +245,6 @@ export class RuleFormDialogComponent {
         },
         error: (error: unknown) => {
           this.aiSuggestion = null;
-          this.selectedAiSuggestionId = null;
 
           const message = this.validationRulesService.getErrorMessage(error);
           this.toast.error(message);

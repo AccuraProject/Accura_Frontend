@@ -1,8 +1,8 @@
-import { HttpClient, HttpEvent, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpEvent, HttpHeaders } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Store } from '@ngrx/store';
-import { Observable, firstValueFrom, from } from 'rxjs';
-import { switchMap } from 'rxjs/operators';
+import { Observable, firstValueFrom, from, throwError } from 'rxjs';
+import { switchMap, take } from 'rxjs/operators';
 
 import { environment } from '../../../environments/environment';
 import { selectSessionState } from '../../core/store/session/session.reducer';
@@ -105,18 +105,90 @@ export interface TemplateLoadResponse {
 export class TemplatesService {
   private readonly baseUrl = environment.apiBaseUrl.replace(/\/$/, '');
 
-  constructor(private readonly http: HttpClient, private readonly store: Store) {}
+  constructor(
+    private readonly http: HttpClient,
+    private readonly store: Store,
+  ) {}
+
+  getTemplates(): Observable<TemplateResponse[]> {
+    return this.store.select(selectSessionState).pipe(
+      take(1),
+      switchMap((session) => {
+        if (!session.accessToken) {
+          return throwError(() => new Error('No hay un token de autenticación disponible.'));
+        }
+
+        const tokenType = session.tokenType ?? 'Bearer';
+        const headers = new HttpHeaders({
+          Authorization: `${tokenType} ${session.accessToken}`,
+        });
+
+        return this.http.get<TemplateResponse[]>(`${this.baseUrl}/templates`, {
+          headers,
+        });
+      }),
+    );
+  }
+
+  saveTemplate(
+    template: TemplateCreatePayload,
+  ): Observable<TemplateResponse> {
+    return this.store.select(selectSessionState).pipe(
+      take(1),
+      switchMap((session) => {
+        if (!session.accessToken) {
+          return throwError(() => new Error('No hay un token de autenticación disponible.'));
+        }
+
+        const tokenType = session.tokenType ?? 'Bearer';
+        const headers = new HttpHeaders({
+          Authorization: `${tokenType} ${session.accessToken}`,
+        });
+
+        const body = { ...template };
+
+        return this.http.post<TemplateResponse>(`${this.baseUrl}/templates/`, body, {
+          headers,
+        });
+      }),
+    );
+  }
 
   async createTemplate(payload: TemplateCreatePayload): Promise<TemplateResponse> {
     const headers = await this.buildAuthHeaders();
     return await firstValueFrom(
-      this.http.post<TemplateResponse>(`${this.baseUrl}/templates/`, payload, { headers })
+      this.http.post<TemplateResponse>(`${this.baseUrl}/templates/`, payload, { headers }),
     );
   }
 
-  async updateTemplate(
+  updateTemplate(
+    templateId: number,
+    template: TemplateCreatePayload,
+  ): Observable<TemplateResponse> {
+    return this.store.select(selectSessionState).pipe(
+      take(1),
+      switchMap((session) => {
+        if (!session.accessToken) {
+          return throwError(() => new Error('No hay un token de autenticación disponible.'));
+        }
+
+        const tokenType = session.tokenType ?? 'Bearer';
+        const headers = new HttpHeaders({
+          Authorization: `${tokenType} ${session.accessToken}`,
+        });
+
+        const body = { template };
+
+        return this.http.put<TemplateResponse>(`${this.baseUrl}/templates/${templateId}`, body, {
+          headers,
+        });
+      }),
+    );
+  }
+
+  async updateTemplate2(
     templateId: number | string,
-    payload: TemplateCreatePayload
+    payload: TemplateCreatePayload,
   ): Promise<TemplateResponse> {
     const headers = await this.buildAuthHeaders();
     const encodedId = encodeURIComponent(String(templateId));
@@ -124,8 +196,8 @@ export class TemplatesService {
       this.http.put<TemplateResponse | Record<string, unknown> | null>(
         `${this.baseUrl}/templates/${encodedId}`,
         payload,
-        { headers }
-      )
+        { headers },
+      ),
     );
 
     if (data) {
@@ -149,8 +221,8 @@ export class TemplatesService {
     const data = await firstValueFrom(
       this.http.get<TemplateResponse | Record<string, unknown> | null>(
         `${this.baseUrl}/templates/${encodedId}`,
-        { headers }
-      )
+        { headers },
+      ),
     );
 
     if (!data) {
@@ -166,8 +238,8 @@ export class TemplatesService {
     const data = await firstValueFrom(
       this.http.get<TemplateResponse | Record<string, unknown> | null>(
         `${this.baseUrl}/templates/${encodedId}/detail`,
-        { headers }
-      )
+        { headers },
+      ),
     );
 
     if (!data) {
@@ -186,13 +258,13 @@ export class TemplatesService {
       this.http.get<Blob>(`${this.baseUrl}/templates/${encodedId}/excel`, {
         headers: sanitizedHeaders,
         responseType: 'blob' as 'json',
-      })
+      }),
     );
   }
 
   uploadTemplateLoad(
     templateId: number | string,
-    file: File
+    file: File,
   ): Observable<HttpEvent<TemplateLoadResponse>> {
     return from(this.buildAuthHeaders({ contentType: null })).pipe(
       switchMap((headers) => {
@@ -209,24 +281,22 @@ export class TemplatesService {
             headers: safeHeaders,
             reportProgress: true,
             observe: 'events' as const,
-          }
+          },
         );
-      })
+      }),
     );
   }
 
   async createTemplateColumns(
     templateId: number | string,
-    payload: TemplateColumnPayload[]
+    payload: TemplateColumnPayload[],
   ): Promise<TemplateColumnResponse[]> {
     const headers = await this.buildAuthHeaders();
     const encodedId = encodeURIComponent(String(templateId));
     const data = await firstValueFrom(
-      this.http.post<TemplateColumnResponse | TemplateColumnResponse[] | Record<string, unknown> | null>(
-        `${this.baseUrl}/templates/${encodedId}/columns`,
-        payload,
-        { headers }
-      )
+      this.http.post<
+        TemplateColumnResponse | TemplateColumnResponse[] | Record<string, unknown> | null
+      >(`${this.baseUrl}/templates/${encodedId}/columns`, payload, { headers }),
     );
 
     if (Array.isArray(data)) {
@@ -247,16 +317,14 @@ export class TemplatesService {
 
   async updateTemplateColumns(
     templateId: number | string,
-    payload: TemplateColumnPayload[]
+    payload: TemplateColumnPayload[],
   ): Promise<TemplateColumnResponse[]> {
     const headers = await this.buildAuthHeaders();
     const encodedId = encodeURIComponent(String(templateId));
     const data = await firstValueFrom(
-      this.http.put<TemplateColumnResponse | TemplateColumnResponse[] | Record<string, unknown> | null>(
-        `${this.baseUrl}/templates/${encodedId}/columns`,
-        payload,
-        { headers }
-      )
+      this.http.put<
+        TemplateColumnResponse | TemplateColumnResponse[] | Record<string, unknown> | null
+      >(`${this.baseUrl}/templates/${encodedId}/columns`, payload, { headers }),
     );
 
     if (Array.isArray(data)) {
@@ -278,7 +346,9 @@ export class TemplatesService {
   async fetchTemplates(): Promise<TemplateResponse[]> {
     const headers = await this.buildAuthHeaders();
     const data = await firstValueFrom(
-      this.http.get<TemplateResponse[] | Record<string, unknown>>(`${this.baseUrl}/templates/`, { headers })
+      this.http.get<TemplateResponse[] | Record<string, unknown>>(`${this.baseUrl}/templates/`, {
+        headers,
+      }),
     );
 
     if (Array.isArray(data)) {
@@ -304,8 +374,8 @@ export class TemplatesService {
     const data = await firstValueFrom(
       this.http.get<TemplateAccessResponse[] | Record<string, unknown>>(
         `${this.baseUrl}/templates/users/${encodedId}/access`,
-        { headers }
-      )
+        { headers },
+      ),
     );
 
     const accessEntries = this.normalizeTemplateAccessCollection(data);
@@ -317,8 +387,8 @@ export class TemplatesService {
       new Set(
         accessEntries
           .map((entry) => entry.template_id)
-          .filter((templateId) => typeof templateId === 'number' && !Number.isNaN(templateId))
-      )
+          .filter((templateId) => typeof templateId === 'number' && !Number.isNaN(templateId)),
+      ),
     );
 
     const session = await firstValueFrom(this.store.select(selectSessionState));
@@ -335,18 +405,18 @@ export class TemplatesService {
         } catch (error) {
           console.error(
             `[TemplatesService] Error al obtener la plantilla ${templateId} para el usuario ${userId}.`,
-            error
+            error,
           );
           return null;
         }
-      })
+      }),
     );
 
     return templates.filter((template): template is TemplateResponse => template !== null);
   }
 
   private normalizeTemplateAccessCollection(
-    data: TemplateAccessResponse[] | Record<string, unknown> | null | undefined
+    data: TemplateAccessResponse[] | Record<string, unknown> | null | undefined,
   ): TemplateAccessResponse[] {
     if (!data) {
       return [];
@@ -379,7 +449,7 @@ export class TemplatesService {
 
     const headers = await this.buildAuthHeaders();
     await firstValueFrom(
-      this.http.post<void>(`${this.baseUrl}/templates/access`, payload, { headers })
+      this.http.post<void>(`${this.baseUrl}/templates/access`, payload, { headers }),
     );
   }
 
@@ -390,7 +460,7 @@ export class TemplatesService {
 
     const headers = await this.buildAuthHeaders();
     await firstValueFrom(
-      this.http.post<void>(`${this.baseUrl}/templates/access/revoke`, payload, { headers })
+      this.http.post<void>(`${this.baseUrl}/templates/access/revoke`, payload, { headers }),
     );
   }
 
@@ -400,8 +470,8 @@ export class TemplatesService {
     const data = await firstValueFrom(
       this.http.get<TemplateColumnResponse[] | Record<string, unknown>>(
         `${this.baseUrl}/templates/${encodedId}/columns`,
-        { headers }
-      )
+        { headers },
+      ),
     );
 
     if (Array.isArray(data)) {
@@ -426,7 +496,7 @@ export class TemplatesService {
 
   async updateTemplateStatus(
     templateId: number | string,
-    status: 'published' | 'unpublished'
+    status: 'published' | 'unpublished',
   ): Promise<TemplateResponse> {
     const headers = await this.buildAuthHeaders();
     const encodedId = encodeURIComponent(String(templateId));
@@ -435,8 +505,8 @@ export class TemplatesService {
       this.http.patch<TemplateResponse>(
         `${this.baseUrl}/templates/${encodedId}/status`,
         { status },
-        { headers }
-      )
+        { headers },
+      ),
     );
   }
 
@@ -445,7 +515,7 @@ export class TemplatesService {
     const encodedId = encodeURIComponent(String(templateId));
 
     await firstValueFrom(
-      this.http.delete<void>(`${this.baseUrl}/templates/${encodedId}`, { headers })
+      this.http.delete<void>(`${this.baseUrl}/templates/${encodedId}`, { headers }),
     );
   }
 
@@ -473,13 +543,13 @@ export class TemplatesService {
     const idValue = record['id'];
 
     if (typeof idValue === 'number') {
-      return (record as unknown) as TemplateResponse;
+      return record as unknown as TemplateResponse;
     }
 
     if (typeof idValue === 'string') {
       const numericId = Number(idValue);
       if (!Number.isNaN(numericId)) {
-        return { ...((record as unknown) as TemplateResponse), id: numericId };
+        return { ...(record as unknown as TemplateResponse), id: numericId };
       }
     }
 
@@ -499,7 +569,7 @@ export class TemplatesService {
 
   private buildTemplateFallback(
     templateId: number | string,
-    payload: TemplateCreatePayload
+    payload: TemplateCreatePayload,
   ): TemplateResponse {
     const numericId = typeof templateId === 'number' ? templateId : Number(templateId);
 
@@ -525,7 +595,9 @@ export class TemplatesService {
 
     const description = typeof entry['description'] === 'string' ? entry['description'] : undefined;
     const templateId = typeof entry['template_id'] === 'number' ? entry['template_id'] : 0;
-    const rules = Array.isArray(entry['rules']) ? (entry['rules'] as TemplateColumnRulePayload[]) : [];
+    const rules = Array.isArray(entry['rules'])
+      ? (entry['rules'] as TemplateColumnRulePayload[])
+      : [];
 
     return {
       id,
@@ -539,7 +611,7 @@ export class TemplatesService {
       is_active: typeof entry['is_active'] === 'boolean' ? entry['is_active'] : undefined,
       deleted: typeof entry['deleted'] === 'boolean' ? entry['deleted'] : undefined,
       deleted_by: typeof entry['deleted_by'] === 'number' ? entry['deleted_by'] : undefined,
-      deleted_at: typeof entry['deleted_at'] === 'string' ? entry['deleted_at'] : undefined
+      deleted_at: typeof entry['deleted_at'] === 'string' ? entry['deleted_at'] : undefined,
     };
   }
 
@@ -570,5 +642,41 @@ export class TemplatesService {
 
     const candidate = entry as Partial<TemplateColumnResponse>;
     return typeof candidate.id === 'number' && typeof candidate.name === 'string';
+  }
+
+  getErrorMessage(error: unknown): string {
+    if (error instanceof HttpErrorResponse) {
+      const err = error.error;
+
+      if (typeof err === 'string' && err.trim().length > 0) {
+        return err;
+      }
+
+      if (err?.detail) {
+        if (typeof err.detail === 'string') {
+          return err.detail;
+        }
+
+        if (Array.isArray(err.detail) || typeof err.detail === 'object') {
+          console.warn('Error detail no controlado:', err.detail);
+          return 'Ocurrió un error inesperado. Contacta al soporte o intenta nuevamente.';
+        }
+      }
+
+      // Sin conexión
+      if (error.status === 0) {
+        return 'No se pudo establecer conexión con el servidor.';
+      }
+
+      // No autorizado
+      if (error.status === 401) {
+        return 'No estás autorizado para realizar esta acción.';
+      }
+
+      // Error genérico backend
+      return 'No se pudo completar la solicitud. Inténtalo nuevamente.';
+    }
+
+    return 'Ha ocurrido un error desconocido al procesar la solicitud.';
   }
 }

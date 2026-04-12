@@ -4,213 +4,192 @@
       <p class="page-header__pretitle">Gestión de Plantillas</p>
       <h1 class="page-header__title">Administra las plantillas de carga de datos</h1>
       <p class="page-header__subtitle">
-        Centraliza la creación y mantenimiento de plantillas para asegurar consistencia en tus procesos de carga.
+        Centraliza la creación y mantenimiento de plantillas para asegurar consistencia en tus
+        procesos de carga.
       </p>
     </div>
-    <button class="page-header__cta" type="button" (click)="openCreateDialog()">
+    <!-- <button class="page-header__cta" type="button" (click)="openCreateDialog()">
       <span class="material-symbols-rounded" aria-hidden="true">add</span>
       Crear Plantilla
-    </button>
+    </button> -->
   </section>
 
-  <section class="templates-summary">
-    <article class="summary-card">
-      <header>
-        <p>Total de Plantillas</p>
-        <span class="material-symbols-rounded" aria-hidden="true">auto_awesome</span>
-      </header>
-      <strong>{{ totalTemplates }}</strong>
-      <span>Registradas en la plataforma</span>
-    </article>
-    <article class="summary-card summary-card--accent">
-      <header>
-        <p>Plantillas Publicadas</p>
-        <span class="material-symbols-rounded" aria-hidden="true">task_alt</span>
-      </header>
-      <strong>{{ publishedTemplates }}</strong>
-      <span>Listas para su uso</span>
-    </article>
-    <article class="summary-card">
-      <header>
-        <p>En Borrador</p>
-        <span class="material-symbols-rounded" aria-hidden="true">draw</span>
-      </header>
-      <strong>{{ draftTemplates }}</strong>
-      <span>En revisión o edición</span>
-    </article>
+  <section class="stats-container">
+    <div class="stats-card">
+      <div class="stats-card__header">
+        <h3>Total de plantillas</h3>
+        <i class="pi pi-sparkles"></i>
+      </div>
+      <div class="stats-card__body">
+        <strong>{{ totalTemplates }}</strong>
+        <div>Registradas en la plataforma</div>
+      </div>
+    </div>
+
+    <div class="stats-card">
+      <div class="stats-card__header">
+        <h3>Plantillas publicadas</h3>
+        <i class="pi pi-check-circle"></i>
+      </div>
+      <div class="stats-card__body">
+        <strong>{{ publishedTemplates }}</strong>
+        <div>Listas para su uso</div>
+      </div>
+    </div>
+
+    <div class="stats-card">
+      <div class="stats-card__header">
+        <h3>En borrador</h3>
+        <i class="pi pi-file-edit"></i>
+      </div>
+      <div class="stats-card__body">
+        <strong>{{ draftTemplates }}</strong>
+        <div>En revisión o edición</div>
+      </div>
+    </div>
   </section>
 
-  <section class="templates-panel">
-    <header class="templates-panel__header">
-      <div>
-        <h2>Plantillas Disponibles</h2>
-        <p>Gestiona las plantillas existentes, visualiza su detalle o crea nuevas estructuras en minutos.</p>
-      </div>
-      <div class="templates-panel__actions">
-        <label class="templates-panel__search">
-          <span class="material-symbols-rounded" aria-hidden="true">search</span>
-          <input
-            type="search"
-            name="search"
-            placeholder="Buscar por nombre, versión o descripción..."
-            [(ngModel)]="searchTerm"
-          />
-        </label>
-        <label class="templates-panel__filter">
-          <span>Estado</span>
-          <select [(ngModel)]="statusFilter" name="status">
-            <option *ngFor="let status of statusOptions" [ngValue]="status">{{ status }}</option>
-          </select>
-        </label>
-      </div>
-    </header>
+  <div class="card">
+    <app-page-actions
+      [showCreate]="true"
+      [showEdit]="true"
+      [showDelete]="true"
+      [showExtraAction]="true"
+      extraActionIcon="pi pi-upload"
+      extraActionLabel="Publicar"
+      [disableEdit]="!selectedTemplate"
+      [disableDelete]="!selectedTemplate"
+      [disableExtraAction]="true"
+      (create)="onCreateTemplate()"
+      (edit)="onEditTemplate()"
+      (delete)="onDeleteTemplate()"
+    ></app-page-actions>
 
-    <div class="templates-table__state" *ngIf="templatesLoading">
-      <span class="material-symbols-rounded" aria-hidden="true">hourglass_top</span>
-      <p>Cargando plantillas registradas...</p>
-    </div>
-    <div
-      class="templates-table__state templates-table__state--error"
-      *ngIf="!templatesLoading && templatesError"
-    >
-      <span class="material-symbols-rounded" aria-hidden="true">error</span>
-      <p>{{ templatesError }}</p>
-    </div>
-    <div
-      class="templates-table__wrapper"
-      *ngIf="!templatesLoading && !templatesError && filteredTemplates as items"
-    >
-      <div class="templates-table__scroll">
-        <table class="templates-table">
-          <thead>
-            <tr>
-              <th>Nombre</th>
-              <th>Versión / Tabla</th>
-              <th>Descripción</th>
-              <th>Última Actualización</th>
-              <th>Estado</th>
-              <th style="text-align: center;">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let template of paginatedTemplates; trackBy: trackByTemplateId">
-              <td>
-                <div class="templates-table__name">
-                  <p class="templates-table__title">{{ template.name }}</p>
-                  <p class="templates-table__meta">{{ template.createdAt | date: 'dd/MM/yyyy' }}</p>
-                  <p class="templates-table__meta" *ngIf="template.tableName">Tabla: {{ template.tableName }}</p>
+    <app-data-table
+      [columns]="columns"
+      [value]="templates"
+      [selection]="selectedTemplate"
+      [loading]="templatesLoading"
+      (rowSelect)="onRowSelect($event)"
+      (rowUnselect)="onRowUnselect()"
+    ></app-data-table>
+  </div>
+
+  <app-template-form-dialog
+    [(visible)]="templateDialogVisible"
+    [data]="templateDialogData"
+    [loading]="templateDialogLoading"
+    (saveRule)="handleSaveTemplate($event)"
+    (cancelDialog)="closeTemplateDialog()"
+  />
+
+  <!-- <section class="templates-panel">
+    <table class="templates-table">
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Versión / Tabla</th>
+          <th>Descripción</th>
+          <th>Última Actualización</th>
+          <th>Estado</th>
+          <th style="text-align: center">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let template of paginatedTemplates; trackBy: trackByTemplateId">
+          <td>
+            <div class="templates-table__name">
+              <p class="templates-table__title">{{ template.name }}</p>
+              <p class="templates-table__meta">{{ template.createdAt | date: 'dd/MM/yyyy' }}</p>
+              <p class="templates-table__meta" *ngIf="template.tableName">
+                Tabla: {{ template.tableName }}
+              </p>
+            </div>
+          </td>
+          <td>
+            <span class="templates-table__version">{{ template.version || '—' }}</span>
+          </td>
+          <td>
+            <span class="templates-table__description">{{ template.description }}</span>
+          </td>
+          <td>
+            <span class="templates-table__date">{{
+              template.lastUpdated | date: 'dd/MM/yyyy'
+            }}</span>
+          </td>
+          <td>
+            <span class="badge" [ngClass]="statusClass(template.status)">{{
+              template.status
+            }}</span>
+          </td>
+          <td class="templates-table__actions">
+            <button
+              class="icon-button"
+              type="button"
+              aria-label="Abrir acciones"
+              [matMenuTriggerFor]="actionsMenu"
+            >
+              <span class="material-symbols-rounded" aria-hidden="true">more_vert</span>
+            </button>
+            <mat-menu #actionsMenu="matMenu">
+              <button mat-menu-item type="button" (click)="openDetailDialog(template)">
+                <div class="menu-item-text">
+                  <span class="material-symbols-rounded" aria-hidden="true">visibility</span>
+                  <span>Ver Detalle</span>
                 </div>
-              </td>
-              <td>
-                <span class="templates-table__version">{{ template.version || '—' }}</span>
-              </td>
-              <td>
-                <span class="templates-table__description">{{ template.description }}</span>
-              </td>
-              <td>
-                <span class="templates-table__date">{{ template.lastUpdated | date: 'dd/MM/yyyy' }}</span>
-              </td>
-              <td>
-                <span class="badge" [ngClass]="statusClass(template.status)">{{ template.status }}</span>
-              </td>
-              <td class="templates-table__actions">
-                <button
-                  class="icon-button"
-                  type="button"
-                  aria-label="Abrir acciones"
-                  [matMenuTriggerFor]="actionsMenu"
-                >
-                  <span class="material-symbols-rounded" aria-hidden="true">more_vert</span>
-                </button>
-                <mat-menu #actionsMenu="matMenu">
-                  <button mat-menu-item type="button" (click)="openDetailDialog(template)">
-                    <div class="menu-item-text">
-                      <span class="material-symbols-rounded" aria-hidden="true">visibility</span>
-                      <span>Ver Detalle</span>
-                    </div>
-                  </button>
-                  <button
-                    mat-menu-item
-                    type="button"
-                    (click)="toggleTemplateStatus(template)"
-                    [disabled]="statusUpdating[template.id]"
-                  >
-                    <div class="menu-item-text">
-                      <span class="material-symbols-rounded" aria-hidden="true">
-                        {{ template.status === 'Publicado' ? 'toggle_off' : 'publish' }}
-                      </span>
-                      <span>{{ template.status === 'Publicado' ? 'Desactivar' : 'Publicar' }}</span>
-                    </div>
-                  </button>
-                  <button
-                    mat-menu-item
-                    type="button"
-                    (click)="openEditDialog(template)"
-                    [disabled]="!canEditTemplate(template)"
-                  >
-                    <div class="menu-item-text">
-                      <span class="material-symbols-rounded" aria-hidden="true">edit</span>
-                      <span>Editar</span>
-                    </div>
-                  </button>
-                  <button
-                    mat-menu-item
-                    type="button"
-                    (click)="openDeleteDialog(template)"
-                    [disabled]="deletingTemplates[template.id]"
-                  >
-                    <div class="menu-item-text text-danger">
-                      <span class="material-symbols-rounded" aria-hidden="true">delete</span>
-                      <span>Eliminar</span>
-                    </div>
-                  </button>
-                </mat-menu>
-              </td>
-            </tr>
-            <tr *ngIf="items.length === 0">
-              <td colspan="6" class="templates-table__empty">
-                <span class="material-symbols-rounded" aria-hidden="true">search_off</span>
-                <p>No se encontraron plantillas para los criterios seleccionados.</p>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <div class="table-pagination" *ngIf="items.length > 0">
-        <span class="table-pagination__info">
-          Mostrando {{ pageStart }}-{{ pageEnd }} de {{ items.length }}
-        </span>
-        <div class="table-pagination__controls">
-          <button
-            type="button"
-            class="table-pagination__button"
-            (click)="goToPreviousPage()"
-            [disabled]="currentPage === 1"
-          >
-            Anterior
-          </button>
-          <span class="table-pagination__status">Página {{ currentPage }} de {{ totalPages }}</span>
-          <button
-            type="button"
-            class="table-pagination__button"
-            (click)="goToNextPage()"
-            [disabled]="currentPage === totalPages || items.length === 0"
-          >
-            Siguiente
-          </button>
-        </div>
-      </div>
-    </div>
-  </section>
+              </button>
+              <button
+                mat-menu-item
+                type="button"
+                (click)="toggleTemplateStatus(template)"
+                [disabled]="statusUpdating[template.id]"
+              >
+                <div class="menu-item-text">
+                  <span class="material-symbols-rounded" aria-hidden="true">
+                    {{ template.status === 'Publicado' ? 'toggle_off' : 'publish' }}
+                  </span>
+                  <span>{{ template.status === 'Publicado' ? 'Desactivar' : 'Publicar' }}</span>
+                </div>
+              </button>
+              <button
+                mat-menu-item
+                type="button"
+                (click)="openEditDialog(template)"
+                [disabled]="!canEditTemplate(template)"
+              >
+                <div class="menu-item-text">
+                  <span class="material-symbols-rounded" aria-hidden="true">edit</span>
+                  <span>Editar</span>
+                </div>
+              </button>
+              <button
+                mat-menu-item
+                type="button"
+                (click)="openDeleteDialog(template)"
+                [disabled]="deletingTemplates[template.id]"
+              >
+                <div class="menu-item-text text-danger">
+                  <span class="material-symbols-rounded" aria-hidden="true">delete</span>
+                  <span>Eliminar</span>
+                </div>
+              </button>
+            </mat-menu>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </section> -->
 </ng-container>
 
 <ng-template #clientTemplates>
   <section class="client-templates">
     <header class="page-header">
       <div>
-        <p class="page-header__pretitle"> Plantillas Disponibles</p>
+        <p class="page-header__pretitle">Plantillas Disponibles</p>
         <h1 class="page-header__title">Explora las plantillas a las que tienes acceso</h1>
-        <p class="page-header__subtitle">Visualiza rápidamente la información clave de cada plantilla asignada a tu usuario.</p>
+        <p class="page-header__subtitle">
+          Visualiza rápidamente la información clave de cada plantilla asignada a tu usuario.
+        </p>
       </div>
       <label class="client-templates__search">
         <span class="material-symbols-rounded" aria-hidden="true">search</span>
@@ -237,7 +216,11 @@
 
     <section
       class="client-templates__grid"
-      *ngIf="!assignedTemplatesLoading && !assignedTemplatesError && filteredAssignedTemplates as templates"
+      *ngIf="
+        !assignedTemplatesLoading &&
+        !assignedTemplatesError &&
+        filteredAssignedTemplates as templates
+      "
     >
       <article
         class="client-template-card"
@@ -288,7 +271,9 @@
               class="client-template-card__action client-template-card__action--primary"
               (click)="toggleUpload(template)"
               [disabled]="isClientUploadDisabled(template)"
-              [attr.aria-expanded]="!isClientUploadDisabled(template) && uploadTemplateId === template.id"
+              [attr.aria-expanded]="
+                !isClientUploadDisabled(template) && uploadTemplateId === template.id
+              "
             >
               <span class="material-symbols-rounded" aria-hidden="true">upload_file</span>
               Cargar archivo
@@ -347,7 +332,10 @@
                 Cancelar
               </button>
             </div>
-            <div *ngIf="uploadInProgress[template.id]" class="client-template-card__upload-progress">
+            <div
+              *ngIf="uploadInProgress[template.id]"
+              class="client-template-card__upload-progress"
+            >
               <div class="client-template-card__upload-progress-bar">
                 <div
                   class="client-template-card__upload-progress-bar-fill"
@@ -355,7 +343,7 @@
                 ></div>
               </div>
               <span class="client-template-card__upload-progress-label">
-                {{ (uploadProgress[template.id] ?? 0) | number: '1.0-0' }}%
+                {{ uploadProgress[template.id] ?? 0 | number: '1.0-0' }}%
               </span>
             </div>
             <p *ngIf="uploadErrors[template.id]" class="client-template-card__upload-error">

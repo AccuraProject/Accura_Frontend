@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnDestroy, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatMenuModule } from '@angular/material/menu';
@@ -19,10 +19,6 @@ import {
   TemplateDetailDialogComponent,
   TemplateDetailDialogData,
 } from './template-detail-dialog.component';
-import {
-  TemplateDeleteDialogComponent,
-  TemplateDeleteDialogData,
-} from './template-delete-dialog.component';
 import { CurrentUserResponse } from '../../core/models/user.model';
 import { selectIsAdmin, selectSessionUser } from '../../core/store/session/session.selectors';
 import {
@@ -33,13 +29,19 @@ import {
 } from './templates.service';
 import { normalizeAiPayload } from '../validation-rules/validation-rule-ai.utils';
 import { RulePayload } from '../validation-rules/models/rule.model';
+import { PageActionsComponent } from '../../shared/components/ui/page-actions/page-actions';
+import { DataTableComponent } from '../../shared/components/data/data-table/data-table';
+import { ToastService } from '../../shared/services/toast.service';
+import { ConfirmService } from '../../shared/services/confirm.service';
+import { formatDate } from '../../shared/utils/date-util';
+import { TemplateFormDialogComponent } from './components/template-form-dialog/template-form-dialog.component';
 
 type ManagementTemplateStatus = 'Publicado' | 'Borrador' | 'Inactivo';
 type ClientTemplateStatus = 'Activo' | 'En Revisión';
 type TemplateStatus = ManagementTemplateStatus | ClientTemplateStatus;
 
 interface TemplateRow {
-  id: string;
+  id: number;
   name: string;
   description: string;
   version: string;
@@ -71,17 +73,27 @@ interface ClientTemplate {
 @Component({
   selector: 'app-template-management',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatDialogModule, MatMenuModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    MatDialogModule,
+    MatMenuModule,
+    PageActionsComponent,
+    DataTableComponent,
+    TemplateFormDialogComponent,
+  ],
   templateUrl: './template-management.component.html',
   styleUrl: './template-management.component.scss',
 })
 export class TemplateManagementComponent implements OnInit, OnDestroy {
+  private readonly cdr = inject(ChangeDetectorRef);
+  protected searchTerm = '';
+
   private readonly dialog = inject(MatDialog);
   private readonly store = inject(Store);
   private readonly templatesService = inject(TemplatesService);
   private readonly sessionUser$ = this.store.select(selectSessionUser);
 
-  protected searchTerm = '';
   protected statusFilter: ManagementTemplateStatus | 'Todos' = 'Todos';
   protected uploadTemplateId: string | null = null;
   protected uploadState: Record<string, string | null> = {};
@@ -108,12 +120,37 @@ export class TemplateManagementComponent implements OnInit, OnDestroy {
   protected templates: TemplateRow[] = [];
   protected templatesLoading = false;
   protected templatesError: string | null = null;
+
+  protected selectedTemplate: TemplateRow | null = null;
+  protected isEditing = false;
+
+  protected readonly pageSize = 10;
+  protected currentPage = 1;
+
+  columns = [
+    { field: 'name', header: 'Nombre' },
+    { field: 'version', header: 'Versión' },
+    { field: 'description', header: 'Descripción' },
+    { field: 'createdAt', header: 'Fecha de creación' },
+    { field: 'lastUpdated', header: 'Última actualización' },
+    { field: 'status', header: 'Estado' },
+  ];
+
+  protected templateDialogVisible = false;
+  protected templateDialogLoading = false;
+
+  templateDialogData: TemplateDialogData = {
+    mode: 'create',
+  };
+
   protected assignedTemplates: ClientTemplate[] = [];
   protected assignedTemplatesLoading = false;
   protected assignedTemplatesError: string | null = null;
 
-  protected readonly pageSize = 10;
-  protected currentPage = 1;
+  constructor(
+    private readonly toast: ToastService,
+    private readonly confirm: ConfirmService,
+  ) {}
 
   ngOnInit(): void {
     void this.initializeTemplates();
@@ -136,73 +173,121 @@ export class TemplateManagementComponent implements OnInit, OnDestroy {
     await this.loadAssignedTemplates();
   }
 
-  private updateTemplatePagination(): void {
-    const totalPages = this.calculateTotalPages(this.templates.length);
-    if (this.currentPage > totalPages) {
-      this.currentPage = totalPages;
-    }
-
-    if (this.currentPage < 1) {
-      this.currentPage = 1;
-    }
+  onRowSelect(template: TemplateRow) {
+    this.selectedTemplate = template;
   }
 
-  private calculateTotalPages(totalItems: number): number {
-    return totalItems > 0 ? Math.ceil(totalItems / this.pageSize) : 1;
+  onRowUnselect() {
+    this.selectedTemplate = null;
   }
 
-  protected get filteredTemplates(): TemplateRow[] {
-    const term = this.searchTerm.trim().toLowerCase();
-    const statusFilter = this.statusFilter;
+  onCreateTemplate(): void {
+    this.isEditing = false;
+    this.openCreateDialog();
+  }
 
-    return this.templates.filter((template) => {
-      const matchesTerm =
-        !term ||
-        template.name.toLowerCase().includes(term) ||
-        template.description.toLowerCase().includes(term) ||
-        template.version.toLowerCase().includes(term);
-      const matchesStatus = statusFilter === 'Todos' || template.status === statusFilter;
+  onEditTemplate(): void {
+    this.isEditing = true;
+    if (!this.selectedTemplate) return;
 
-      return matchesTerm && matchesStatus;
+    const template = this.selectedTemplate;
+
+    this.openEditDialog(template);
+  }
+
+  onDeleteTemplate(): void {
+    if (!this.selectedTemplate) return;
+
+    const template = this.selectedTemplate;
+
+    this.confirm.confirmDelete(() => {
+      this.handleDeleteTemplate(template.id);
     });
   }
 
-  protected get paginatedTemplates(): TemplateRow[] {
-    const startIndex = (this.currentPage - 1) * this.pageSize;
-    return this.filteredTemplates.slice(startIndex, startIndex + this.pageSize);
+  handleSaveTemplate(event: any): void {
+    // this.ruleDialogLoading = true;
+    // this.cdr.markForCheck();
+    // if (!this.isEditing) {
+    //   this.validationRulesService
+    //     .saveRule(event.rule, event.isActive)
+    //     .pipe(
+    //       finalize(() => {
+    //         this.ruleDialogLoading = false;
+    //         this.cdr.markForCheck();
+    //       }),
+    //     )
+    //     .subscribe({
+    //       next: () => {
+    //         this.loadRules();
+    //         this.toast.success('Regla creada exitosamente.');
+    //         this.closeRuleDialog();
+    //       },
+    //       error: (error: unknown) => {
+    //         const message = this.validationRulesService.getErrorMessage(error);
+    //         this.toast.error(message);
+    //       },
+    //     });
+    // } else {
+    //   if (this.selectedRule) {
+    //     this.validationRulesService
+    //       .updateRule(this.selectedRule.id, event.rule, event.isActive)
+    //       .pipe(
+    //         finalize(() => {
+    //           this.ruleDialogLoading = false;
+    //           this.cdr.markForCheck();
+    //         }),
+    //       )
+    //       .subscribe({
+    //         next: (updatedRule: RuleResponse) => {
+    //           const updatedRow = this.mapToRuleRow(updatedRule);
+    //           this.rules = this.rules.map((current) =>
+    //             current.id === updatedRow.id ? updatedRow : current,
+    //           );
+    //           this.toast.success('Regla actualizada exitosamente.');
+    //           this.closeRuleDialog();
+    //         },
+    //         error: (error: unknown) => {
+    //           const message = this.validationRulesService.getErrorMessage(error);
+    //           this.toast.error(message);
+    //         },
+    //       });
+    //   } else {
+    //     this.ruleDialogLoading = false;
+    //     this.cdr.markForCheck();
+    //   }
+    // }
   }
 
-  protected get totalPages(): number {
-    const total = Math.ceil(this.filteredTemplates.length / this.pageSize);
-    return total > 0 ? total : 1;
+  handleDeleteTemplate(templateId: number): void {
+    this.templatesLoading = true;
+
+    // this.validationRulesService
+    //   .deleteRule(ruleId)
+    //   .pipe(
+    //     finalize(() => {
+    //       this.selectedRule = null;
+    //       this.rulesLoading = false;
+    //     }),
+    //   )
+    //   .subscribe({
+    //     next: () => {
+    //       this.removeRuleEntry(ruleId);
+    //       this.toast.success('Regla eliminada exitosamente.');
+    //     },
+    //     error: (error: unknown) => {
+    //       const message = this.validationRulesService.getErrorMessage(error);
+    //       this.toast.error(message);
+    //     },
+    //   });
   }
 
-  protected get pageStart(): number {
-    if (this.filteredTemplates.length === 0) {
-      return 0;
-    }
-
-    return (this.currentPage - 1) * this.pageSize + 1;
-  }
-
-  protected get pageEnd(): number {
-    if (this.filteredTemplates.length === 0) {
-      return 0;
-    }
-
-    return Math.min(this.filteredTemplates.length, this.currentPage * this.pageSize);
-  }
-
-  protected goToPreviousPage(): void {
-    if (this.currentPage > 1) {
-      this.currentPage -= 1;
-    }
-  }
-
-  protected goToNextPage(): void {
-    if (this.currentPage < this.totalPages) {
-      this.currentPage += 1;
-    }
+  protected closeTemplateDialog(): void {
+    this.templateDialogVisible = false;
+    this.templateDialogLoading = false;
+    this.templateDialogData = {
+      mode: 'create',
+    };
   }
 
   protected onFilterChange(): void {
@@ -239,10 +324,6 @@ export class TemplateManagementComponent implements OnInit, OnDestroy {
 
   protected get inactiveTemplates(): number {
     return this.templates.filter((template) => template.status === 'Inactivo').length;
-  }
-
-  protected trackByTemplateId(_: number, template: TemplateRow): string {
-    return template.id;
   }
 
   protected trackByAssignedTemplateId(_: number, template: ClientTemplate): string {
@@ -312,25 +393,30 @@ export class TemplateManagementComponent implements OnInit, OnDestroy {
   }
 
   protected openCreateDialog(): void {
-    const dialogRef = this.dialog.open<
-      TemplateCreateDialogComponent,
-      TemplateDialogData,
-      TemplateCreateDialogResult
-    >(TemplateCreateDialogComponent, {
-      disableClose: true,
-      width: '92vw',
-      maxWidth: '1240px',
-      maxHeight: '95vh',
-      data: { mode: 'create' },
-    });
+    this.templateDialogData = {
+      mode: 'create',
+    };
 
-    dialogRef.afterClosed().subscribe((result: TemplateCreateDialogResult | undefined) => {
-      if (!result) {
-        return;
-      }
+    this.templateDialogVisible = true;
+    // const dialogRef = this.dialog.open<
+    //   TemplateCreateDialogComponent,
+    //   TemplateDialogData,
+    //   TemplateCreateDialogResult
+    // >(TemplateCreateDialogComponent, {
+    //   disableClose: true,
+    //   width: '92vw',
+    //   maxWidth: '1240px',
+    //   maxHeight: '95vh',
+    //   data: { mode: 'create' },
+    // });
 
-      this.addTemplateFromCreate(result);
-    });
+    // dialogRef.afterClosed().subscribe((result: TemplateCreateDialogResult | undefined) => {
+    //   if (!result) {
+    //     return;
+    //   }
+
+    //   this.addTemplateFromCreate(result);
+    // });
   }
 
   protected async openEditDialog(template: TemplateRow): Promise<void> {
@@ -355,7 +441,7 @@ export class TemplateManagementComponent implements OnInit, OnDestroy {
       } catch (columnError) {
         console.error(
           '[TemplateManagement] No se pudieron obtener las columnas para la edición:',
-          columnError
+          columnError,
         );
         columns = [];
       }
@@ -406,7 +492,7 @@ export class TemplateManagementComponent implements OnInit, OnDestroy {
           columnsCount: template.columns,
           columnsDetail: template.columnsDetail,
         },
-      }
+      },
     );
   }
 
@@ -438,7 +524,7 @@ export class TemplateManagementComponent implements OnInit, OnDestroy {
               tags: mappedTemplate.tags,
               columnsDetail: mappedTemplate.columnsDetail,
             },
-          }
+          },
         );
         return;
       }
@@ -463,7 +549,7 @@ export class TemplateManagementComponent implements OnInit, OnDestroy {
           tags: template.tags,
           columnsDetail: template.columnsDetail,
         },
-      }
+      },
     );
   }
 
@@ -497,7 +583,6 @@ export class TemplateManagementComponent implements OnInit, OnDestroy {
           lastUpdated: updatedAt,
         };
       });
-      this.updateTemplatePagination();
     } catch (error) {
       console.error('[TemplateManagement] No se pudo actualizar el estado de la plantilla:', error);
       this.templatesError = this.getErrorMessage(error);
@@ -685,27 +770,6 @@ export class TemplateManagementComponent implements OnInit, OnDestroy {
     }
   }
 
-  protected openDeleteDialog(template: TemplateRow): void {
-    const dialogRef = this.dialog.open<
-      TemplateDeleteDialogComponent,
-      TemplateDeleteDialogData,
-      boolean
-    >(TemplateDeleteDialogComponent, {
-      disableClose: true,
-      data: {
-        name: template.name,
-      },
-    });
-
-    dialogRef.afterClosed().subscribe((shouldDelete: boolean | undefined) => {
-      if (!shouldDelete) {
-        return;
-      }
-
-      void this.deleteTemplate(template.id);
-    });
-  }
-
   private async loadAssignedTemplates(): Promise<void> {
     if (this.assignedTemplatesLoading) {
       return;
@@ -716,15 +780,15 @@ export class TemplateManagementComponent implements OnInit, OnDestroy {
 
     try {
       const user = await firstValueFrom(
-        this.sessionUser$.pipe(filter((value): value is CurrentUserResponse => value !== null))
+        this.sessionUser$.pipe(filter((value): value is CurrentUserResponse => value !== null)),
       );
 
       const templates = await this.templatesService.fetchTemplatesForUser(user.id);
       this.assignedTemplates = templates.map((template) =>
         this.mapTemplateResponseToClient(
           template,
-          Array.isArray(template.columns) ? template.columns : []
-        )
+          Array.isArray(template.columns) ? template.columns : [],
+        ),
       );
     } catch (error) {
       console.error('[TemplateManagement] Error al obtener plantillas asignadas:', error);
@@ -743,30 +807,24 @@ export class TemplateManagementComponent implements OnInit, OnDestroy {
     this.templatesLoading = true;
     this.templatesError = null;
 
-    try {
-      const templates = await this.templatesService.fetchTemplates();
-      this.templates = templates.map((template) =>
-        this.mapTemplateResponseToRow(
-          template,
-          Array.isArray(template.columns) ? template.columns : []
-        )
-      );
-      this.updateTemplatePagination();
-    } catch (error) {
-      console.error('[TemplateManagement] Error al obtener plantillas registradas:', error);
-      this.templatesError = this.getErrorMessage(error);
-      this.templates = [];
-      this.updateTemplatePagination();
-    } finally {
-      this.templatesLoading = false;
-    }
+    this.templatesService.getTemplates().subscribe({
+      next: (templates: TemplateResponse[]) => {
+        this.templates = templates.map((template) => this.mapToTemplateRow(template));
+        this.templatesLoading = false;
+      },
+      error: (error: unknown) => {
+        this.templates = [];
+        this.templatesError = this.templatesService.getErrorMessage(error);
+        this.templatesLoading = false;
+        console.error(this.templatesError);
+      },
+    });
   }
 
   private addTemplateFromCreate(result: TemplateCreateDialogResult): void {
     const entry = this.mapTemplateResultToRow(result);
     this.templatesError = null;
     this.templates = [entry, ...this.templates];
-    this.updateTemplatePagination();
 
     if (result.template?.id !== undefined && result.template?.id !== null) {
       void this.refreshTemplateColumns(result.template.id);
@@ -788,7 +846,6 @@ export class TemplateManagementComponent implements OnInit, OnDestroy {
         ...updatedEntry,
       };
     });
-    this.updateTemplatePagination();
 
     if (result.template?.id !== undefined && result.template?.id !== null) {
       void this.refreshTemplateColumns(result.template.id);
@@ -797,8 +854,8 @@ export class TemplateManagementComponent implements OnInit, OnDestroy {
 
   private mapTemplateResultToRow(result: TemplateCreateDialogResult): TemplateRow {
     const template = result.template;
-    const columns = result.columns ?? [];
-    return this.mapTemplateResponseToRow(template, columns);
+
+    return this.mapToTemplateRow(template);
   }
 
   private buildTemplateFilename(template: ClientTemplate): string {
@@ -817,19 +874,17 @@ export class TemplateManagementComponent implements OnInit, OnDestroy {
     return versionSegment ? `${baseName}-${versionSegment}.xlsx` : `${baseName}.xlsx`;
   }
 
-  private mapTemplateResponseToRow(
-    template: TemplateResponse,
-    columns: TemplateColumnResponse[] = []
-  ): TemplateRow {
-    const createdAt = this.toIsoDate(template.created_at);
-    const updatedAt = this.toIsoDate(template.updated_at ?? template.created_at);
+  private mapToTemplateRow(template: TemplateResponse): TemplateRow {
+    const createdAt = formatDate(template.created_at);
+    const updatedAt = formatDate(template.updated_at ?? template.created_at);
     const status = this.toDisplayStatus(template.status);
     const version = template.table_name?.trim().length ? template.table_name : '—';
 
+    const columns: TemplateColumnResponse[] = template.columns ?? [];
     const columnsDetail = this.mapColumnsToDetail(columns);
 
     return {
-      id: this.normalizeId(template.id),
+      id: template.id,
       name: template.name ?? 'Nueva plantilla',
       description: template.description ?? '',
       version,
@@ -845,7 +900,7 @@ export class TemplateManagementComponent implements OnInit, OnDestroy {
 
   private mapTemplateResponseToClient(
     template: TemplateResponse,
-    columns: TemplateColumnResponse[] = []
+    columns: TemplateColumnResponse[] = [],
   ): ClientTemplate {
     const id = this.normalizeId(template.id);
     const name = template.name ?? 'Plantilla sin nombre';
@@ -933,13 +988,13 @@ export class TemplateManagementComponent implements OnInit, OnDestroy {
   }
 
   private mapRuleToDetail(
-    rule: TemplateColumnRulePayload
+    rule: TemplateColumnRulePayload,
   ): { detail: TemplateColumnRuleDetail; mandatory: boolean } | null {
     const id = this.extractRuleId(rule.id);
     const payload = this.extractRulePayload(rule);
     const normalizedPayload = normalizeAiPayload(payload);
     const mandatory = this.toBoolean(
-      normalizedPayload?.['Campo obligatorio'] ?? this.extractMandatoryFlag(rule, payload)
+      normalizedPayload?.['Campo obligatorio'] ?? this.extractMandatoryFlag(rule, payload),
     );
 
     if (normalizedPayload) {
@@ -1024,7 +1079,7 @@ export class TemplateManagementComponent implements OnInit, OnDestroy {
 
   private buildRuleDisplayFromPayload(
     payload: RulePayload,
-    ruleId: string | null
+    ruleId: string | null,
   ): { title: string; description?: string; conditions?: string[] } {
     const titleParts: string[] = [];
     const name = this.sanitizeString(payload['Nombre de la regla']);
@@ -1187,7 +1242,7 @@ export class TemplateManagementComponent implements OnInit, OnDestroy {
   private async refreshTemplateColumns(templateId: number | string): Promise<void> {
     try {
       const columns = await this.templatesService.fetchTemplateColumns(templateId);
-      const normalizedId = this.normalizeId(templateId);
+      const normalizedId = templateId;
       const columnsDetail = this.mapColumnsToDetail(columns);
 
       this.templates = this.templates.map((template) => {
@@ -1201,11 +1256,10 @@ export class TemplateManagementComponent implements OnInit, OnDestroy {
           columnsDetail,
         };
       });
-      this.updateTemplatePagination();
     } catch (error) {
       console.error(
         '[TemplateManagement] No se pudieron sincronizar las columnas de la plantilla creada.',
-        error
+        error,
       );
     }
   }
@@ -1261,8 +1315,7 @@ export class TemplateManagementComponent implements OnInit, OnDestroy {
 
     try {
       await this.templatesService.deleteTemplate(templateId);
-      this.templates = this.templates.filter((template) => template.id !== templateId);
-      this.updateTemplatePagination();
+      // this.templates = this.templates.filter((template) => template.id !== templateId);
     } catch (error) {
       console.error('[TemplateManagement] No se pudo eliminar la plantilla seleccionada:', error);
       this.templatesError = this.getErrorMessage(error);

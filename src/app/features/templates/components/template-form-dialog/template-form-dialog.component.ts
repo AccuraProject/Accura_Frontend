@@ -1,18 +1,34 @@
 import { CommonModule } from '@angular/common';
-import { Component, Inject } from '@angular/core';
-import { FormsModule, NgForm } from '@angular/forms';
+import {
+  Component,
+  computed,
+  EventEmitter,
+  inject,
+  Inject,
+  Input,
+  Output,
+  signal,
+} from '@angular/core';
+import { FormBuilder, FormsModule, NgForm, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { read, utils, writeFileXLSX } from 'xlsx';
 
-import { ValidationRulesService } from '../validation-rules/validation-rules.service';
+import { ValidationRulesService } from '../../../validation-rules/validation-rules.service';
 import {
   TemplateCreatePayload,
   TemplateColumnPayload,
   TemplateColumnResponse,
   TemplateColumnRulePayload,
   TemplateResponse,
-  TemplatesService
-} from './templates.service';
+  TemplatesService,
+} from '../../templates.service';
+import { StepperModule } from 'primeng/stepper';
+import { TextFieldComponent } from '../../../../shared/components/ui/field/text-field/text-field';
+import { TextAreaFieldComponent } from '../../../../shared/components/ui/field/textarea-field/textarea-field';
+import { ToastService } from '../../../../shared/services/toast.service';
+import { finalize } from 'rxjs';
+import { DialogShellComponent } from '../../../../shared/components/overlay/dialog/dialog-shell/dialog-shell';
+import { ButtonComponent } from '../../../../shared/components/ui/button/button';
 
 interface StepOneFormModel {
   name: string;
@@ -59,20 +75,67 @@ export interface TemplateDialogData {
 }
 
 @Component({
-  selector: 'app-template-create-dialog',
+  selector: 'app-template-form-dialog',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatDialogModule],
-  templateUrl: './template-create-dialog.component.html',
-  styleUrl: './template-create-dialog.component.scss'
+  imports: [
+    CommonModule,
+    FormsModule,
+    MatDialogModule,
+    ReactiveFormsModule,
+    DialogShellComponent,
+    StepperModule,
+    TextFieldComponent,
+    TextAreaFieldComponent,
+    ButtonComponent,
+  ],
+  templateUrl: './template-form-dialog.component.html',
+  styleUrl: './template-form-dialog.component.scss',
 })
-export class TemplateCreateDialogComponent {
-  protected readonly mode: 'create' | 'edit';
-  protected currentStep: 1 | 2 = 1;
-  protected readonly stepOneForm: StepOneFormModel = {
-    name: '',
-    tableName: '',
-    description: ''
-  };
+export class TemplateFormDialogComponent {
+  protected isEditMode = false;
+
+  protected title = 'Crear nueva plantilla';
+  protected description =
+    'Configura la estructura de la plantilla que los usuarios utilizarán para cargar y validar sus datos.';
+  protected actionLabel = 'Crear plantilla';
+
+  protected templateId: number | null = null;
+
+  private readonly fb = inject(FormBuilder);
+
+  readonly step1Form = this.fb.group({
+    name: this.fb.control<string | null>(null, [
+      Validators.required,
+      Validators.minLength(3),
+      Validators.maxLength(50),
+    ]),
+    tableName: this.fb.control<string | null>(null, [
+      Validators.required,
+      Validators.minLength(3),
+      Validators.maxLength(50),
+    ]),
+    description: this.fb.control<string | null>(null, [Validators.maxLength(200)]),
+  });
+
+  readonly step2Form = this.fb.group({});
+
+  readonly currentStep = signal<1 | 2>(1);
+
+  readonly isStep1 = computed(() => this.currentStep() === 1);
+  readonly isStep2 = computed(() => this.currentStep() === 2);
+
+  readonly saveLabel = computed(() => 'Crear plantilla');
+
+  readonly isSubmittingStep1 = signal(false);
+
+  @Input() visible = false;
+  @Output() visibleChange = new EventEmitter<boolean>();
+
+  @Output() saveTemplate = new EventEmitter<any>();
+  @Output() cancelDialog = new EventEmitter<void>();
+
+  @Input() loading = false;
+  @Input() set data(value: TemplateDialogData | null) {}
 
   protected generalError: string | null = null;
   protected generalLoading = false;
@@ -87,101 +150,124 @@ export class TemplateCreateDialogComponent {
 
   protected templateResponse: TemplateResponse | null = null;
 
-  private readonly dialogData: TemplateDialogData;
   private pendingColumns: TemplateColumnResponse[] | null = null;
 
   constructor(
-    private readonly dialogRef: MatDialogRef<TemplateCreateDialogComponent, TemplateCreateDialogResult | undefined>,
     private readonly templatesService: TemplatesService,
     private readonly validationRulesService: ValidationRulesService,
-    @Inject(MAT_DIALOG_DATA) data: TemplateDialogData | null
+    private readonly toast: ToastService,
   ) {
-    this.dialogData = data ?? { mode: 'create' };
-    this.mode = this.dialogData.mode === 'edit' ? 'edit' : 'create';
-
-    if (this.mode === 'edit' && this.dialogData.template) {
-      this.templateResponse = this.dialogData.template;
-      this.stepOneForm.name = this.dialogData.template.name ?? '';
-      this.stepOneForm.tableName = this.dialogData.template.table_name ?? '';
-      this.stepOneForm.description = this.dialogData.template.description ?? '';
-    }
-
-    if (this.mode === 'edit' && Array.isArray(this.dialogData.columns)) {
-      this.pendingColumns = this.dialogData.columns.map((column) => ({
-        ...column,
-        rules: Array.isArray(column.rules)
-          ? column.rules.map((rule) => ({ ...rule }))
-          : []
-      }));
-    }
+    // this.dialogData = data ?? { mode: 'create' };
+    // this.mode = this.dialogData.mode === 'edit' ? 'edit' : 'create';
+    // if (this.mode === 'edit' && this.dialogData.template) {
+    //   this.templateResponse = this.dialogData.template;
+    //   this.stepOneForm.name = this.dialogData.template.name ?? '';
+    //   this.stepOneForm.tableName = this.dialogData.template.table_name ?? '';
+    //   this.stepOneForm.description = this.dialogData.template.description ?? '';
+    // }
+    // if (this.mode === 'edit' && Array.isArray(this.dialogData.columns)) {
+    //   this.pendingColumns = this.dialogData.columns.map((column) => ({
+    //     ...column,
+    //     rules: Array.isArray(column.rules) ? column.rules.map((rule) => ({ ...rule })) : [],
+    //   }));
+    // }
   }
 
-  protected get isEditMode(): boolean {
-    return this.mode === 'edit';
-  }
-
-  protected close(): void {
-    if (this.generalLoading || this.columnsLoading) {
+  protected cancel(): void {
+    if (this.isSubmittingStep1() || this.loading) {
       return;
     }
 
-    this.dialogRef.close();
+    this.cancelDialog.emit();
+    this.close();
   }
 
-  protected async submitGeneralStep(form: NgForm): Promise<void> {
-    if (this.generalLoading) {
+  private close(): void {
+    this.visible = false;
+    this.visibleChange.emit(false);
+  }
+
+  protected submitStep1Form(): void {
+    if (this.isSubmittingStep1()) {
       return;
     }
 
-    if (form.invalid) {
-      form.form.markAllAsTouched();
+    if (this.step1Form.invalid) {
+      this.step1Form.markAllAsTouched();
       return;
     }
 
-    const description = this.stepOneForm.description.trim();
+    const rawValue = this.step1Form.getRawValue();
+
     const payload: TemplateCreatePayload = {
-      name: this.stepOneForm.name.trim(),
-      table_name: this.stepOneForm.tableName.trim(),
-      ...(description ? { description } : {})
+      name: rawValue.name?.trim() ?? '',
+      table_name: rawValue.tableName?.trim() ?? '',
+      description: rawValue.description?.trim() ?? '',
     };
 
-    if (!payload.name || !payload.table_name) {
-      form.form.markAllAsTouched();
-      return;
+    this.isSubmittingStep1.set(true);
+
+    if (this.isEditMode) {
+      if (this.templateId) {
+        this.templatesService
+          .updateTemplate(this.templateId, payload)
+          .pipe(finalize(() => this.isSubmittingStep1.set(false)))
+          .subscribe({
+            next: (payloads) => {
+              this.currentStep.set(2);
+            },
+            error: (error: unknown) => {
+              const message = this.validationRulesService.getErrorMessage(error);
+              this.toast.error(message);
+            },
+          });
+      }
+    } else {
+      this.templatesService
+        .saveTemplate(payload)
+        .pipe(finalize(() => this.isSubmittingStep1.set(false)))
+        .subscribe({
+          next: (payloads) => {
+            this.currentStep.set(2);
+          },
+          error: (error: unknown) => {
+            const message = this.validationRulesService.getErrorMessage(error);
+            this.toast.error(message);
+          },
+        });
     }
 
-    this.generalLoading = true;
-    this.generalError = null;
+    // try {
+    //   let response: TemplateResponse;
 
-    try {
-      let response: TemplateResponse;
+    //   if (this.isEditMode) {
+    //     const templateId = this.templateResponse?.id ?? this.dialogData.template?.id;
 
-      if (this.isEditMode) {
-        const templateId = this.templateResponse?.id ?? this.dialogData.template?.id;
+    //     if (templateId === undefined || templateId === null) {
+    //       throw new Error('No fue posible identificar la plantilla a editar.');
+    //     }
 
-        if (templateId === undefined || templateId === null) {
-          throw new Error('No fue posible identificar la plantilla a editar.');
-        }
+    //     response = await this.templatesService.updateTemplate(templateId, payload);
+    //     this.templateResponse = { ...(this.templateResponse ?? {}), ...response };
+    //   } else {
+    //     response = await this.templatesService.createTemplate(payload);
+    //     this.templateResponse = response;
+    //   }
 
-        response = await this.templatesService.updateTemplate2(templateId, payload);
-        this.templateResponse = { ...(this.templateResponse ?? {}), ...response };
-      } else {
-        response = await this.templatesService.createTemplate(payload);
-        this.templateResponse = response;
-      }
-
-      this.currentStep = 2;
-      await this.loadRules();
-      if (this.columns.length === 0) {
-        this.addColumn();
-      }
-    } catch (error) {
-      console.error('[TemplateCreateDialog] Error al guardar plantilla:', error);
-      this.generalError = this.getErrorMessage(error);
-    } finally {
-      this.generalLoading = false;
-    }
+    //   this.currentStep = 2;
+    //   await this.loadRules();
+    //   if (this.columns.length === 0) {
+    //     this.addColumn();
+    //   }
+    // } catch (error) {
+    //   console.error('[TemplateCreateDialog] Error al guardar plantilla:', error);
+    //   this.generalError = this.getErrorMessage(error);
+    // } finally {
+    //   this.generalLoading = false;
+    // }
   }
+
+  protected submitStep2Form(): void {}
 
   protected addColumn(): void {
     const draft: ColumnRowDraft = {
@@ -189,7 +275,7 @@ export class TemplateCreateDialogComponent {
       name: '',
       description: '',
       ruleSelections: [],
-      errors: {}
+      errors: {},
     };
 
     this.columns = [...this.columns, draft];
@@ -233,7 +319,9 @@ export class TemplateCreateDialogComponent {
     const selection: ColumnRuleSelection = {
       id: ruleId,
       option,
-      headerSelection: this.requiresHeaderSelection(option) ? null : option.headerRule?.[0] ?? null
+      headerSelection: this.requiresHeaderSelection(option)
+        ? null
+        : (option.headerRule?.[0] ?? null),
     };
 
     column.ruleSelections = [...column.ruleSelections, selection];
@@ -255,7 +343,11 @@ export class TemplateCreateDialogComponent {
     return normalized === 'lista compleja' || normalized === 'dependencia';
   }
 
-  protected updateHeaderSelection(column: ColumnRowDraft, rule: ColumnRuleSelection, value: string): void {
+  protected updateHeaderSelection(
+    column: ColumnRowDraft,
+    rule: ColumnRuleSelection,
+    value: string,
+  ): void {
     rule.headerSelection = value || null;
 
     if (rule.headerSelection) {
@@ -299,14 +391,14 @@ export class TemplateCreateDialogComponent {
               ? selection.headerSelection
                 ? [selection.headerSelection]
                 : []
-              : selection.option.headerRule ?? [];
+              : (selection.option.headerRule ?? []);
 
             return {
               id: this.toNumericId(selection.id),
-              'header rule': headerRule
+              'header rule': headerRule,
             };
           }),
-          is_active: true
+          is_active: true,
         };
       });
 
@@ -314,10 +406,10 @@ export class TemplateCreateDialogComponent {
         ? await this.templatesService.updateTemplateColumns(this.templateResponse.id, payload)
         : await this.templatesService.createTemplateColumns(this.templateResponse.id, payload);
 
-      this.dialogRef.close({
-        template: this.templateResponse,
-        columns: columnsResponse
-      });
+      // this.dialogRef.close({
+      //   template: this.templateResponse,
+      //   columns: columnsResponse,
+      // });
     } catch (error) {
       console.error('[TemplateCreateDialog] Error al crear columnas:', error);
       this.columnsError = this.getErrorMessage(error);
@@ -328,7 +420,7 @@ export class TemplateCreateDialogComponent {
 
   protected downloadTemplate(): void {
     const worksheet = utils.json_to_sheet([
-      { Nombre: 'Ejemplo de Columna', Descripción: 'Descripción opcional' }
+      { Nombre: 'Ejemplo de Columna', Descripción: 'Descripción opcional' },
     ]);
     const workbook = utils.book_new();
     utils.book_append_sheet(workbook, worksheet, 'Columnas');
@@ -357,7 +449,11 @@ export class TemplateCreateDialogComponent {
 
       for (const row of rows) {
         const name = this.extractCellValue(row, ['Nombre', 'name', 'columna']);
-        const description = this.extractCellValue(row, ['Descripción', 'description', 'descripcion']);
+        const description = this.extractCellValue(row, [
+          'Descripción',
+          'description',
+          'descripcion',
+        ]);
 
         if (!name) {
           continue;
@@ -368,7 +464,7 @@ export class TemplateCreateDialogComponent {
           name,
           description,
           ruleSelections: [],
-          errors: {}
+          errors: {},
         });
       }
 
@@ -426,16 +522,16 @@ export class TemplateCreateDialogComponent {
       const headerRule = this.extractStringArray(
         rule['header rule'] ??
           (typeof rule === 'object' && rule !== null
-            ? ((rule as unknown) as Record<string, unknown>)['header_rule']
-            : undefined)
+            ? (rule as unknown as Record<string, unknown>)['header_rule']
+            : undefined),
       );
 
       const option = this.rules.find((candidate) => candidate.id === ruleId);
       const selectionOption = option ?? this.buildFallbackRuleOption(rule, ruleId, headerRule);
 
       const headerSelection = this.requiresHeaderSelection(selectionOption)
-        ? headerRule[0] ?? null
-        : selectionOption.headerRule?.[0] ?? null;
+        ? (headerRule[0] ?? null)
+        : (selectionOption.headerRule?.[0] ?? null);
 
       ruleSelections.push({
         id: ruleId,
@@ -456,10 +552,10 @@ export class TemplateCreateDialogComponent {
   private buildFallbackRuleOption(
     rule: TemplateColumnRulePayload,
     ruleId: string,
-    headerRule: string[]
+    headerRule: string[],
   ): TemplateRuleOption {
     const requiresHeader = headerRule.length > 0;
-    const ruleRecord = (rule as unknown) as Record<string, unknown>;
+    const ruleRecord = rule as unknown as Record<string, unknown>;
     const name =
       this.extractString(ruleRecord['name']) ??
       this.extractString(ruleRecord['rule_name']) ??
@@ -539,7 +635,7 @@ export class TemplateCreateDialogComponent {
         ...column,
         name,
         description: column.description.trim(),
-        errors
+        errors,
       };
     });
 
@@ -603,9 +699,14 @@ export class TemplateCreateDialogComponent {
     const payload = payloadCandidate as Record<string, unknown>;
     const id = this.extractIdentifier(record['id'] ?? payload['id']);
     const name = this.extractString(payload['Nombre de la regla'] ?? payload['name']);
-    const dataType = this.extractString(payload['Tipo de dato'] ?? payload['data_type'] ?? record['data_type']);
+    const dataType = this.extractString(
+      payload['Tipo de dato'] ?? payload['data_type'] ?? record['data_type'],
+    );
     const headerRule = this.extractStringArray(
-      payload['Header rule'] ?? payload['header rule'] ?? record['header_rule'] ?? record['headerRule']
+      payload['Header rule'] ??
+        payload['header rule'] ??
+        record['header_rule'] ??
+        record['headerRule'],
     );
 
     if (!id || !name) {
@@ -616,7 +717,7 @@ export class TemplateCreateDialogComponent {
       id,
       name,
       dataType: dataType ?? 'Regla',
-      headerRule
+      headerRule,
     };
   }
 
