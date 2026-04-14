@@ -1,135 +1,97 @@
-<section class="permissions-panel">
-  <header class="permissions-panel__header">
-    <div>
-      <h2>Gestión de Permisos</h2>
-      <p>Administra el acceso de los usuarios a las plantillas disponibles.</p>
-    </div>
-    <label class="permissions-panel__search">
-      <span class="material-symbols-rounded" aria-hidden="true">search</span>
-      <input
-        type="search"
-        name="search"
-        placeholder="Buscar usuario por nombre o correo electrónico"
-        [(ngModel)]="searchTerm"
-        (ngModelChange)="onSearchChange()"
-      />
-    </label>
-  </header>
-
-  <p class="permissions-panel__hint">
-    Selecciona un usuario para gestionar las plantillas a las que tiene acceso.
-  </p>
-
-  <div class="permissions-table__wrapper" *ngIf="filteredUsers as items">
-    <div class="permissions-table__scroll">
-      <table class="permissions-table">
-        <thead>
-          <tr>
-            <th>Usuario</th>
-            <th>Plantillas Asignadas</th>
-            <th>Última Actualización</th>
-            <th class="permissions-table__actions-column">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngIf="isLoading">
-            <td colspan="5">
-              <div class="permissions-table__state">
-                <span class="material-symbols-rounded" aria-hidden="true">hourglass_top</span>
-                <p>Cargando usuarios...</p>
-              </div>
-            </td>
-          </tr>
-          <tr *ngIf="!isLoading && loadError && items.length === 0">
-            <td colspan="5">
-              <div class="permissions-table__state permissions-table__state--error">
-                <span class="material-symbols-rounded" aria-hidden="true">warning</span>
-                <p>{{ loadError }}</p>
-              </div>
-            </td>
-          </tr>
-          <tr *ngFor="let user of paginatedUsers; trackBy: trackByUserId">
-            <td>
-              <div class="permissions-table__identity">
-                <span class="permissions-table__avatar" aria-hidden="true">
-                  {{ getInitials(user.name) }}
-                </span>
-                <div>
-                  <p class="permissions-table__name">{{ user.name }}</p>
-                  <p class="permissions-table__email">{{ user.email }}</p>
-                </div>
-              </div>
-            </td>
-            <td>
-              <ng-container *ngIf="user.templates as assigned">
-                <ng-container *ngIf="assigned.length; else noTemplates">
-                  <div class="permissions-table__templates">
-                    <span
-                      class="template-chip"
-                      *ngFor="let template of getVisibleTemplates(user); trackBy: trackByTemplateId"
-                    >
-                      <span class="template-chip__name">{{ template.name }}</span>
-                    </span>
-                    <span
-                      class="template-chip template-chip--counter"
-                      *ngIf="getRemainingCount(user) > 0"
-                    >
-                      +{{ getRemainingCount(user) }} más
-                    </span>
-                  </div>
-                </ng-container>
-              </ng-container>
-              <ng-template #noTemplates>
-                <span class="permissions-table__empty">Sin acceso</span>
-              </ng-template>
-            </td>
-            <td>
-              <span class="permissions-table__date">{{ user.lastUpdated }}</span>
-            </td>
-            <td class="permissions-table__actions-column">
-              <button
-                type="button"
-                class="permissions-table__manage"
-                (click)="openManageDialog(user)"
-              >
-                Gestionar
-              </button>
-            </td>
-          </tr>
-          <tr *ngIf="!isLoading && !loadError && items.length === 0">
-            <td colspan="5">
-              <div class="permissions-table__empty-row">
-                <span class="material-symbols-rounded" aria-hidden="true">search_off</span>
-                <p>No se encontraron usuarios para la búsqueda realizada.</p>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-    <div class="table-pagination" *ngIf="items.length > 0">
-      <span class="table-pagination__info">
-        Mostrando {{ pageStart }}-{{ pageEnd }} de {{ items.length }}
-      </span>
-      <div class="table-pagination__controls">
-        <button
-          type="button"
-          class="table-pagination__button"
-          (click)="goToPreviousPage()"
-          [disabled]="currentPage === 1"
-        >
-          Anterior
-        </button>
-        <span class="table-pagination__status">Página {{ currentPage }} de {{ totalPages }}</span>
-        <button
-          type="button"
-          class="table-pagination__button"
-          (click)="goToNextPage()"
-          [disabled]="currentPage === totalPages || items.length === 0"
-        >
-          Siguiente
-        </button>
-      </div>
-    </div>
+<section class="page-header">
+  <div>
+    <p class="page-header__pretitle">Gestión de Permisos</p>
+    <h1 class="page-header__title">Controla el acceso a las plantillas</h1>
+    <p class="page-header__subtitle">
+      Define qué usuarios pueden visualizar las plantillas disponibles y realizar la carga de datos
+      en cada una.
+    </p>
   </div>
 </section>
+
+<div class="card">
+  <app-page-actions
+    [showCreate]="false"
+    [showEdit]="false"
+    [showDelete]="false"
+    [showExtraAction]="true"
+    [disableExtraAction]="isManageAccessDisabled"
+    extraActionIcon="pi pi-cog"
+    extraActionLabel="Gestionar"
+    (extraAction)="onManageAccess()"
+  ></app-page-actions>
+
+  <app-data-table
+    [columns]="columns"
+    [value]="users"
+    [selection]="selectedUser"
+    [loading]="isTableLoading()"
+    (rowSelect)="onRowSelect($event)"
+    (rowUnselect)="onRowUnselect()"
+  ></app-data-table>
+</div>
+
+
+<app-permission-form-dialog
+  [(visible)]="permissionDialogVisible"
+  [data]="permissionDialogData"
+  [loading]="permissionDialogLoading"
+  (cancelDialog)="closePermissionDialog()"
+/>
+
+<!-- <table class="permissions-table">
+  <thead>
+    <tr>
+      <th>Usuario</th>
+      <th>Plantillas Asignadas</th>
+      <th>Última Actualización</th>
+      <th class="permissions-table__actions-column">Acciones</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr *ngFor="let user of paginatedUsers; trackBy: trackByUserId">
+      <td>
+        <div class="permissions-table__identity">
+          <span class="permissions-table__avatar" aria-hidden="true">
+            {{ getInitials(user.name) }}
+          </span>
+          <div>
+            <p class="permissions-table__name">{{ user.name }}</p>
+            <p class="permissions-table__email">{{ user.email }}</p>
+          </div>
+        </div>
+      </td>
+      <td>
+        <ng-container *ngIf="user.templates as assigned">
+          <ng-container *ngIf="assigned.length; else noTemplates">
+            <div class="permissions-table__templates">
+              <span
+                class="template-chip"
+                *ngFor="let template of getVisibleTemplates(user); trackBy: trackByTemplateId"
+              >
+                <span class="template-chip__name">{{ template.name }}</span>
+              </span>
+              <span
+                class="template-chip template-chip--counter"
+                *ngIf="getRemainingCount(user) > 0"
+              >
+                +{{ getRemainingCount(user) }} más
+              </span>
+            </div>
+          </ng-container>
+        </ng-container>
+        <ng-template #noTemplates>
+          <span class="permissions-table__empty">Sin acceso</span>
+        </ng-template>
+      </td>
+      <td>
+        <span class="permissions-table__date">{{ user.lastUpdated }}</span>
+      </td>
+      <td class="permissions-table__actions-column">
+        <button type="button" class="permissions-table__manage" (click)="openManageDialog(user)">
+          Gestionar
+        </button>
+      </td>
+    </tr>
+  </tbody>
+</table> -->

@@ -1,0 +1,42 @@
+<app-dialog-shell
+  [(visible)]="visible"
+  [title]="title"
+  [description]="description"
+  [showFooter]="false"
+  (cancel)="cancel()"
+>
+  <div class="history-detail">
+    <!-- HEADER -->
+    <p-card>
+      <div class="hd-header">
+        <div class="hd-icon">
+          <i class="pi pi-user" style="font-size: 1.5rem"></i>
+        </div>
+
+        <div class="hd-info">
+          <div class="hd-title">
+            {{ detailDialogData.name }}
+          </div>
+          <div class="hd-subtitle">
+            {{ detailDialogData.email }}
+          </div>
+        </div>
+      </div>
+    </p-card>
+
+    <!-- RESUMEN -->
+    <h3 class="hd-section-title">Plantillas asignadas</h3>
+
+    <div class="hd-grid hd-grid--summary">
+      <p-card>
+        <div class="hd-label">Filas procesadas</div>
+        <div class="hd-value hd-value--strong">
+          
+        </div>
+      </p-card>
+    </div>
+
+    <p-divider></p-divider>
+
+  </div>
+</app-dialog-shell>
