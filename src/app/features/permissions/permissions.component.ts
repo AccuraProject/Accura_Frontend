@@ -1,17 +1,13 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { firstValueFrom, Subject, takeUntil } from 'rxjs';
-
-import {
-  PermissionManageDialogComponent,
-  PermissionManageDialogData,
-  PermissionManageDialogResult
-} from './permission-manage-dialog.component';
 import { TemplatesService, TemplateResponse } from '../templates/templates.service';
 import { UserService } from '../../core/services/user.service';
 import { UserResponse } from '../../core/models/user.model';
+import { PageActionsComponent } from '../../shared/components/ui/page-actions/page-actions';
+import { DataTableComponent } from '../../shared/components/data/data-table/data-table';
+import { PermissionFormDialogComponent } from './components/permission-form-dialog/permission-form-dialog.component';
 
 interface PermissionUser {
   id: number;
@@ -27,28 +23,53 @@ interface TemplatePreview {
   code: string;
 }
 
+const EMPTY_PERMISSION_USER_DATA: PermissionFormDialogData = {
+  id: 0,
+  name: '',
+  email: '',
+};
+
+interface PermissionFormDialogData {
+  id: number;
+  name: string;
+  email: string;
+}
+
 @Component({
   selector: 'app-permissions',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatDialogModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    PageActionsComponent,
+    DataTableComponent,
+    PermissionFormDialogComponent,
+  ],
   templateUrl: './permissions.component.html',
-  styleUrl: './permissions.component.scss'
+  styleUrl: './permissions.component.scss',
 })
 export class PermissionsComponent implements OnInit, OnDestroy {
   protected searchTerm = '';
   protected users: PermissionUser[] = [];
-  protected isLoading = false;
-  protected loadError: string | null = null;
+  protected selectedUser: PermissionUser | null = null;
+  protected isTableLoading = signal(false);
+  protected usersLoadError: string | null = null;
 
-  protected readonly pageSize = 10;
-  protected currentPage = 1;
+  columns = [
+    { field: 'name', header: 'Usuario' },
+    { field: 'templates', header: 'Plantillas asignadas' },
+    { field: 'lastUpdated', header: 'Última actualización' },
+  ];
+
+  protected permissionDialogVisible = false;
+  protected permissionDialogLoading = false;
+  protected permissionDialogData: PermissionFormDialogData = EMPTY_PERMISSION_USER_DATA;
 
   private readonly destroy$ = new Subject<void>();
 
   constructor(
-    private readonly dialog: MatDialog,
     private readonly userService: UserService,
-    private readonly templatesService: TemplatesService
+    private readonly templatesService: TemplatesService,
   ) {}
 
   async ngOnInit(): Promise<void> {
@@ -60,6 +81,30 @@ export class PermissionsComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
+  onRowSelect(record: PermissionUser): void {
+    this.selectedUser = record;
+  }
+
+  onRowUnselect() {
+    this.selectedUser = null;
+  }
+
+  get isManageAccessDisabled(): boolean {
+    return !this.selectedUser;
+  }
+
+  onManageAccess(): void {
+    if (!this.selectedUser) return;
+
+    this.permissionDialogData = {
+      id: this.selectedUser.id,
+      name: this.selectedUser.name,
+      email: this.selectedUser.email,
+    };
+
+    this.permissionDialogVisible = true;
+  }
+
   protected get filteredUsers(): PermissionUser[] {
     const term = this.searchTerm.trim().toLowerCase();
     if (!term) {
@@ -67,66 +112,8 @@ export class PermissionsComponent implements OnInit, OnDestroy {
     }
 
     return this.users.filter((user) => {
-      return (
-        user.name.toLowerCase().includes(term) ||
-        user.email.toLowerCase().includes(term)
-      );
+      return user.name.toLowerCase().includes(term) || user.email.toLowerCase().includes(term);
     });
-  }
-
-  protected get paginatedUsers(): PermissionUser[] {
-    const startIndex = (this.currentPage - 1) * this.pageSize;
-    return this.filteredUsers.slice(startIndex, startIndex + this.pageSize);
-  }
-
-  protected get totalPages(): number {
-    const total = Math.ceil(this.filteredUsers.length / this.pageSize);
-    return total > 0 ? total : 1;
-  }
-
-  protected get pageStart(): number {
-    if (this.filteredUsers.length === 0) {
-      return 0;
-    }
-
-    return (this.currentPage - 1) * this.pageSize + 1;
-  }
-
-  protected get pageEnd(): number {
-    if (this.filteredUsers.length === 0) {
-      return 0;
-    }
-
-    return Math.min(this.filteredUsers.length, this.currentPage * this.pageSize);
-  }
-
-  protected goToPreviousPage(): void {
-    if (this.currentPage > 1) {
-      this.currentPage -= 1;
-    }
-  }
-
-  protected goToNextPage(): void {
-    if (this.currentPage < this.totalPages) {
-      this.currentPage += 1;
-    }
-  }
-
-  protected onSearchChange(): void {
-    this.currentPage = 1;
-  }
-
-  protected trackByUserId(_: number, user: PermissionUser): number {
-    return user.id;
-  }
-
-  protected getInitials(name: string): string {
-    return name
-      .split(' ')
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((part) => part[0]?.toUpperCase() ?? '')
-      .join('');
   }
 
   protected getVisibleTemplates(user: PermissionUser): TemplatePreview[] {
@@ -141,70 +128,24 @@ export class PermissionsComponent implements OnInit, OnDestroy {
     return template.id;
   }
 
-  protected openManageDialog(user: PermissionUser): void {
-    const dialogRef = this.dialog.open<
-      PermissionManageDialogComponent,
-      PermissionManageDialogData,
-      PermissionManageDialogResult
-    >(PermissionManageDialogComponent, {
-      disableClose: true,
-      data: {
-        user: {
-          id: user.id,
-          name: user.name,
-          email: user.email
-        }
-      }
-    });
-
-    dialogRef
-      .afterClosed()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe((result: PermissionManageDialogResult | undefined) => {
-        if (!result?.refresh) {
-          return;
-        }
-
-        void this.loadUsers();
-      });
-  }
-
   private async loadUsers(): Promise<void> {
-    if (this.isLoading) {
+    if (this.isTableLoading()) {
       return;
     }
 
-    this.isLoading = true;
-    this.loadError = null;
+    this.isTableLoading.set(true);
+    this.usersLoadError = null;
 
     try {
       const users = await firstValueFrom(this.userService.getUsers());
-      const enrichedUsers = await Promise.all(
-        users.map((user) => this.buildPermissionUser(user))
-      );
+      const enrichedUsers = await Promise.all(users.map((user) => this.buildPermissionUser(user)));
       this.users = enrichedUsers;
-      this.updatePaginationAfterDataChange(this.users.length);
     } catch (error) {
       console.error('Error al cargar los usuarios con sus plantillas.', error);
-      this.loadError = 'No fue posible cargar los usuarios. Inténtalo nuevamente.';
+      this.usersLoadError = 'No fue posible cargar los usuarios. Inténtalo nuevamente.';
     } finally {
-      this.isLoading = false;
+      this.isTableLoading.set(false);
     }
-  }
-
-  private updatePaginationAfterDataChange(totalItems: number): void {
-    const totalPages = this.calculateTotalPages(totalItems);
-    if (this.currentPage > totalPages) {
-      this.currentPage = totalPages;
-    }
-
-    if (this.currentPage < 1) {
-      this.currentPage = 1;
-    }
-  }
-
-  private calculateTotalPages(totalItems: number): number {
-    return totalItems > 0 ? Math.ceil(totalItems / this.pageSize) : 1;
   }
 
   private async buildPermissionUser(user: UserResponse): Promise<PermissionUser> {
@@ -215,7 +156,7 @@ export class PermissionsComponent implements OnInit, OnDestroy {
       name: user.name,
       email: user.email,
       lastUpdated: this.formatDate(user.updated_at ?? user.created_at),
-      templates
+      templates,
     };
   }
 
@@ -233,7 +174,7 @@ export class PermissionsComponent implements OnInit, OnDestroy {
     return {
       id: template.id,
       name: template.name,
-      code: this.buildTemplateCode(template)
+      code: this.buildTemplateCode(template),
     };
   }
 
@@ -264,5 +205,11 @@ export class PermissionsComponent implements OnInit, OnDestroy {
     }
 
     return parsed.toISOString().slice(0, 10);
+  }
+
+  protected closePermissionDialog(): void {
+    this.permissionDialogVisible = false;
+    this.permissionDialogLoading = false;
+    this.permissionDialogData = EMPTY_PERMISSION_USER_DATA;
   }
 }
