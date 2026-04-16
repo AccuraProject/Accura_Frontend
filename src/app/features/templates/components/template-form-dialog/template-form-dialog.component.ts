@@ -190,20 +190,6 @@ export class TemplateFormDialogComponent {
     return this.step2Form.controls.columns;
   }
 
-  protected cancel(): void {
-    if (this.isSubmittingStep1() || this.loading) {
-      return;
-    }
-
-    this.cancelDialog.emit();
-    this.close();
-  }
-
-  private close(): void {
-    this.visible = false;
-    this.visibleChange.emit(false);
-  }
-
   private mapRuleResponseToOption(rule: RuleResponse): TemplateRuleOption {
     return {
       id: rule.id,
@@ -513,27 +499,6 @@ export class TemplateFormDialogComponent {
     });
   }
 
-  private patchColumns(columns: TemplateColumnResponse[]): void {
-    this.columnsFormArray.clear();
-
-    if (!columns.length) {
-      return;
-    }
-
-    for (const column of columns) {
-      this.columnsFormArray.push(
-        this.createColumnRowForm({
-          name: column.name,
-          description: column.description ?? '',
-          rules: (column.rules ?? []).map((rule) => ({
-            id: rule.id,
-            'header rule': rule['header rule'] ?? [],
-          })),
-        }),
-      );
-    }
-  }
-
   private clearColumnsForm(): void {
     this.columnsFormArray.clear();
   }
@@ -555,5 +520,19 @@ export class TemplateFormDialogComponent {
     });
 
     this.clearColumnsForm();
+  }
+
+  protected cancel(): void {
+    if (this.isSubmittingStep1() || this.loading) {
+      return;
+    }
+
+    this.cancelDialog.emit();
+    this.close();
+  }
+
+  private close(): void {
+    this.visible = false;
+    this.visibleChange.emit(false);
   }
 }

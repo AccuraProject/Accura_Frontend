@@ -152,13 +152,6 @@ export class TemplatesService {
     );
   }
 
-  async createTemplate(payload: TemplateCreatePayload): Promise<TemplateResponse> {
-    const headers = await this.buildAuthHeaders();
-    return await firstValueFrom(
-      this.http.post<TemplateResponse>(`${this.baseUrl}/templates/`, payload, { headers }),
-    );
-  }
-
   updateTemplate(
     templateId: number,
     template: TemplateCreatePayload,
@@ -184,33 +177,26 @@ export class TemplatesService {
     );
   }
 
-  async updateTemplate2(
-    templateId: number | string,
-    payload: TemplateCreatePayload,
-  ): Promise<TemplateResponse> {
-    const headers = await this.buildAuthHeaders();
-    const encodedId = encodeURIComponent(String(templateId));
-    const data = await firstValueFrom(
-      this.http.put<TemplateResponse | Record<string, unknown> | null>(
-        `${this.baseUrl}/templates/${encodedId}`,
-        payload,
-        { headers },
-      ),
+  deleteTemplate(
+    templateId: number
+  ): Observable<void> {
+    return this.store.select(selectSessionState).pipe(
+      take(1),
+      switchMap((session) => {
+        if (!session.accessToken) {
+          return throwError(() => new Error('No hay un token de autenticación disponible.'));
+        }
+
+        const tokenType = session.tokenType ?? 'Bearer';
+        const headers = new HttpHeaders({
+          Authorization: `${tokenType} ${session.accessToken}`,
+        });
+
+        return this.http.delete<void>(`${this.baseUrl}/templates/${templateId}`, {
+          headers,
+        });
+      }),
     );
-
-    if (data) {
-      const parsed = this.parseTemplateResponse(data);
-      if (parsed) {
-        return parsed;
-      }
-    }
-
-    const refreshed = await this.fetchTemplate(templateId);
-    if (refreshed) {
-      return refreshed;
-    }
-
-    return this.buildTemplateFallback(templateId, payload);
   }
 
   async fetchTemplate(templateId: number | string): Promise<TemplateResponse | null> {
@@ -312,34 +298,6 @@ export class TemplatesService {
     );
   }
 
-  async createTemplateColumns(
-    templateId: number | string,
-    payload: TemplateColumnPayload[],
-  ): Promise<TemplateColumnResponse[]> {
-    const headers = await this.buildAuthHeaders();
-    const encodedId = encodeURIComponent(String(templateId));
-    const data = await firstValueFrom(
-      this.http.post<
-        TemplateColumnResponse | TemplateColumnResponse[] | Record<string, unknown> | null
-      >(`${this.baseUrl}/templates/${encodedId}/columns`, payload, { headers }),
-    );
-
-    if (Array.isArray(data)) {
-      return data;
-    }
-
-    if (data && typeof data === 'object') {
-      if (this.isTemplateColumnResponse(data)) {
-        return [data];
-      }
-
-      const asColumn = this.toColumnResponse(data as Record<string, unknown>);
-      return asColumn ? [asColumn] : [];
-    }
-
-    return [];
-  }
-
   updateTemplateColumns(
     templateId: number,
     payload: TemplateColumnPayload[],
@@ -365,34 +323,6 @@ export class TemplatesService {
         );
       }),
     );
-  }
-
-  async updateTemplateColumns2(
-    templateId: number | string,
-    payload: TemplateColumnPayload[],
-  ): Promise<TemplateColumnResponse[]> {
-    const headers = await this.buildAuthHeaders();
-    const encodedId = encodeURIComponent(String(templateId));
-    const data = await firstValueFrom(
-      this.http.put<
-        TemplateColumnResponse | TemplateColumnResponse[] | Record<string, unknown> | null
-      >(`${this.baseUrl}/templates/${encodedId}/columns`, payload, { headers }),
-    );
-
-    if (Array.isArray(data)) {
-      return data;
-    }
-
-    if (data && typeof data === 'object') {
-      if (this.isTemplateColumnResponse(data)) {
-        return [data];
-      }
-
-      const asColumn = this.toColumnResponse(data as Record<string, unknown>);
-      return asColumn ? [asColumn] : [];
-    }
-
-    return [];
   }
 
   async fetchTemplates(): Promise<TemplateResponse[]> {
@@ -559,15 +489,6 @@ export class TemplatesService {
         { status },
         { headers },
       ),
-    );
-  }
-
-  async deleteTemplate(templateId: number | string): Promise<void> {
-    const headers = await this.buildAuthHeaders();
-    const encodedId = encodeURIComponent(String(templateId));
-
-    await firstValueFrom(
-      this.http.delete<void>(`${this.baseUrl}/templates/${encodedId}`, { headers }),
     );
   }
 

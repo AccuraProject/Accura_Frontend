@@ -7,12 +7,6 @@ import { Store } from '@ngrx/store';
 import { HttpEventType } from '@angular/common/http';
 import { Observable, Subscription, firstValueFrom } from 'rxjs';
 import { filter, finalize } from 'rxjs/operators';
-
-import {
-  TemplateCreateDialogComponent,
-  TemplateCreateDialogResult,
-  TemplateDialogData,
-} from './template-create-dialog.component';
 import {
   TemplateColumnDetail,
   TemplateColumnRuleDetail,
@@ -36,6 +30,7 @@ import { ConfirmService } from '../../shared/services/confirm.service';
 import { formatDate } from '../../shared/utils/date-util';
 import {
   SaveTemplateColumnsEvent,
+  TemplateDialogData,
   TemplateFormDialogComponent,
 } from './components/template-form-dialog/template-form-dialog.component';
 
@@ -243,6 +238,7 @@ export class TemplateManagementComponent implements OnInit, OnDestroy {
           .updateTemplateColumns(event.templateId, event.columns)
           .pipe(
             finalize(() => {
+              this.selectedTemplate = null;
               this.templateDialogLoading = false;
               this.cdr.markForCheck();
             }),
@@ -268,24 +264,28 @@ export class TemplateManagementComponent implements OnInit, OnDestroy {
   handleDeleteTemplate(templateId: number): void {
     this.templatesLoading = true;
 
-    // this.validationRulesService
-    //   .deleteRule(ruleId)
-    //   .pipe(
-    //     finalize(() => {
-    //       this.selectedRule = null;
-    //       this.rulesLoading = false;
-    //     }),
-    //   )
-    //   .subscribe({
-    //     next: () => {
-    //       this.removeRuleEntry(ruleId);
-    //       this.toast.success('Regla eliminada exitosamente.');
-    //     },
-    //     error: (error: unknown) => {
-    //       const message = this.validationRulesService.getErrorMessage(error);
-    //       this.toast.error(message);
-    //     },
-    //   });
+    this.templatesService
+      .deleteTemplate(templateId)
+      .pipe(
+        finalize(() => {
+          this.selectedTemplate = null;
+          this.templatesLoading = false;
+        }),
+      )
+      .subscribe({
+        next: () => {
+          this.removeTemplateEntry(templateId);
+          this.toast.success('Plantilla eliminada exitosamente.');
+        },
+        error: (error: unknown) => {
+          const message = this.templatesService.getErrorMessage(error);
+          this.toast.error(message);
+        },
+      });
+  }
+
+  private removeTemplateEntry(templateId: number): void {
+    this.templates = this.templates.filter((template) => template.id !== templateId);
   }
 
   protected closeTemplateDialog(): void {
@@ -772,43 +772,6 @@ export class TemplateManagementComponent implements OnInit, OnDestroy {
     });
   }
 
-  private addTemplateFromCreate(result: TemplateCreateDialogResult): void {
-    const entry = this.mapTemplateResultToRow(result);
-    this.templatesError = null;
-    this.templates = [entry, ...this.templates];
-
-    if (result.template?.id !== undefined && result.template?.id !== null) {
-      void this.refreshTemplateColumns(result.template.id);
-    }
-  }
-
-  private updateTemplateFromEdit(result: TemplateCreateDialogResult): void {
-    const updatedEntry = this.mapTemplateResultToRow(result);
-    const updatedId = updatedEntry.id;
-
-    this.templatesError = null;
-    this.templates = this.templates.map((template) => {
-      if (template.id !== updatedId) {
-        return template;
-      }
-
-      return {
-        ...template,
-        ...updatedEntry,
-      };
-    });
-
-    if (result.template?.id !== undefined && result.template?.id !== null) {
-      void this.refreshTemplateColumns(result.template.id);
-    }
-  }
-
-  private mapTemplateResultToRow(result: TemplateCreateDialogResult): TemplateRow {
-    const template = result.template;
-
-    return this.mapToTemplateRow(template);
-  }
-
   private buildTemplateFilename(template: ClientTemplate): string {
     const normalizeSegment = (value: string): string =>
       value
@@ -1190,31 +1153,6 @@ export class TemplateManagementComponent implements OnInit, OnDestroy {
     return null;
   }
 
-  private async refreshTemplateColumns(templateId: number | string): Promise<void> {
-    try {
-      const columns = await this.templatesService.fetchTemplateColumns(templateId);
-      const normalizedId = templateId;
-      const columnsDetail = this.mapColumnsToDetail(columns);
-
-      this.templates = this.templates.map((template) => {
-        if (template.id !== normalizedId) {
-          return template;
-        }
-
-        return {
-          ...template,
-          columns: columns.length,
-          columnsDetail,
-        };
-      });
-    } catch (error) {
-      console.error(
-        '[TemplateManagement] No se pudieron sincronizar las columnas de la plantilla creada.',
-        error,
-      );
-    }
-  }
-
   private getErrorMessage(error: unknown): string {
     if (!error) {
       return 'Ocurrió un error inesperado. Intenta nuevamente más tarde.';
@@ -1254,25 +1192,6 @@ export class TemplateManagementComponent implements OnInit, OnDestroy {
     }
 
     return 'No fue posible completar la operación. Intenta nuevamente.';
-  }
-
-  private async deleteTemplate(templateId: string): Promise<void> {
-    if (!templateId || this.deletingTemplates[templateId]) {
-      return;
-    }
-
-    this.templatesError = null;
-    this.deletingTemplates[templateId] = true;
-
-    try {
-      await this.templatesService.deleteTemplate(templateId);
-      // this.templates = this.templates.filter((template) => template.id !== templateId);
-    } catch (error) {
-      console.error('[TemplateManagement] No se pudo eliminar la plantilla seleccionada:', error);
-      this.templatesError = this.getErrorMessage(error);
-    } finally {
-      delete this.deletingTemplates[templateId];
-    }
   }
 
   private generateId(): string {
