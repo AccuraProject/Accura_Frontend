@@ -57,12 +57,13 @@
       [showExtraAction]="true"
       extraActionIcon="pi pi-upload"
       extraActionLabel="Publicar"
-      [disableEdit]="!selectedTemplate"
+      [disableEdit]="!selectedTemplate || selectedTemplate.statusCode == 'published'"
       [disableDelete]="!selectedTemplate"
-      [disableExtraAction]="true"
+      [disableExtraAction]="isPublishTemplateDisabled"
       (create)="onCreateTemplate()"
       (edit)="onEditTemplate()"
       (delete)="onDeleteTemplate()"
+      (extraAction)="onPublishTemplate()"
     ></app-page-actions>
 
     <app-data-table

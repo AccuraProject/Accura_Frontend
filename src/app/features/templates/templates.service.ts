@@ -177,6 +177,31 @@ export class TemplatesService {
     );
   }
 
+  updateTemplateStatus(
+    templateId: number,
+    status: 'published' | 'unpublished',
+  ): Observable<TemplateResponse> {
+    return this.store.select(selectSessionState).pipe(
+      take(1),
+      switchMap((session) => {
+        if (!session.accessToken) {
+          return throwError(() => new Error('No hay un token de autenticación disponible.'));
+        }
+
+        const tokenType = session.tokenType ?? 'Bearer';
+        const headers = new HttpHeaders({
+          Authorization: `${tokenType} ${session.accessToken}`,
+        });
+
+        const body = { status };
+
+        return this.http.patch<TemplateResponse>(`${this.baseUrl}/templates/${templateId}/status`, body, {
+          headers,
+        });
+      }),
+    );
+  }
+
   deleteTemplate(
     templateId: number
   ): Observable<void> {
@@ -476,22 +501,6 @@ export class TemplatesService {
     return [];
   }
 
-  async updateTemplateStatus(
-    templateId: number | string,
-    status: 'published' | 'unpublished',
-  ): Promise<TemplateResponse> {
-    const headers = await this.buildAuthHeaders();
-    const encodedId = encodeURIComponent(String(templateId));
-
-    return await firstValueFrom(
-      this.http.patch<TemplateResponse>(
-        `${this.baseUrl}/templates/${encodedId}/status`,
-        { status },
-        { headers },
-      ),
-    );
-  }
-
   private parseTemplateResponse(data: unknown): TemplateResponse | null {
     if (!data) {
       return null;
@@ -538,24 +547,6 @@ export class TemplatesService {
     }
 
     return null;
-  }
-
-  private buildTemplateFallback(
-    templateId: number | string,
-    payload: TemplateCreatePayload,
-  ): TemplateResponse {
-    const numericId = typeof templateId === 'number' ? templateId : Number(templateId);
-
-    if (Number.isNaN(numericId)) {
-      throw new Error('No fue posible determinar el identificador de la plantilla.');
-    }
-
-    return {
-      id: numericId,
-      name: payload.name,
-      description: payload.description,
-      table_name: payload.table_name,
-    };
   }
 
   private toColumnResponse(entry: Record<string, unknown>): TemplateColumnResponse | null {
@@ -606,15 +597,6 @@ export class TemplatesService {
     }
 
     return new HttpHeaders(headers);
-  }
-
-  private isTemplateColumnResponse(entry: unknown): entry is TemplateColumnResponse {
-    if (!entry || typeof entry !== 'object') {
-      return false;
-    }
-
-    const candidate = entry as Partial<TemplateColumnResponse>;
-    return typeof candidate.id === 'number' && typeof candidate.name === 'string';
   }
 
   getErrorMessage(error: unknown): string {

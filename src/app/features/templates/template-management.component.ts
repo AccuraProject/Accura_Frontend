@@ -171,6 +171,10 @@ export class TemplateManagementComponent implements OnInit, OnDestroy {
     await this.loadAssignedTemplates();
   }
 
+  get isPublishTemplateDisabled(): boolean {
+    return !this.selectedTemplate || !(this.selectedTemplate.statusCode == 'unpublished');
+  }
+
   onRowSelect(template: TemplateRow) {
     this.selectedTemplate = template;
   }
@@ -201,6 +205,19 @@ export class TemplateManagementComponent implements OnInit, OnDestroy {
     this.confirm.confirmDelete(() => {
       this.handleDeleteTemplate(template.id);
     });
+  }
+
+  onPublishTemplate(): void {
+    if (!this.selectedTemplate || !(this.selectedTemplate.statusCode == 'unpublished')) return;
+
+    const template = this.selectedTemplate;
+
+    this.confirm.confirmAction(
+      () => this.handlePublishTemplate(template.id),
+      `Se publicará la plantilla <b>${template.name}</b>. Una vez publicada, no podrás editarla. ¿Deseas continuar?`,
+      'Publicar plantilla',
+      'Publicar',
+    );
   }
 
   handleSaveTemplate(event: SaveTemplateColumnsEvent): void {
@@ -276,6 +293,43 @@ export class TemplateManagementComponent implements OnInit, OnDestroy {
         next: () => {
           this.removeTemplateEntry(templateId);
           this.toast.success('Plantilla eliminada exitosamente.');
+        },
+        error: (error: unknown) => {
+          const message = this.templatesService.getErrorMessage(error);
+          this.toast.error(message);
+        },
+      });
+  }
+
+  handlePublishTemplate(templateId: number): void {
+    this.templatesLoading = true;
+
+    const updateState = 'published';
+
+    this.templatesService
+      .updateTemplateStatus(templateId, updateState)
+      .pipe(
+        finalize(() => {
+          this.selectedTemplate = null;
+          this.templatesLoading = false;
+        }),
+      )
+      .subscribe({
+        next: (template: TemplateResponse) => {
+          this.templates = this.templates.map((entry) => {
+            if (entry.id !== templateId) {
+              return entry;
+            }
+
+            return {
+              ...entry,
+              status: this.toDisplayStatus(updateState),
+              statusCode: template.status,
+              lastUpdated: formatDate(template.updated_at),
+            };
+          });
+
+          this.toast.success('Plantilla publicada exitosamente.');
         },
         error: (error: unknown) => {
           const message = this.templatesService.getErrorMessage(error);
@@ -502,44 +556,6 @@ export class TemplateManagementComponent implements OnInit, OnDestroy {
         },
       },
     );
-  }
-
-  protected async toggleTemplateStatus(template: TemplateRow): Promise<void> {
-    const templateId = template.id;
-    const isPublished = template.status === 'Publicado';
-    const nextStatus = isPublished ? 'unpublished' : 'published';
-
-    if (!templateId) {
-      return;
-    }
-
-    this.statusUpdating[templateId] = true;
-    this.templatesError = null;
-
-    try {
-      const response = await this.templatesService.updateTemplateStatus(templateId, nextStatus);
-      const displayStatus = this.toDisplayStatus(response.status ?? nextStatus);
-      const updatedAt = this.toIsoDate(response.updated_at ?? new Date().toISOString());
-      const statusCode = response.status ?? nextStatus;
-
-      this.templates = this.templates.map((entry) => {
-        if (entry.id !== templateId) {
-          return entry;
-        }
-
-        return {
-          ...entry,
-          status: displayStatus,
-          statusCode,
-          lastUpdated: updatedAt,
-        };
-      });
-    } catch (error) {
-      console.error('[TemplateManagement] No se pudo actualizar el estado de la plantilla:', error);
-      this.templatesError = this.getErrorMessage(error);
-    } finally {
-      delete this.statusUpdating[templateId];
-    }
   }
 
   protected toggleUpload(template: ClientTemplate): void {
