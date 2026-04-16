@@ -9,8 +9,14 @@ import {
   Output,
   signal,
 } from '@angular/core';
-import { FormBuilder, FormsModule, NgForm, ReactiveFormsModule, Validators } from '@angular/forms';
-import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import {
+  FormArray,
+  FormBuilder,
+  FormsModule,
+  ReactiveFormsModule,
+  Validators,
+} from '@angular/forms';
+import { MatDialogModule } from '@angular/material/dialog';
 import { read, utils, writeFileXLSX } from 'xlsx';
 
 import { ValidationRulesService } from '../../../validation-rules/validation-rules.service';
@@ -29,43 +35,23 @@ import { ToastService } from '../../../../shared/services/toast.service';
 import { finalize } from 'rxjs';
 import { DialogShellComponent } from '../../../../shared/components/overlay/dialog/dialog-shell/dialog-shell';
 import { ButtonComponent } from '../../../../shared/components/ui/button/button';
-
-interface StepOneFormModel {
-  name: string;
-  tableName: string;
-  description: string;
-}
-
-interface TemplateRuleOption {
-  id: string;
-  name: string;
-  dataType: string;
-  headerRule: string[];
-}
-
-interface ColumnRuleSelection {
-  id: string;
-  option: TemplateRuleOption;
-  headerSelection: string | null;
-}
-
-interface ColumnRowErrors {
-  name?: string;
-  rules?: string;
-  headerSelections?: Record<string, string>;
-}
-
-interface ColumnRowDraft {
-  id: string;
-  name: string;
-  description: string;
-  ruleSelections: ColumnRuleSelection[];
-  errors: ColumnRowErrors;
-}
+import {
+  ColumnRowForm,
+  ColumnRuleForm,
+  Step2Form,
+  TemplateRuleOption,
+} from '../../models/template-columns-editor';
+import { TemplateColumnsEditorComponent } from '../../../../shared/components/data/template-columns-editor/template-columns-editor';
+import { RuleResponse } from '../../../validation-rules/models/rule.model';
 
 export interface TemplateCreateDialogResult {
   template: TemplateResponse;
   columns: TemplateColumnResponse[];
+}
+
+export interface SaveTemplateColumnsEvent {
+  templateId: number | null;
+  columns: TemplateColumnPayload[];
 }
 
 export interface TemplateDialogData {
@@ -87,6 +73,7 @@ export interface TemplateDialogData {
     TextFieldComponent,
     TextAreaFieldComponent,
     ButtonComponent,
+    TemplateColumnsEditorComponent,
   ],
   templateUrl: './template-form-dialog.component.html',
   styleUrl: './template-form-dialog.component.scss',
@@ -117,7 +104,9 @@ export class TemplateFormDialogComponent {
     description: this.fb.control<string | null>(null, [Validators.maxLength(200)]),
   });
 
-  readonly step2Form = this.fb.group({});
+  readonly step2Form: Step2Form = this.fb.group({
+    columns: this.fb.array<ColumnRowForm>([]),
+  });
 
   readonly currentStep = signal<1 | 2>(1);
 
@@ -127,50 +116,78 @@ export class TemplateFormDialogComponent {
   readonly saveLabel = computed(() => 'Crear plantilla');
 
   readonly isSubmittingStep1 = signal(false);
+  readonly isImportingColumns = signal(false);
+
+  protected ruleOptions: TemplateRuleOption[] = [];
+  protected rulesLoading = false;
+  protected rulesError: string | null = null;
 
   @Input() visible = false;
   @Output() visibleChange = new EventEmitter<boolean>();
 
-  @Output() saveTemplate = new EventEmitter<any>();
+  @Output() saveTemplate = new EventEmitter<SaveTemplateColumnsEvent>();
   @Output() cancelDialog = new EventEmitter<void>();
 
   @Input() loading = false;
-  @Input() set data(value: TemplateDialogData | null) {}
+  @Input() set data(value: TemplateDialogData | null) {
+    if (!value) {
+      this.resetDialogState();
+      return;
+    }
+
+    this.isEditMode = value.mode === 'edit';
+    this.currentStep.set(1);
+
+    if (this.isEditMode && value.template) {
+      this.templateId = value.template.id ?? null;
+
+      this.title = 'Editar plantilla';
+      this.description =
+        'Actualiza la información general de la plantilla antes de configurar sus columnas.';
+      this.actionLabel = 'Guardar cambios';
+
+      this.step1Form.reset({
+        name: value.template.name ?? null,
+        tableName: value.template.table_name ?? null,
+        description: value.template.description ?? null,
+      });
+    } else {
+      this.templateId = null;
+
+      this.title = 'Crear nueva plantilla';
+      this.description =
+        'Configura la estructura de la plantilla que los usuarios utilizarán para cargar y validar sus datos.';
+      this.actionLabel = 'Crear plantilla';
+
+      this.step1Form.reset({
+        name: null,
+        tableName: null,
+        description: null,
+      });
+    }
+
+    this.clearColumnsForm();
+  }
 
   protected generalError: string | null = null;
   protected generalLoading = false;
 
-  protected columns: ColumnRowDraft[] = [];
+  protected columns = [];
   protected columnsError: string | null = null;
   protected columnsLoading = false;
 
   protected rules: TemplateRuleOption[] = [];
-  protected rulesLoading = false;
-  protected rulesError: string | null = null;
 
-  protected templateResponse: TemplateResponse | null = null;
-
-  private pendingColumns: TemplateColumnResponse[] | null = null;
+  protected template: TemplateResponse | null = null;
 
   constructor(
     private readonly templatesService: TemplatesService,
     private readonly validationRulesService: ValidationRulesService,
     private readonly toast: ToastService,
-  ) {
-    // this.dialogData = data ?? { mode: 'create' };
-    // this.mode = this.dialogData.mode === 'edit' ? 'edit' : 'create';
-    // if (this.mode === 'edit' && this.dialogData.template) {
-    //   this.templateResponse = this.dialogData.template;
-    //   this.stepOneForm.name = this.dialogData.template.name ?? '';
-    //   this.stepOneForm.tableName = this.dialogData.template.table_name ?? '';
-    //   this.stepOneForm.description = this.dialogData.template.description ?? '';
-    // }
-    // if (this.mode === 'edit' && Array.isArray(this.dialogData.columns)) {
-    //   this.pendingColumns = this.dialogData.columns.map((column) => ({
-    //     ...column,
-    //     rules: Array.isArray(column.rules) ? column.rules.map((rule) => ({ ...rule })) : [],
-    //   }));
-    // }
+  ) {}
+
+  get columnsFormArray(): FormArray<ColumnRowForm> {
+    return this.step2Form.controls.columns;
   }
 
   protected cancel(): void {
@@ -185,6 +202,76 @@ export class TemplateFormDialogComponent {
   private close(): void {
     this.visible = false;
     this.visibleChange.emit(false);
+  }
+
+  private mapRuleResponseToOption(rule: RuleResponse): TemplateRuleOption {
+    return {
+      id: rule.id,
+      name: rule.rule['Nombre de la regla'] ?? '',
+      dataType: rule.rule['Tipo de dato'] ?? '',
+      headerRule: Array.isArray(rule.rule['Header rule']) ? rule.rule['Header rule'] : [],
+    };
+  }
+
+  private mapTemplateColumnResponseToFormValue(
+    column: TemplateColumnResponse,
+  ): Partial<TemplateColumnPayload> {
+    return {
+      name: column.name ?? '',
+      description: column.description ?? '',
+      rules: (column.rules ?? []).map((rule) => {
+        const matchedRule = this.ruleOptions.find((option) => option.id === rule.id);
+
+        return {
+          id: rule.id ?? null,
+          'header rule': Array.isArray(rule['header rule'])
+            ? rule['header rule']
+            : (matchedRule?.headerRule ?? []),
+        };
+      }),
+    };
+  }
+
+  private populateColumnsForm(columns: TemplateColumnResponse[] = []): void {
+    this.columnsFormArray.clear();
+
+    if (!columns.length) {
+      this.ensureAtLeastOneColumnRow();
+      return;
+    }
+
+    for (const column of columns) {
+      this.columnsFormArray.push(
+        this.createColumnRowForm(this.mapTemplateColumnResponseToFormValue(column)),
+      );
+    }
+  }
+
+  private loadRulesAndGoToStep2(): void {
+    if (this.ruleOptions.length) {
+      this.populateColumnsForm(this.template?.columns ?? []);
+      this.currentStep.set(2);
+      return;
+    }
+
+    this.rulesLoading = true;
+    this.rulesError = null;
+
+    this.validationRulesService
+      .getRules()
+      .pipe(finalize(() => (this.rulesLoading = false)))
+      .subscribe({
+        next: (rules: RuleResponse[]) => {
+          this.ruleOptions = rules.map((rule) => this.mapRuleResponseToOption(rule));
+          this.populateColumnsForm(this.template?.columns ?? []);
+          this.currentStep.set(2);
+        },
+        error: (error: unknown) => {
+          this.ruleOptions = [];
+          this.rulesError = this.validationRulesService.getErrorMessage(error);
+          this.toast.error(this.rulesError);
+        },
+      });
   }
 
   protected submitStep1Form(): void {
@@ -213,8 +300,10 @@ export class TemplateFormDialogComponent {
           .updateTemplate(this.templateId, payload)
           .pipe(finalize(() => this.isSubmittingStep1.set(false)))
           .subscribe({
-            next: (payloads) => {
-              this.currentStep.set(2);
+            next: (payload) => {
+              this.template = payload;
+              this.templateId = this.template.id;
+              this.loadRulesAndGoToStep2();
             },
             error: (error: unknown) => {
               const message = this.validationRulesService.getErrorMessage(error);
@@ -227,8 +316,10 @@ export class TemplateFormDialogComponent {
         .saveTemplate(payload)
         .pipe(finalize(() => this.isSubmittingStep1.set(false)))
         .subscribe({
-          next: (payloads) => {
-            this.currentStep.set(2);
+          next: (payload) => {
+            this.template = payload;
+            this.templateId = this.template.id;
+            this.loadRulesAndGoToStep2();
           },
           error: (error: unknown) => {
             const message = this.validationRulesService.getErrorMessage(error);
@@ -236,189 +327,27 @@ export class TemplateFormDialogComponent {
           },
         });
     }
-
-    // try {
-    //   let response: TemplateResponse;
-
-    //   if (this.isEditMode) {
-    //     const templateId = this.templateResponse?.id ?? this.dialogData.template?.id;
-
-    //     if (templateId === undefined || templateId === null) {
-    //       throw new Error('No fue posible identificar la plantilla a editar.');
-    //     }
-
-    //     response = await this.templatesService.updateTemplate(templateId, payload);
-    //     this.templateResponse = { ...(this.templateResponse ?? {}), ...response };
-    //   } else {
-    //     response = await this.templatesService.createTemplate(payload);
-    //     this.templateResponse = response;
-    //   }
-
-    //   this.currentStep = 2;
-    //   await this.loadRules();
-    //   if (this.columns.length === 0) {
-    //     this.addColumn();
-    //   }
-    // } catch (error) {
-    //   console.error('[TemplateCreateDialog] Error al guardar plantilla:', error);
-    //   this.generalError = this.getErrorMessage(error);
-    // } finally {
-    //   this.generalLoading = false;
-    // }
   }
 
-  protected submitStep2Form(): void {}
-
-  protected addColumn(): void {
-    const draft: ColumnRowDraft = {
-      id: `column-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
-      name: '',
-      description: '',
-      ruleSelections: [],
-      errors: {},
-    };
-
-    this.columns = [...this.columns, draft];
-  }
-
-  protected removeColumn(columnId: string): void {
-    this.columns = this.columns.filter((column) => column.id !== columnId);
-
-    if (this.columns.length === 0) {
-      this.columnsError = 'Agrega al menos una columna para continuar.';
-    }
-  }
-
-  protected trackByColumnId(_: number, column: ColumnRowDraft): string {
-    return column.id;
-  }
-
-  protected trackByRuleId(_: number, rule: ColumnRuleSelection): string {
-    return rule.id;
-  }
-
-  protected onRuleSelected(column: ColumnRowDraft, event: Event): void {
-    const select = event.target as HTMLSelectElement;
-    const ruleId = select.value;
-
-    if (!ruleId) {
+  protected submitStep2Form(): void {
+    if (this.loading) {
       return;
     }
 
-    select.value = '';
-
-    if (column.ruleSelections.some((selection) => selection.id === ruleId)) {
+    if (this.step2Form.invalid) {
+      this.step2Form.markAllAsTouched();
       return;
     }
 
-    const option = this.rules.find((rule) => rule.id === ruleId);
-    if (!option) {
-      return;
-    }
+    const payload = this.buildColumnsPayload();
 
-    const selection: ColumnRuleSelection = {
-      id: ruleId,
-      option,
-      headerSelection: this.requiresHeaderSelection(option)
-        ? null
-        : (option.headerRule?.[0] ?? null),
-    };
-
-    column.ruleSelections = [...column.ruleSelections, selection];
-    column.errors = { ...column.errors, rules: undefined };
+    this.saveTemplate.emit({
+      templateId: this.templateId,
+      columns: payload,
+    });
   }
 
-  protected removeRule(column: ColumnRowDraft, ruleId: string): void {
-    column.ruleSelections = column.ruleSelections.filter((selection) => selection.id !== ruleId);
-
-    if (Object.keys(column.errors.headerSelections ?? {}).length > 0) {
-      const nextHeaderErrors = { ...(column.errors.headerSelections ?? {}) };
-      delete nextHeaderErrors[ruleId];
-      column.errors = { ...column.errors, headerSelections: nextHeaderErrors };
-    }
-  }
-
-  protected requiresHeaderSelection(option: TemplateRuleOption): boolean {
-    const normalized = option.dataType.trim().toLowerCase();
-    return normalized === 'lista compleja' || normalized === 'dependencia';
-  }
-
-  protected updateHeaderSelection(
-    column: ColumnRowDraft,
-    rule: ColumnRuleSelection,
-    value: string,
-  ): void {
-    rule.headerSelection = value || null;
-
-    if (rule.headerSelection) {
-      const nextHeaderErrors = { ...(column.errors.headerSelections ?? {}) };
-      delete nextHeaderErrors[rule.id];
-      column.errors = { ...column.errors, headerSelections: nextHeaderErrors };
-    }
-  }
-
-  protected getRuleHeaderOptions(rule: TemplateRuleOption): string[] {
-    if (!Array.isArray(rule.headerRule)) {
-      return [];
-    }
-
-    return rule.headerRule.filter((item) => typeof item === 'string' && item.trim().length > 0);
-  }
-
-  protected async submitColumns(): Promise<void> {
-    if (this.columnsLoading || !this.templateResponse) {
-      return;
-    }
-
-    const hasValidationErrors = this.validateColumns();
-    if (hasValidationErrors) {
-      return;
-    }
-
-    this.columnsLoading = true;
-    this.columnsError = null;
-
-    try {
-      const payload = this.columns.map<TemplateColumnPayload>((column) => {
-        const name = column.name.trim();
-        const description = column.description.trim();
-
-        return {
-          name,
-          ...(description ? { description } : {}),
-          rules: column.ruleSelections.map((selection) => {
-            const headerRule = this.requiresHeaderSelection(selection.option)
-              ? selection.headerSelection
-                ? [selection.headerSelection]
-                : []
-              : (selection.option.headerRule ?? []);
-
-            return {
-              id: this.toNumericId(selection.id),
-              'header rule': headerRule,
-            };
-          }),
-          is_active: true,
-        };
-      });
-
-      const columnsResponse = this.isEditMode
-        ? await this.templatesService.updateTemplateColumns(this.templateResponse.id, payload)
-        : await this.templatesService.createTemplateColumns(this.templateResponse.id, payload);
-
-      // this.dialogRef.close({
-      //   template: this.templateResponse,
-      //   columns: columnsResponse,
-      // });
-    } catch (error) {
-      console.error('[TemplateCreateDialog] Error al crear columnas:', error);
-      this.columnsError = this.getErrorMessage(error);
-    } finally {
-      this.columnsLoading = false;
-    }
-  }
-
-  protected downloadTemplate(): void {
+  protected onDownloadColumnsTemplate(): void {
     const worksheet = utils.json_to_sheet([
       { Nombre: 'Ejemplo de Columna', Descripción: 'Descripción opcional' },
     ]);
@@ -427,389 +356,204 @@ export class TemplateFormDialogComponent {
     writeFileXLSX(workbook, 'plantilla-columnas.xlsx');
   }
 
-  protected async importColumns(event: Event): Promise<void> {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
+  protected onImportColumnsExcel(file: File): void {
+    this.isImportingColumns.set(true);
 
-    if (!file) {
-      return;
-    }
+    file
+      .arrayBuffer()
+      .then((arrayBuffer) => {
+        const workbook = read(arrayBuffer, { type: 'array' });
 
-    try {
-      const arrayBuffer = await file.arrayBuffer();
-      const workbook = read(arrayBuffer, { type: 'array' });
-      const sheetName = workbook.SheetNames[0];
-      const sheet = workbook.Sheets[sheetName];
-      if (!sheet) {
-        throw new Error('La plantilla no contiene datos.');
-      }
-
-      const rows = utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: '' });
-      const imported: ColumnRowDraft[] = [];
-
-      for (const row of rows) {
-        const name = this.extractCellValue(row, ['Nombre', 'name', 'columna']);
-        const description = this.extractCellValue(row, [
-          'Descripción',
-          'description',
-          'descripcion',
-        ]);
-
-        if (!name) {
-          continue;
+        const sheetName = workbook.SheetNames[0];
+        if (!sheetName) {
+          throw new Error('El archivo no contiene hojas.');
         }
 
-        imported.push({
-          id: `column-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
-          name,
-          description,
-          ruleSelections: [],
-          errors: {},
+        const sheet = workbook.Sheets[sheetName];
+        if (!sheet) {
+          throw new Error('La hoja seleccionada no contiene datos.');
+        }
+
+        const rows = utils.sheet_to_json<Record<string, unknown>>(sheet, {
+          defval: '',
         });
-      }
 
-      if (imported.length === 0) {
-        this.columnsError = 'No se encontraron columnas válidas en el archivo seleccionado.';
-        return;
-      }
+        if (rows.length) {
+          const importedColumns = rows
+            .map((row) => this.mapExcelRowToColumnPayload(row))
+            .filter((column): column is TemplateColumnPayload => column !== null);
 
-      this.columns = [...this.columns, ...imported];
-      this.columnsError = null;
-    } catch (error) {
-      console.error('[TemplateCreateDialog] Error al importar columnas:', error);
-      this.columnsError = 'No fue posible importar el archivo seleccionado. Verifica el formato.';
-    } finally {
-      input.value = '';
+          if (!importedColumns.length) {
+            this.toast.error('No se encontraron columnas válidas en el archivo seleccionado.');
+            return;
+          }
+
+          this.replaceImportedColumns(importedColumns);
+
+          this.toast.success('Se cargaron los datos correctamente.');
+        } else {
+          this.toast.warn('El archivo seleccionado no contiene datos.');
+        }
+      })
+      .catch((error) => {
+        console.error('Error al importar columnas:', error);
+        this.toast.error('No fue posible importar el archivo seleccionado. Verifica el formato.');
+      })
+      .finally(() => {
+        this.isImportingColumns.set(false);
+      });
+  }
+
+  private replaceImportedColumns(columns: TemplateColumnPayload[]): void {
+    this.columnsFormArray.clear();
+
+    for (const column of columns) {
+      this.columnsFormArray.push(this.createColumnRowForm(column));
     }
   }
 
-  protected get hasColumns(): boolean {
-    return this.columns.length > 0;
-  }
+  private mapExcelRowToColumnPayload(row: Record<string, unknown>): TemplateColumnPayload | null {
+    const name = this.extractCellValue(row, ['Nombre', 'name', 'columna']);
+    const description = this.extractCellValue(row, ['Descripción', 'description', 'descripcion']);
 
-  private hydratePendingColumns(): void {
-    if (!this.pendingColumns || this.pendingColumns.length === 0) {
-      return;
-    }
-
-    const drafts = this.pendingColumns
-      .map((column) => this.createDraftFromResponse(column))
-      .filter((draft): draft is ColumnRowDraft => draft !== null);
-
-    if (drafts.length > 0) {
-      this.columns = drafts;
-      this.columnsError = null;
-    }
-
-    this.pendingColumns = null;
-  }
-
-  private createDraftFromResponse(column: TemplateColumnResponse): ColumnRowDraft | null {
-    if (!column || typeof column.name !== 'string') {
+    if (!name) {
       return null;
     }
 
-    const rules = Array.isArray(column.rules) ? column.rules : [];
-    const ruleSelections: ColumnRuleSelection[] = [];
+    return {
+      name,
+      description: description || undefined,
+      rules: [],
+    };
+  }
 
-    for (const rule of rules) {
-      const ruleIdValue = (rule as TemplateColumnRulePayload)?.id;
-      if (ruleIdValue === undefined || ruleIdValue === null) {
+  private extractCellValue(row: Record<string, unknown>, possibleKeys: string[]): string {
+    for (const key of possibleKeys) {
+      const match = Object.keys(row).find(
+        (currentKey) => currentKey.trim().toLowerCase() === key.trim().toLowerCase(),
+      );
+
+      if (!match) {
         continue;
       }
 
-      const ruleId = String(ruleIdValue);
-      const headerRule = this.extractStringArray(
-        rule['header rule'] ??
-          (typeof rule === 'object' && rule !== null
-            ? (rule as unknown as Record<string, unknown>)['header_rule']
-            : undefined),
-      );
+      const rawValue = row[match];
 
-      const option = this.rules.find((candidate) => candidate.id === ruleId);
-      const selectionOption = option ?? this.buildFallbackRuleOption(rule, ruleId, headerRule);
-
-      const headerSelection = this.requiresHeaderSelection(selectionOption)
-        ? (headerRule[0] ?? null)
-        : (selectionOption.headerRule?.[0] ?? null);
-
-      ruleSelections.push({
-        id: ruleId,
-        option: selectionOption,
-        headerSelection,
-      });
-    }
-
-    return {
-      id: `column-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
-      name: column.name,
-      description: column.description ?? '',
-      ruleSelections,
-      errors: {},
-    };
-  }
-
-  private buildFallbackRuleOption(
-    rule: TemplateColumnRulePayload,
-    ruleId: string,
-    headerRule: string[],
-  ): TemplateRuleOption {
-    const requiresHeader = headerRule.length > 0;
-    const ruleRecord = rule as unknown as Record<string, unknown>;
-    const name =
-      this.extractString(ruleRecord['name']) ??
-      this.extractString(ruleRecord['rule_name']) ??
-      this.extractString(ruleRecord['Nombre de la regla']) ??
-      `Regla #${ruleId}`;
-
-    return {
-      id: ruleId,
-      name,
-      dataType: requiresHeader ? 'Dependencia' : 'Regla',
-      headerRule,
-    };
-  }
-
-  private async loadRules(): Promise<void> {
-    if (this.rulesLoading) {
-      return;
-    }
-
-    if (this.rules.length > 0) {
-      this.hydratePendingColumns();
-      return;
-    }
-
-    this.rulesLoading = true;
-    this.rulesError = null;
-
-    try {
-      const data = await this.validationRulesService.fetchRules();
-      this.rules = this.parseRuleList(data);
-    } catch (error) {
-      console.error('[TemplateCreateDialog] Error al obtener reglas:', error);
-      this.rulesError = this.getErrorMessage(error);
-      this.rules = [];
-    } finally {
-      this.hydratePendingColumns();
-      this.rulesLoading = false;
-    }
-  }
-
-  private validateColumns(): boolean {
-    let hasErrors = false;
-
-    if (this.columns.length === 0) {
-      this.columnsError = 'Agrega al menos una columna para continuar.';
-      return true;
-    }
-
-    this.columnsError = null;
-
-    this.columns = this.columns.map((column) => {
-      const errors: ColumnRowErrors = {};
-      const name = column.name.trim();
-
-      if (!name) {
-        errors.name = 'El nombre de la columna es obligatorio.';
+      if (rawValue === null || rawValue === undefined) {
+        continue;
       }
 
-      if (column.ruleSelections.length > 0) {
-        const headerErrors: Record<string, string> = {};
-        for (const selection of column.ruleSelections) {
-          if (this.requiresHeaderSelection(selection.option) && !selection.headerSelection) {
-            headerErrors[selection.id] = 'Selecciona un encabezado para esta regla.';
-          }
-        }
+      const value = String(rawValue).trim();
 
-        if (Object.keys(headerErrors).length > 0) {
-          errors.headerSelections = headerErrors;
-        }
-      }
-
-      if (Object.keys(errors).length > 0) {
-        hasErrors = true;
-      }
-
-      return {
-        ...column,
-        name,
-        description: column.description.trim(),
-        errors,
-      };
-    });
-
-    return hasErrors;
-  }
-
-  private extractCellValue(row: Record<string, unknown>, keys: string[]): string {
-    for (const key of keys) {
-      const value = row[key];
-      if (typeof value === 'string' && value.trim().length > 0) {
-        return value.trim();
-      }
-
-      if (typeof value === 'number') {
-        return String(value);
+      if (value) {
+        return value;
       }
     }
 
     return '';
   }
 
-  private parseRuleList(data: unknown): TemplateRuleOption[] {
-    if (Array.isArray(data)) {
-      return data
-        .map((entry) => this.parseRuleItem(entry))
-        .filter((rule): rule is TemplateRuleOption => rule !== null);
+  private createRuleForm(value?: Partial<TemplateColumnRulePayload>): ColumnRuleForm {
+    return this.fb.group({
+      id: this.fb.control<number | string | null>(value?.id ?? null),
+      headerRule: this.fb.nonNullable.control<string[]>(value?.['header rule'] ?? []),
+    });
+  }
+
+  private createColumnRowForm(value?: Partial<TemplateColumnPayload>): ColumnRowForm {
+    return this.fb.group({
+      rowId: this.fb.nonNullable.control<string>(crypto.randomUUID()),
+      name: this.fb.control<string | null>(value?.name ?? null, [
+        Validators.required,
+        Validators.maxLength(100),
+      ]),
+      description: this.fb.control<string | null>(value?.description ?? null, [
+        Validators.maxLength(200),
+      ]),
+      rules: this.fb.array<ColumnRuleForm>(
+        value?.rules?.length
+          ? value.rules.map((rule) => this.createRuleForm(rule))
+          : [this.createRuleForm()],
+      ),
+    });
+  }
+
+  private ensureAtLeastOneColumnRow(): void {
+    if (!this.columnsFormArray.length) {
+      this.columnsFormArray.push(this.createColumnRowForm());
     }
+  }
 
-    if (data && typeof data === 'object') {
-      const record = data as Record<string, unknown>;
-      const collectionKeys = ['items', 'rules', 'data'];
+  private buildColumnsPayload(): TemplateColumnPayload[] {
+    return this.columnsFormArray.getRawValue().map((column) => {
+      const payload: TemplateColumnPayload = {
+        name: column.name?.trim() ?? '',
+        rules: column.rules
+          .filter((rule) => rule.id !== null && rule.id !== '')
+          .map((rule) => {
+            const rulePayload: TemplateColumnRulePayload = {
+              id: rule.id as number | string,
+            };
 
-      for (const key of collectionKeys) {
-        const candidate = record[key];
-        if (Array.isArray(candidate)) {
-          return candidate
-            .map((entry) => this.parseRuleItem(entry))
-            .filter((rule): rule is TemplateRuleOption => rule !== null);
-        }
+            if (rule.headerRule?.length) {
+              rulePayload['header rule'] = Array.isArray(rule.headerRule)
+                ? rule.headerRule
+                : [rule.headerRule];
+            }
+
+            return rulePayload;
+          }),
+      };
+
+      if (column.description?.trim()) {
+        payload.description = column.description.trim();
       }
 
-      const single = this.parseRuleItem(record);
-      return single ? [single] : [];
-    }
-
-    return [];
+      return payload;
+    });
   }
 
-  private parseRuleItem(entry: unknown): TemplateRuleOption | null {
-    if (!entry || typeof entry !== 'object') {
-      return null;
+  private patchColumns(columns: TemplateColumnResponse[]): void {
+    this.columnsFormArray.clear();
+
+    if (!columns.length) {
+      return;
     }
 
-    const record = entry as Record<string, unknown>;
-    const payloadCandidate = record['payload'] ?? record['rule'] ?? entry;
-
-    if (!payloadCandidate || typeof payloadCandidate !== 'object') {
-      return null;
+    for (const column of columns) {
+      this.columnsFormArray.push(
+        this.createColumnRowForm({
+          name: column.name,
+          description: column.description ?? '',
+          rules: (column.rules ?? []).map((rule) => ({
+            id: rule.id,
+            'header rule': rule['header rule'] ?? [],
+          })),
+        }),
+      );
     }
-
-    const payload = payloadCandidate as Record<string, unknown>;
-    const id = this.extractIdentifier(record['id'] ?? payload['id']);
-    const name = this.extractString(payload['Nombre de la regla'] ?? payload['name']);
-    const dataType = this.extractString(
-      payload['Tipo de dato'] ?? payload['data_type'] ?? record['data_type'],
-    );
-    const headerRule = this.extractStringArray(
-      payload['Header rule'] ??
-        payload['header rule'] ??
-        record['header_rule'] ??
-        record['headerRule'],
-    );
-
-    if (!id || !name) {
-      return null;
-    }
-
-    return {
-      id,
-      name,
-      dataType: dataType ?? 'Regla',
-      headerRule,
-    };
   }
 
-  private extractIdentifier(value: unknown): string | null {
-    if (typeof value === 'string') {
-      return value;
-    }
-
-    if (typeof value === 'number') {
-      return String(value);
-    }
-
-    return null;
+  private clearColumnsForm(): void {
+    this.columnsFormArray.clear();
   }
 
-  private extractString(value: unknown): string | null {
-    if (typeof value === 'string') {
-      const trimmed = value.trim();
-      return trimmed.length > 0 ? trimmed : null;
-    }
+  private resetDialogState(): void {
+    this.isEditMode = false;
+    this.templateId = null;
+    this.currentStep.set(1);
 
-    return null;
-  }
+    this.title = 'Crear nueva plantilla';
+    this.description =
+      'Configura la estructura de la plantilla que los usuarios utilizarán para cargar y validar sus datos.';
+    this.actionLabel = 'Crear plantilla';
 
-  private extractStringArray(value: unknown): string[] {
-    if (!value) {
-      return [];
-    }
+    this.step1Form.reset({
+      name: null,
+      tableName: null,
+      description: null,
+    });
 
-    if (Array.isArray(value)) {
-      return value
-        .map((item) => (typeof item === 'string' ? item.trim() : null))
-        .filter((item): item is string => !!item && item.length > 0);
-    }
-
-    if (typeof value === 'string') {
-      return value
-        .split(',')
-        .map((item) => item.trim())
-        .filter((item) => item.length > 0);
-    }
-
-    return [];
-  }
-
-  private toNumericId(id: string): number | string {
-    const numeric = Number(id);
-    return Number.isNaN(numeric) ? id : numeric;
-  }
-
-  private getErrorMessage(error: unknown): string {
-    if (!error) {
-      return 'Ocurrió un error inesperado. Intenta nuevamente.';
-    }
-
-    if (typeof error === 'string') {
-      return error;
-    }
-
-    if (error instanceof Error) {
-      return error.message;
-    }
-
-    if (typeof error === 'object' && error !== null) {
-      const record = error as Record<string, unknown>;
-
-      if (record['error']) {
-        return this.getErrorMessage(record['error']);
-      }
-
-      const detail = record['detail'];
-
-      if (Array.isArray(detail)) {
-        const first = detail[0];
-        if (first && typeof first === 'object') {
-          const message = (first as Record<string, unknown>)['msg'];
-          if (typeof message === 'string' && message.trim().length > 0) {
-            return message;
-          }
-        }
-      }
-
-      if (typeof detail === 'string' && detail.trim().length > 0) {
-        return detail;
-      }
-
-      const message = record['message'];
-      if (typeof message === 'string' && message.trim().length > 0) {
-        return message;
-      }
-    }
-
-    return 'Ocurrió un error inesperado. Intenta nuevamente.';
+    this.clearColumnsForm();
   }
 }

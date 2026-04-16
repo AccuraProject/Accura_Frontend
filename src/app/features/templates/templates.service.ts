@@ -130,9 +130,7 @@ export class TemplatesService {
     );
   }
 
-  saveTemplate(
-    template: TemplateCreatePayload,
-  ): Observable<TemplateResponse> {
+  saveTemplate(template: TemplateCreatePayload): Observable<TemplateResponse> {
     return this.store.select(selectSessionState).pipe(
       take(1),
       switchMap((session) => {
@@ -177,7 +175,7 @@ export class TemplatesService {
           Authorization: `${tokenType} ${session.accessToken}`,
         });
 
-        const body = { template };
+        const body = { ...template };
 
         return this.http.put<TemplateResponse>(`${this.baseUrl}/templates/${templateId}`, body, {
           headers,
@@ -287,6 +285,33 @@ export class TemplatesService {
     );
   }
 
+  saveTemplateColumns(
+    templateId: number,
+    payload: TemplateColumnPayload[],
+  ): Observable<TemplateColumnResponse[]> {
+    return this.store.select(selectSessionState).pipe(
+      take(1),
+      switchMap((session) => {
+        if (!session.accessToken) {
+          return throwError(() => new Error('No hay un token de autenticación disponible.'));
+        }
+
+        const tokenType = session.tokenType ?? 'Bearer';
+        const headers = new HttpHeaders({
+          Authorization: `${tokenType} ${session.accessToken}`,
+        });
+
+        return this.http.post<TemplateColumnResponse[]>(
+          `${this.baseUrl}/templates/${templateId}/columns`,
+          payload,
+          {
+            headers,
+          },
+        );
+      }),
+    );
+  }
+
   async createTemplateColumns(
     templateId: number | string,
     payload: TemplateColumnPayload[],
@@ -315,7 +340,34 @@ export class TemplatesService {
     return [];
   }
 
-  async updateTemplateColumns(
+  updateTemplateColumns(
+    templateId: number,
+    payload: TemplateColumnPayload[],
+  ): Observable<TemplateColumnResponse[]> {
+    return this.store.select(selectSessionState).pipe(
+      take(1),
+      switchMap((session) => {
+        if (!session.accessToken) {
+          return throwError(() => new Error('No hay un token de autenticación disponible.'));
+        }
+
+        const tokenType = session.tokenType ?? 'Bearer';
+        const headers = new HttpHeaders({
+          Authorization: `${tokenType} ${session.accessToken}`,
+        });
+
+        return this.http.put<TemplateColumnResponse[]>(
+          `${this.baseUrl}/templates/${templateId}/columns`,
+          payload,
+          {
+            headers,
+          },
+        );
+      }),
+    );
+  }
+
+  async updateTemplateColumns2(
     templateId: number | string,
     payload: TemplateColumnPayload[],
   ): Promise<TemplateColumnResponse[]> {

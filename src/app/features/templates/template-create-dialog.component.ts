@@ -314,10 +314,10 @@ export class TemplateCreateDialogComponent {
         ? await this.templatesService.updateTemplateColumns(this.templateResponse.id, payload)
         : await this.templatesService.createTemplateColumns(this.templateResponse.id, payload);
 
-      this.dialogRef.close({
-        template: this.templateResponse,
-        columns: columnsResponse
-      });
+      // this.dialogRef.close({
+      //   template: this.templateResponse,
+      //   columns: columnsResponse
+      // });
     } catch (error) {
       console.error('[TemplateCreateDialog] Error al crear columnas:', error);
       this.columnsError = this.getErrorMessage(error);

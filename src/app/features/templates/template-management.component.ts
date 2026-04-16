@@ -6,7 +6,7 @@ import { MatMenuModule } from '@angular/material/menu';
 import { Store } from '@ngrx/store';
 import { HttpEventType } from '@angular/common/http';
 import { Observable, Subscription, firstValueFrom } from 'rxjs';
-import { filter } from 'rxjs/operators';
+import { filter, finalize } from 'rxjs/operators';
 
 import {
   TemplateCreateDialogComponent,
@@ -34,7 +34,10 @@ import { DataTableComponent } from '../../shared/components/data/data-table/data
 import { ToastService } from '../../shared/services/toast.service';
 import { ConfirmService } from '../../shared/services/confirm.service';
 import { formatDate } from '../../shared/utils/date-util';
-import { TemplateFormDialogComponent } from './components/template-form-dialog/template-form-dialog.component';
+import {
+  SaveTemplateColumnsEvent,
+  TemplateFormDialogComponent,
+} from './components/template-form-dialog/template-form-dialog.component';
 
 type ManagementTemplateStatus = 'Publicado' | 'Borrador' | 'Inactivo';
 type ClientTemplateStatus = 'Activo' | 'En Revisión';
@@ -205,58 +208,61 @@ export class TemplateManagementComponent implements OnInit, OnDestroy {
     });
   }
 
-  handleSaveTemplate(event: any): void {
-    // this.ruleDialogLoading = true;
-    // this.cdr.markForCheck();
-    // if (!this.isEditing) {
-    //   this.validationRulesService
-    //     .saveRule(event.rule, event.isActive)
-    //     .pipe(
-    //       finalize(() => {
-    //         this.ruleDialogLoading = false;
-    //         this.cdr.markForCheck();
-    //       }),
-    //     )
-    //     .subscribe({
-    //       next: () => {
-    //         this.loadRules();
-    //         this.toast.success('Regla creada exitosamente.');
-    //         this.closeRuleDialog();
-    //       },
-    //       error: (error: unknown) => {
-    //         const message = this.validationRulesService.getErrorMessage(error);
-    //         this.toast.error(message);
-    //       },
-    //     });
-    // } else {
-    //   if (this.selectedRule) {
-    //     this.validationRulesService
-    //       .updateRule(this.selectedRule.id, event.rule, event.isActive)
-    //       .pipe(
-    //         finalize(() => {
-    //           this.ruleDialogLoading = false;
-    //           this.cdr.markForCheck();
-    //         }),
-    //       )
-    //       .subscribe({
-    //         next: (updatedRule: RuleResponse) => {
-    //           const updatedRow = this.mapToRuleRow(updatedRule);
-    //           this.rules = this.rules.map((current) =>
-    //             current.id === updatedRow.id ? updatedRow : current,
-    //           );
-    //           this.toast.success('Regla actualizada exitosamente.');
-    //           this.closeRuleDialog();
-    //         },
-    //         error: (error: unknown) => {
-    //           const message = this.validationRulesService.getErrorMessage(error);
-    //           this.toast.error(message);
-    //         },
-    //       });
-    //   } else {
-    //     this.ruleDialogLoading = false;
-    //     this.cdr.markForCheck();
-    //   }
-    // }
+  handleSaveTemplate(event: SaveTemplateColumnsEvent): void {
+    this.templateDialogLoading = true;
+    this.cdr.markForCheck();
+
+    if (!this.isEditing) {
+      if (event.templateId) {
+        this.templatesService
+          .saveTemplateColumns(event.templateId, event.columns)
+          .pipe(
+            finalize(() => {
+              this.templateDialogLoading = false;
+              this.cdr.markForCheck();
+            }),
+          )
+          .subscribe({
+            next: () => {
+              this.loadTemplates();
+              this.toast.success('Plantilla creada exitosamente.');
+              this.closeTemplateDialog();
+            },
+            error: (error: unknown) => {
+              const message = this.templatesService.getErrorMessage(error);
+              this.toast.error(message);
+            },
+          });
+      } else {
+        this.templateDialogLoading = false;
+        this.cdr.markForCheck();
+      }
+    } else {
+      if (event.templateId) {
+        this.templatesService
+          .updateTemplateColumns(event.templateId, event.columns)
+          .pipe(
+            finalize(() => {
+              this.templateDialogLoading = false;
+              this.cdr.markForCheck();
+            }),
+          )
+          .subscribe({
+            next: () => {
+              this.loadTemplates();
+              this.toast.success('Plantilla actualizada exitosamente.');
+              this.closeTemplateDialog();
+            },
+            error: (error: unknown) => {
+              const message = this.templatesService.getErrorMessage(error);
+              this.toast.error(message);
+            },
+          });
+      } else {
+        this.templateDialogLoading = false;
+        this.cdr.markForCheck();
+      }
+    }
   }
 
   handleDeleteTemplate(templateId: number): void {
@@ -398,81 +404,26 @@ export class TemplateManagementComponent implements OnInit, OnDestroy {
     };
 
     this.templateDialogVisible = true;
-    // const dialogRef = this.dialog.open<
-    //   TemplateCreateDialogComponent,
-    //   TemplateDialogData,
-    //   TemplateCreateDialogResult
-    // >(TemplateCreateDialogComponent, {
-    //   disableClose: true,
-    //   width: '92vw',
-    //   maxWidth: '1240px',
-    //   maxHeight: '95vh',
-    //   data: { mode: 'create' },
-    // });
-
-    // dialogRef.afterClosed().subscribe((result: TemplateCreateDialogResult | undefined) => {
-    //   if (!result) {
-    //     return;
-    //   }
-
-    //   this.addTemplateFromCreate(result);
-    // });
   }
 
-  protected async openEditDialog(template: TemplateRow): Promise<void> {
-    if (!this.canEditTemplate(template)) {
-      return;
-    }
+  protected openEditDialog(template: TemplateRow) {
+    this.templateDialogData = {
+      mode: 'edit',
+      template: this.mapTemplateRowToResponse(template),
+    };
 
-    const templateId = template.id;
-    this.templatesError = null;
+    this.templateDialogVisible = true;
+  }
 
-    try {
-      const templateResponse = await this.templatesService.fetchTemplate(templateId);
-
-      if (!templateResponse) {
-        throw new Error('No fue posible obtener la plantilla seleccionada.');
-      }
-
-      let columns: TemplateColumnResponse[] = [];
-
-      try {
-        columns = await this.templatesService.fetchTemplateColumns(templateId);
-      } catch (columnError) {
-        console.error(
-          '[TemplateManagement] No se pudieron obtener las columnas para la edición:',
-          columnError,
-        );
-        columns = [];
-      }
-
-      const dialogRef = this.dialog.open<
-        TemplateCreateDialogComponent,
-        TemplateDialogData,
-        TemplateCreateDialogResult
-      >(TemplateCreateDialogComponent, {
-        disableClose: true,
-        width: '92vw',
-        maxWidth: '1240px',
-        maxHeight: '95vh',
-        data: {
-          mode: 'edit',
-          template: templateResponse,
-          columns,
-        },
-      });
-
-      dialogRef.afterClosed().subscribe((result: TemplateCreateDialogResult | undefined) => {
-        if (!result) {
-          return;
-        }
-
-        this.updateTemplateFromEdit(result);
-      });
-    } catch (error) {
-      console.error('[TemplateManagement] Error al preparar edición de plantilla:', error);
-      this.templatesError = this.getErrorMessage(error);
-    }
+  private mapTemplateRowToResponse(template: TemplateRow): TemplateResponse {
+    return {
+      id: template.id,
+      name: template.name,
+      description: template.description,
+      table_name: template.tableName ?? '',
+      version: template.version,
+      is_active: true,
+    } as TemplateResponse;
   }
 
   protected openDetailDialog(template: TemplateRow): void {

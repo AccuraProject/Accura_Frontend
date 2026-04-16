@@ -8,13 +8,7 @@ import { FloatLabelModule } from 'primeng/floatlabel';
 @Component({
   selector: 'app-select-field',
   standalone: true,
-  imports: [
-    CommonModule,
-    ReactiveFormsModule,
-    SelectModule,
-    MessageModule,
-    FloatLabelModule,
-  ],
+  imports: [CommonModule, ReactiveFormsModule, SelectModule, MessageModule, FloatLabelModule],
   templateUrl: './select-field.html',
 })
 export class SelectFieldComponent {
@@ -22,7 +16,7 @@ export class SelectFieldComponent {
   @Input() placeholder = 'Selecciona una opción';
   @Input() control!: FormControl;
 
-  @Input() options: any[] = [];
+  @Input() options: unknown[] = [];
   @Input() optionLabel = 'label';
   @Input() optionValue = 'value';
 
@@ -36,12 +30,49 @@ export class SelectFieldComponent {
   @Input() showClear = false;
   @Input() appendTo: 'body' | HTMLElement | undefined = 'body';
 
+  get normalizedOptions(): unknown[] {
+    if (!Array.isArray(this.options) || !this.options.length) {
+      return [];
+    }
+
+    const firstItem = this.options[0];
+
+    if (typeof firstItem === 'string') {
+      return (this.options as string[]).map((item) => ({
+        label: item,
+        value: item,
+      }));
+    }
+
+    return this.options;
+  }
+
+  get resolvedOptionLabel(): string | undefined {
+    if (!Array.isArray(this.options) || !this.options.length) {
+      return this.optionLabel;
+    }
+
+    const firstItem = this.options[0];
+    return typeof firstItem === 'string' ? 'label' : this.optionLabel;
+  }
+
+  get resolvedOptionValue(): string | undefined {
+    if (!Array.isArray(this.options) || !this.options.length) {
+      return this.optionValue;
+    }
+
+    const firstItem = this.options[0];
+    return typeof firstItem === 'string' ? 'value' : this.optionValue;
+  }
+
   get showError(): boolean {
     return !!this.control && this.control.invalid && (this.control.touched || this.control.dirty);
   }
 
   get computedInputId(): string {
-    if (this.inputId) return this.inputId;
+    if (this.inputId) {
+      return this.inputId;
+    }
 
     return this.label
       ? this.label.toLowerCase().replace(/\s+/g, '-')
@@ -49,7 +80,9 @@ export class SelectFieldComponent {
   }
 
   get errorText(): string {
-    if (!this.control || !this.control.errors) return '';
+    if (!this.control || !this.control.errors) {
+      return '';
+    }
 
     if (this.control.errors['required']) return 'Este campo es requerido.';
     if (this.control.errors['minlength']) {

@@ -64,7 +64,16 @@
       <p-step-panel [value]="2">
         <ng-template #content>
           <form class="form" [formGroup]="step2Form" (ngSubmit)="submitStep2Form()">
-            <div class="form-body"></div>
+            <div class="form-body">
+              <app-template-columns-editor
+                [form]="step2Form"
+                [ruleOptions]="ruleOptions"
+                [loading]="loading"
+                [isImporting]="isImportingColumns()"
+                (downloadTemplate)="onDownloadColumnsTemplate()"
+                (importExcel)="onImportColumnsExcel($event)"
+              ></app-template-columns-editor>
+            </div>
             <div class="form-footer">
               <app-button
                 label="Atrás"

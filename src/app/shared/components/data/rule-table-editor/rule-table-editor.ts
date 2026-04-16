@@ -115,18 +115,30 @@ export class RuleTableEditorComponent implements OnChanges {
     try {
       const importedRows = await this.readExcelFile(file);
 
+      if (!importedRows.length) {
+        this.toast.error('El archivo seleccionado no contiene datos.');
+        return;
+      }
+
       let nextRows: Record<string, string>[] = [];
 
       for (const row of importedRows) {
         nextRows = this.getRowsAfterInsert(nextRows, row);
       }
 
-      if (!this.areRowsCollectionsEqual(this.rows, nextRows)) {
+      const hasChanges = !this.areRowsCollectionsEqual(this.rows, nextRows);
+
+      if (hasChanges) {
         this.rowsChange.emit(nextRows);
+        this.toast.success('Se cargaron los datos correctamente.');
+      } else {
+        this.toast.warn('El archivo seleccionado no contiene datos.');
       }
+    } catch (error) {
+      console.error(error);
+      this.toast.error('Ocurrió un error al procesar el archivo.');
     } finally {
       this.isImporting = false;
-      this.toast.success('Se cargaron los datos correctamente.');
 
       if (input) {
         input.value = '';
