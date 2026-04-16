@@ -220,6 +220,19 @@ export class TemplateManagementComponent implements OnInit, OnDestroy {
     );
   }
 
+  onDuplicateTemplate(): void {
+    if (!this.selectedTemplate) return;
+
+    const template = this.selectedTemplate;
+
+    this.confirm.confirmAction(
+      () => this.handleDuplicateTemplate(template.id),
+      `Se duplicará la plantilla <b>${template.name}</b>. ¿Deseas continuar?`,
+      'Duplicar plantilla',
+      'Duplicar',
+    );
+  }
+
   handleSaveTemplate(event: SaveTemplateColumnsEvent): void {
     this.templateDialogLoading = true;
     this.cdr.markForCheck();
@@ -330,6 +343,31 @@ export class TemplateManagementComponent implements OnInit, OnDestroy {
           });
 
           this.toast.success('Plantilla publicada exitosamente.');
+        },
+        error: (error: unknown) => {
+          const message = this.templatesService.getErrorMessage(error);
+          this.toast.error(message);
+        },
+      });
+  }
+
+  handleDuplicateTemplate(templateId: number): void {
+    this.templatesLoading = true;
+
+    this.templatesService
+      .duplicateTemplate(templateId)
+      .pipe(
+        finalize(() => {
+          this.selectedTemplate = null;
+          this.templatesLoading = false;
+        }),
+      )
+      .subscribe({
+        next: () => {
+          this.templatesLoading = false;
+          
+          this.loadTemplates();
+          this.toast.success('Plantilla duplicada exitosamente.');
         },
         error: (error: unknown) => {
           const message = this.templatesService.getErrorMessage(error);
@@ -766,7 +804,7 @@ export class TemplateManagementComponent implements OnInit, OnDestroy {
     }
   }
 
-  private async loadTemplates(): Promise<void> {
+  private loadTemplates() {
     if (this.templatesLoading) {
       return;
     }

@@ -43,6 +43,17 @@
           (clicked)="onExtraAction()"
         ></app-button>
       }
+
+      @if (showExtraAction2) {
+        <app-button
+          [label]="extraActionLabel2"
+          [icon]="extraActionIcon2"
+          variant="secondary"
+          [outlined]="true"
+          [disabled]="disableExtraAction2"
+          (clicked)="onExtraAction2()"
+        ></app-button>
+      }
     </div>
   </ng-template>
 

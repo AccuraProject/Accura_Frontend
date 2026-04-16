@@ -224,6 +224,28 @@ export class TemplatesService {
     );
   }
 
+  duplicateTemplate(
+    templateId: number
+  ): Observable<TemplateResponse> {
+    return this.store.select(selectSessionState).pipe(
+      take(1),
+      switchMap((session) => {
+        if (!session.accessToken) {
+          return throwError(() => new Error('No hay un token de autenticación disponible.'));
+        }
+
+        const tokenType = session.tokenType ?? 'Bearer';
+        const headers = new HttpHeaders({
+          Authorization: `${tokenType} ${session.accessToken}`,
+        });
+
+        return this.http.post<TemplateResponse>(`${this.baseUrl}/templates/${templateId}/duplicate`, {
+          headers,
+        });
+      }),
+    );
+  }
+
   async fetchTemplate(templateId: number | string): Promise<TemplateResponse | null> {
     const headers = await this.buildAuthHeaders();
     const encodedId = encodeURIComponent(String(templateId));
