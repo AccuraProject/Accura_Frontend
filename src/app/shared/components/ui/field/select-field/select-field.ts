@@ -30,6 +30,12 @@ export class SelectFieldComponent {
   @Input() showClear = false;
   @Input() appendTo: 'body' | HTMLElement | undefined = 'body';
 
+  ngOnInit() {
+    if (Array.isArray(this.control.value)) {
+      this.control.setValue(this.control.value[0] ?? '');
+    }
+  }
+
   get normalizedOptions(): unknown[] {
     if (!Array.isArray(this.options) || !this.options.length) {
       return [];
