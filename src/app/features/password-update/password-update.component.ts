@@ -9,7 +9,7 @@ import {
   Validators,
 } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Router } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { finalize } from 'rxjs';
 
@@ -17,6 +17,9 @@ import { UserService } from '../../core/services/user.service';
 import { SessionActions } from '../../core/store/session/session.actions';
 import { selectSessionUser } from '../../core/store/session/session.selectors';
 import { CurrentUserResponse } from '../../core/models/user.model';
+import { PasswordFieldComponent } from '../../shared/components/ui/field/password-field/password-field';
+import { ButtonComponent } from '../../shared/components/ui/button/button';
+import { MessageFeedbackComponent } from '../../shared/components/feedback/message/message-feedback';
 
 interface PasswordUpdateAlert {
   type: 'success' | 'error';
@@ -26,12 +29,19 @@ interface PasswordUpdateAlert {
 @Component({
   selector: 'app-password-update',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    PasswordFieldComponent,
+    ButtonComponent,
+    MessageFeedbackComponent,
+    RouterModule,
+  ],
   templateUrl: './password-update.component.html',
   styleUrl: './password-update.component.scss',
 })
 export class PasswordUpdateComponent {
-  private readonly formBuilder = inject(FormBuilder);
+  private readonly fb = inject(FormBuilder);
   private readonly userService = inject(UserService);
   private readonly store = inject(Store);
   private readonly router = inject(Router);
@@ -42,8 +52,18 @@ export class PasswordUpdateComponent {
   readonly submitting = signal(false);
   readonly alert = signal<PasswordUpdateAlert | null>(null);
 
-  readonly passwordUpdateForm = this.formBuilder.group({
-    newPassword: ['', [Validators.required, Validators.minLength(8)]],
+  readonly passwordUpdateForm = this.fb.group({
+    newPassword: [
+      '',
+      [
+        Validators.required,
+        Validators.minLength(8),
+        Validators.pattern(/[a-z]/), // al menos una minúscula
+        Validators.pattern(/[A-Z]/), // al menos una mayúscula
+        Validators.pattern(/[0-9]/), // al menos un número
+        Validators.pattern(/[^a-zA-Z0-9]/), // al menos un carácter especial
+      ],
+    ],
     confirmPassword: [
       '',
       [Validators.required, Validators.minLength(8), this.confirmPasswordValidator()],
@@ -60,9 +80,7 @@ export class PasswordUpdateComponent {
       .get('newPassword')
       ?.valueChanges.pipe(takeUntilDestroyed())
       .subscribe(() => {
-        this.passwordUpdateForm
-          .get('confirmPassword')
-          ?.updateValueAndValidity({ onlySelf: true });
+        this.passwordUpdateForm.get('confirmPassword')?.updateValueAndValidity({ onlySelf: true });
       });
 
     this.passwordUpdateForm.valueChanges.pipe(takeUntilDestroyed()).subscribe(() => {
@@ -83,8 +101,7 @@ export class PasswordUpdateComponent {
     if (!this.currentUser) {
       this.alert.set({
         type: 'error',
-        message:
-          'No se encontró la información del usuario en sesión. Inténtalo nuevamente.',
+        message: 'No se encontró la información del usuario en sesión. Inténtalo nuevamente.',
       });
       return;
     }
@@ -96,14 +113,15 @@ export class PasswordUpdateComponent {
 
     this.userService
       .resetPassword(this.currentUser.id, { password })
-      .pipe(
-        finalize(() => this.submitting.set(false))
-      )
+      .pipe(finalize(() => this.submitting.set(false)))
       .subscribe({
         next: () => {
           this.passwordUpdateForm.reset();
           this.passwordUpdateForm.markAsPristine();
           this.passwordUpdateForm.markAsUntouched();
+
+          this.passwordUpdateForm.disable();
+
           this.submitted.set(false);
 
           this.store.dispatch(SessionActions.logout());
