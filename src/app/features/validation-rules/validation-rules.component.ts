@@ -28,6 +28,7 @@ interface RuleRow {
   dataType: string;
   mandatory: string;
   status: string;
+  statusAssigned: string;
   description: string;
   header: string[];
   headerRule: string[];
@@ -73,7 +74,7 @@ export class ValidationRulesComponent implements OnInit {
     { field: 'name', header: 'Nombre' },
     { field: 'dataType', header: 'Tipo de dato' },
     { field: 'mandatory', header: 'Obligatoria' },
-    { field: 'status', header: 'Estado' },
+    { field: 'statusAssigned', header: 'Estado' },
   ];
 
   protected ruleDialogVisible = false;
@@ -252,6 +253,7 @@ export class ValidationRulesComponent implements OnInit {
       payload['Nombre de la regla'],
       payload['Tipo de dato'],
       payload['Campo obligatorio'],
+      ruleResponse.is_active,
       ruleResponse.status,
       payload['Descripción'],
       payload.Header,
@@ -267,7 +269,8 @@ export class ValidationRulesComponent implements OnInit {
     name: string,
     dataType: string,
     mandatory: boolean,
-    status: string,
+    isActive: boolean,
+    statusAssigned: string,
     description: string,
     header: string[],
     headerRule: string[],
@@ -280,7 +283,8 @@ export class ValidationRulesComponent implements OnInit {
       name,
       dataType,
       mandatory: this.getMandatoryLabel(mandatory),
-      status: capitalizeFirstLetter(status),
+      status: this.getStatusLabel(isActive),
+      statusAssigned: this.getStatusLabel(isActive) + ' | ' + capitalizeFirstLetter(statusAssigned),
       description,
       header,
       headerRule,

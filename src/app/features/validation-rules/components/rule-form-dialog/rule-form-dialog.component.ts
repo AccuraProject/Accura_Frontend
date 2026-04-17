@@ -156,7 +156,7 @@ export class RuleFormDialogComponent {
     this.aiForm.reset({ description: null });
 
     if (this.isEditMode && value.payload) {
-      this.applyRulePayload(value.payload);
+      this.applyRulePayload(value.payload, value.isActive);
       this.currentStep.set(2);
       return;
     }
