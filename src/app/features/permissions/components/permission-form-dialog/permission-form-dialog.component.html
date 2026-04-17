@@ -2,6 +2,7 @@
   [(visible)]="visible"
   [title]="title"
   [description]="description"
+  [loading]="loading || isSubmittingAssignForm() || isSubmmittingRevokeForm()"
   [showFooter]="false"
   (cancel)="cancel()"
 >

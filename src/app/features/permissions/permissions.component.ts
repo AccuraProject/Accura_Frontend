@@ -22,13 +22,7 @@ interface PermissionUser {
   name: string;
   email: string;
   lastUpdated: string;
-  templates: TemplatePreview[];
-}
-
-interface TemplatePreview {
-  id: number;
-  name: string;
-  code: string;
+  templates: string;
 }
 
 @Component({
@@ -184,7 +178,7 @@ export class PermissionsComponent implements OnInit, OnDestroy {
           .map((template) => ({
             id: template.id,
             name: template.name,
-            description: template.description || ''
+            description: template.description || '',
           }));
 
         this.permissionDialogData = {
@@ -208,16 +202,8 @@ export class PermissionsComponent implements OnInit, OnDestroy {
     });
   }
 
-  protected getVisibleTemplates(user: PermissionUser): TemplatePreview[] {
-    return user.templates.slice(0, 2);
-  }
-
   protected getRemainingCount(user: PermissionUser): number {
     return user.templates.length > 2 ? user.templates.length - 2 : 0;
-  }
-
-  protected trackByTemplateId(_: number, template: TemplatePreview): number {
-    return template.id;
   }
 
   private async loadUsers(): Promise<void> {
@@ -243,47 +229,38 @@ export class PermissionsComponent implements OnInit, OnDestroy {
   private async buildPermissionUser(user: UserResponse): Promise<PermissionUser> {
     const templates = await this.fetchTemplatesForUser(user.id);
 
+    // Obtener los nombres de las plantillas y concatenarlos
+    const templateNames = templates.map((template) => template.name);
+
+    // Concatenar los nombres, limitando la longitud con elipsis si es necesario
+    const concatenatedTemplateNames = this.formatTemplateNames(templateNames);
+
     return {
       id: user.id,
       name: user.name,
       email: user.email,
       lastUpdated: this.formatDate(user.updated_at ?? user.created_at),
-      templates,
+      templates: concatenatedTemplateNames,
     };
   }
 
-  private async fetchTemplatesForUser(userId: number): Promise<TemplatePreview[]> {
+  private formatTemplateNames(templateNames: string[]): string {
+    const MAX_LENGTH = 100;
+    let concatenated = templateNames.join(', ');
+    if (concatenated.length > MAX_LENGTH) {
+      concatenated = concatenated.substring(0, MAX_LENGTH) + '...';
+    }
+    return concatenated;
+  }
+
+  private async fetchTemplatesForUser(userId: number): Promise<TemplateResponse[]> {
     try {
       const templates = await this.templatesService.fetchTemplatesForUser(userId);
-      return templates.map((template) => this.toTemplatePreview(template));
+      return templates;
     } catch (error) {
       console.error(`Error al obtener las plantillas del usuario ${userId}.`, error);
       return [];
     }
-  }
-
-  private toTemplatePreview(template: TemplateResponse): TemplatePreview {
-    return {
-      id: template.id,
-      name: template.name,
-      code: this.buildTemplateCode(template),
-    };
-  }
-
-  private buildTemplateCode(template: TemplateResponse): string {
-    const tableName = template.table_name?.trim();
-    if (tableName) {
-      return tableName.toUpperCase();
-    }
-
-    const initials = template.name
-      .split(' ')
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((part) => part.charAt(0).toUpperCase())
-      .join('');
-
-    return initials || `#${template.id}`;
   }
 
   private formatDate(value: string | null | undefined): string {
