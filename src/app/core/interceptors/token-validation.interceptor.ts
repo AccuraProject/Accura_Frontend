@@ -1,14 +1,16 @@
-import { HttpBackend, HttpClient, HttpErrorResponse, HttpHeaders, HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
-import { Router } from '@angular/router';
+import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { Store } from '@ngrx/store';
-import { Observable, catchError, switchMap, take, throwError } from 'rxjs';
-import { MatDialog, MatDialogRef } from '@angular/material/dialog';
-
-import { environment } from '../../../environments/environment';
+import { Router } from '@angular/router';
+import { HttpBackend, HttpClient, HttpHeaders } from '@angular/common/http';
+import { catchError, Observable, switchMap, take } from 'rxjs';
+import { throwError } from 'rxjs';
+import { DialogService } from 'primeng/dynamicdialog';  // Asegúrate de importar DialogService de PrimeNG
+import { SessionExpiredDialogComponent } from '../components/session-expired-dialog/session-expired-dialog.component';
+import { SessionExpiredService } from '../components/session-expired-dialog/session-expired.service';
 import { SessionActions } from '../store/session/session.actions';
 import { selectSessionState } from '../store/session/session.reducer';
-import { SessionExpiredDialogComponent } from '../components/session-expired-dialog/session-expired-dialog.component';
+import { environment } from '../../../environments/environment';
 
 interface TokenValidationResponse {
   is_valid: boolean;
@@ -23,7 +25,8 @@ const PUBLIC_ENDPOINTS = new Set([
   VALIDATE_TOKEN_ENDPOINT,
 ]);
 
-let sessionInvalidationInProgress = false;
+let sessionInvalidationTimeoutId: ReturnType<typeof setTimeout> | null = null;
+let sessionInvalidationDialogRef: any | null = null;
 
 export const tokenValidationInterceptor: HttpInterceptorFn = (req, next) => {
   if (!isApiRequest(req.url) || isPublicEndpoint(req.url)) {
@@ -32,7 +35,8 @@ export const tokenValidationInterceptor: HttpInterceptorFn = (req, next) => {
 
   const store = inject(Store);
   const router = inject(Router);
-  const dialog = inject(MatDialog);
+  const dialogService = inject(DialogService);
+  const sessionExpiredService = inject(SessionExpiredService);
   const httpBackend = inject(HttpBackend);
   const rawHttpClient = new HttpClient(httpBackend);
 
@@ -54,17 +58,17 @@ export const tokenValidationInterceptor: HttpInterceptorFn = (req, next) => {
       return validateToken(rawHttpClient, authorizationHeader).pipe(
         switchMap((response) => {
           if (!response.is_valid) {
-            handleInvalidSession(store, router, dialog);
+            handleInvalidSession(store, router, dialogService, sessionExpiredService); // Llamamos al servicio para abrir el modal
             return throwError(() => new Error('Sesión expirada.'));
           }
 
           return next(request).pipe(
-            catchError((error) => handleRequestError(error, store, router, dialog))
+            catchError((error) => handleRequestError(error, store, router, dialogService, sessionExpiredService)),
           );
         }),
-        catchError((error) => handleValidationError(error, store, router, dialog))
+        catchError((error) => handleValidationError(error, store, router, dialogService, sessionExpiredService)),
       );
-    })
+    }),
   );
 };
 
@@ -77,10 +81,11 @@ function handleValidationError(
   error: unknown,
   store: Store,
   router: Router,
-  dialog: MatDialog,
+  dialogService: DialogService,
+  sessionExpiredService: SessionExpiredService,
 ): Observable<never> {
   if (error instanceof HttpErrorResponse && (error.status === 401 || error.status === 403)) {
-    handleInvalidSession(store, router, dialog);
+    handleInvalidSession(store, router, dialogService, sessionExpiredService);
     return throwError(() => new Error('Sesión expirada.'));
   }
 
@@ -91,19 +96,24 @@ function handleRequestError(
   error: unknown,
   store: Store,
   router: Router,
-  dialog: MatDialog,
+  dialogService: DialogService,
+  sessionExpiredService: SessionExpiredService,
 ): Observable<never> {
   if (error instanceof HttpErrorResponse && error.status === 401) {
-    handleInvalidSession(store, router, dialog);
+    handleInvalidSession(store, router, dialogService, sessionExpiredService);
   }
 
   return throwError(() => error);
 }
 
-let sessionInvalidationTimeoutId: ReturnType<typeof setTimeout> | null = null;
-let sessionInvalidationDialogRef: MatDialogRef<SessionExpiredDialogComponent> | null = null;
+let sessionInvalidationInProgress = false;
 
-function handleInvalidSession(store: Store, router: Router, dialog: MatDialog): void {
+function handleInvalidSession(
+  store: Store,
+  router: Router,
+  dialogService: DialogService,
+  sessionExpiredService: SessionExpiredService,
+): void {
   if (sessionInvalidationInProgress) {
     return;
   }
@@ -112,21 +122,15 @@ function handleInvalidSession(store: Store, router: Router, dialog: MatDialog): 
 
   store.dispatch(SessionActions.logout());
 
-  sessionInvalidationDialogRef = dialog.open(SessionExpiredDialogComponent, {
-    disableClose: true,
-    panelClass: 'session-expired-dialog',
-  });
+  sessionExpiredService.openSessionExpiredDialog();
 
   sessionInvalidationTimeoutId = setTimeout(() => {
-    router
-      .navigate(['/login'])
-      .finally(() => {
-        sessionInvalidationDialogRef?.close();
-        sessionInvalidationDialogRef = null;
-        sessionInvalidationTimeoutId = null;
-        sessionInvalidationInProgress = false;
-      });
-  }, 5000);
+    router.navigate(['/login']).finally(() => {
+      sessionExpiredService.closeSessionExpiredDialog();
+      sessionInvalidationTimeoutId = null;
+      sessionInvalidationInProgress = false;
+    });
+  }, 5000); 
 }
 
 function isApiRequest(url: string): boolean {

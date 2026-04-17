@@ -19,6 +19,7 @@ import { tokenValidationInterceptor } from './core/interceptors/token-validation
 import { provideStoreDevtools } from '@ngrx/store-devtools';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { MyPreset } from './core/config/theme.config';
+import { DialogService } from 'primeng/dynamicdialog';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -42,7 +43,8 @@ export const appConfig: ApplicationConfig = {
       },
     }),
     MessageService,
-    ConfirmationService
+    ConfirmationService,
+    DialogService,
   ],
 };
 

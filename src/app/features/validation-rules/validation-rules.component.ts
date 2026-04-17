@@ -15,6 +15,7 @@ import {
 } from './components/rule-form-dialog/rule-form-dialog.component';
 import { finalize } from 'rxjs';
 import { ToastService } from '../../shared/services/toast.service';
+import { capitalizeFirstLetter } from '../../shared/utils/text-utils';
 
 interface AiRuleOption {
   id: string;
@@ -251,7 +252,7 @@ export class ValidationRulesComponent implements OnInit {
       payload['Nombre de la regla'],
       payload['Tipo de dato'],
       payload['Campo obligatorio'],
-      ruleResponse.is_active,
+      ruleResponse.status,
       payload['Descripción'],
       payload.Header,
       payload['Header rule'],
@@ -266,7 +267,7 @@ export class ValidationRulesComponent implements OnInit {
     name: string,
     dataType: string,
     mandatory: boolean,
-    isActive: boolean,
+    status: string,
     description: string,
     header: string[],
     headerRule: string[],
@@ -279,7 +280,7 @@ export class ValidationRulesComponent implements OnInit {
       name,
       dataType,
       mandatory: this.getMandatoryLabel(mandatory),
-      status: this.getStatusLabel(isActive),
+      status: capitalizeFirstLetter(status),
       description,
       header,
       headerRule,

@@ -20,6 +20,7 @@ export interface RuleResponse {
   updated_by: number | null;
   updated_at: string | null;
   is_active: boolean;
+  status: string;
   deleted: boolean;
   deleted_by: number | null;
   deleted_at: string | null;

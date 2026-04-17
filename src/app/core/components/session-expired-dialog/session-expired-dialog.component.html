@@ -1,23 +1,20 @@
-<header class="modal__header">
-  <div>
-    <h3>Sesión expirada</h3>
-    <p>Tu sesión ha terminado por inactividad o cierre de seguridad.</p>
-  </div>
-</header>
+<div>
+  <h3 class="dialog__title">Sesión expirada</h3>
+  <p class="dialog__description">Tu sesión ha terminado por inactividad o cierre de seguridad.</p>
+</div>
 
-<div mat-dialog-content class="session-expired-dialog__content">
-  <div class="modal__alert">
-    <span class="material-symbols-rounded" aria-hidden="true">lock_clock</span>
-    <div>
-      <p class="modal__alert-title">Tu sesión ha expirado</p>
-      <p class="modal__alert-text">
-        Por tu seguridad cerraremos la sesión y te redirigiremos al inicio en {{ countdown() }} segundos.
-      </p>
+<div class="session-expired-dialog__content">
+  <p-message severity="info">
+    <div class="session-expired-dialog__alert">
+      <i class="pi pi-exclamation-circle" style="font-size: 1.3rem"></i>
+      <span>
+        Por tu seguridad cerraremos la sesión y te redirigiremos al inicio en {{ count }} segundos.
+      </span>
     </div>
-  </div>
+  </p-message>
 
-  <div class="session-expired-dialog__status" role="status" aria-live="polite">
-    <mat-progress-spinner diameter="56" mode="indeterminate"></mat-progress-spinner>
+  <div class="session-expired-dialog__status">
+    <i class="pi pi-spin pi-spinner"></i>
     <div class="session-expired-dialog__status-text">
       <p>Redirigiendo al inicio de sesión...</p>
       <span>Tiempo restante: {{ countdown() }} s</span>
