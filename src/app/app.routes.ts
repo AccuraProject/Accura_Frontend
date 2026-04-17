@@ -6,7 +6,6 @@ import { DashboardComponent } from './features/dashboard/dashboard.component';
 import { UsersComponent } from './features/users/users.component';
 import { ValidationRulesComponent } from './features/validation-rules/validation-rules.component';
 import { PermissionsComponent } from './features/permissions/permissions.component';
-import { TemplateManagementComponent } from './features/templates/template-management.component';
 import { HistoryComponent } from './features/history/history.component';
 import { SettingsComponent } from './features/settings/settings.component';
 import { authGuard } from './core/guards/auth.guard';
@@ -14,6 +13,7 @@ import { PasswordUpdateComponent } from './features/password-update/password-upd
 import { passwordUpdateGuard } from './core/guards/password-update.guard';
 import { loginRedirectGuard } from './core/guards/login-redirect.guard';
 import { ForgotPasswordComponent } from './features/forgot-password/forgot-password.component';
+import { TemplateLayoutComponent } from './features/templates/template-layout.component';
 
 export const routes: Routes = [
   {
@@ -30,7 +30,7 @@ export const routes: Routes = [
         data: { roles: ['admin'] },
       },
       { path: 'permisos', component: PermissionsComponent, data: { roles: ['admin'] } },
-      { path: 'plantillas', component: TemplateManagementComponent, data: { roles: ['admin', 'user'] } },
+      { path: 'plantillas', component: TemplateLayoutComponent, data: { roles: ['admin', 'user'] } },
       { path: 'historial', component: HistoryComponent, data: { roles: ['admin', 'user'] } },
       { path: 'configuracion', component: SettingsComponent, data: { roles: ['admin', 'user'] } },
     ]

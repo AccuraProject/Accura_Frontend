@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, Output, computed, inject, signal } from '@angular/core';
 import {
+  AbstractControl,
   FormBuilder,
   FormControl,
   FormGroup,
@@ -356,7 +357,7 @@ export class RuleFormDialogComponent {
 
     if (dataType === 'Correo') {
       if (key === 'Formato') {
-        validators.push(Validators.pattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/));
+        validators.push(this.regexValidator());
       }
     }
 
@@ -368,6 +369,17 @@ export class RuleFormDialogComponent {
 
     return validators;
   }
+
+  private regexValidator() {
+  return (control: AbstractControl) => {
+    try {
+      new RegExp(control.value);
+      return null;
+    } catch (e) {
+      return { 'invalidRegex': true };
+    }
+  };
+}
 
   private generateSuggestionId(): string {
     return `ai-suggestion-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;

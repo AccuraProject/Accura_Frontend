@@ -1,0 +1,108 @@
+<div class="template-columns-editor__wrapper">
+  <div formArrayName="columns">
+    <p-table
+      [value]="data"
+      scrollable="true"
+      scrollHeight="300px"
+      [tableStyle]="{ 'min-width': '100%', 'table-layout': 'fixed' }"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th style="width: 25%">Nombre</th>
+          <th style="width: 40%">Descripción</th>
+          <th style="width: 10%; text-align: center">Obligatorio</th>
+          <th style="width: 25%; text-align: center">Reglas</th>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="body" let-column let-rowIndex="rowIndex">
+        <tr>
+          <td>{{ column.name }}</td>
+          <td>{{ column.description }}</td>
+          <td style="text-align: center">
+            <span>{{ column.required ? 'Sí' : 'No' }}</span>
+          </td>
+          <td style="text-align: center">
+            <p-button
+              type="button"
+              label="Ver detalle"
+              icon="pi pi-eye"
+              [badge]="column.rules.length"
+              severity="secondary"
+              badgeSeverity="contrast"
+              (click)="onRulesButtonClick(column.rules, rowIndex)"
+            ></p-button>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>
+
+<p-popover #op (onHide)="isPopoverVisible = false">
+  <div class="popover-container">
+    <div>
+      <p-carousel
+        *ngIf="currentRules.length > 1"
+        [value]="currentRules"
+        [numVisible]="1"
+        [numScroll]="1"
+      >
+        <ng-template let-rule pTemplate="item">
+          <div class="rule-details">
+            <h3 class="rule-title" style="padding-top: 1rem">{{ rule.summary.rule_name }}</h3>
+            <p><span class="rule-subtitle">Tipo:</span> {{ rule.summary.technical_type }}</p>
+            <p><span class="rule-subtitle">Descripción:</span> {{ rule.summary.description }}</p>
+            <p><span class="rule-subtitle">Configuración:</span></p>
+            <ul class="rule-list">
+              <li *ngFor="let param of rule.summary.configuration?.interpreted.main_parameters">
+                <i class="pi pi-check"></i> <span class="rule-subtitle">{{ param.key }}:</span>
+                {{ param.value }}
+              </li>
+            </ul>
+            @if (rule.attachment) {
+              <div class="rule-footer">
+                <p-button
+                  icon="pi pi-download"
+                  label="Descargar adjunto"
+                  [outlined]="true"
+                  [severity]="'secondary'"
+                  (click)="downloadAttachment(rule.attachment)"
+                ></p-button>
+              </div>
+            }
+          </div>
+        </ng-template>
+      </p-carousel>
+
+      <!-- Si solo hay una regla, mostramos sin carousel -->
+      <div *ngIf="currentRules.length === 1" class="rule-details" style="padding: 1rem;">
+        <h3 class="rule-title">{{ currentRules[0].summary.rule_name }}</h3>
+        <p><span class="rule-subtitle">Tipo:</span> {{ currentRules[0].summary.technical_type }}</p>
+        <p>
+          <span class="rule-subtitle">Descripción:</span> {{ currentRules[0].summary.description }}
+        </p>
+        <p><span class="rule-subtitle">Configuración:</span></p>
+        <ul class="rule-list">
+          <li
+            *ngFor="let param of currentRules[0].summary.configuration?.interpreted.main_parameters"
+          >
+            <i class="pi pi-check"></i> <span class="rule-subtitle">{{ param.key }}:</span>
+            {{ param.value }}
+          </li>
+        </ul>
+        @if (currentRules[0].attachment) {
+          <div class="rule-footer">
+            <p-button
+              icon="pi pi-download"
+              label="Descargar adjunto"
+              [outlined]="true"
+              [severity]="'secondary'"
+              (click)="downloadAttachment(currentRules[0].attachment)"
+            ></p-button>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+</p-popover>

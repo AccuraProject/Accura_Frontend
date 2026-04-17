@@ -1,0 +1,66 @@
+<app-dialog-shell
+  [(visible)]="visible"
+  [title]="title"
+  [description]="description"
+  [loading]="loading || isDownloading()"
+  [showFooter]="false"
+  width="min(92vw, 1240px)"
+  (cancel)="cancel()"
+>
+  <div class="template-detail">
+    <div class="hd-grid">
+      <p-card>
+        <div class="hd-label">N° de columnas</div>
+        <div class="hd-value">{{ detailDialogData.columns }}</div>
+      </p-card>
+
+      <p-card>
+        <div class="hd-label">Fecha de asignación</div>
+        <div class="hd-value">
+          {{ detailDialogData.start_date }} - {{ detailDialogData.end_date }}
+        </div>
+      </p-card>
+
+      <p-card>
+        <div class="hd-label">Última actualización</div>
+        <div class="hd-value">{{ detailDialogData.lastUpdated }}</div>
+      </p-card>
+    </div>
+
+    <!-- RESUMEN -->
+    <h3 class="hd-section-title">Columnas</h3>
+
+    <div>
+      <app-template-detail-table
+        [data]="detailDialogData.columnsDetail"
+      ></app-template-detail-table>
+    </div>
+
+    <div class="hd-actions">
+      <app-button
+        label="Descargar plantilla"
+        icon="pi pi-download"
+        [outlined]="true"
+        [loading]="isDownloading()"
+        [disabled]="isDownloading()"
+        (clicked)="onDownloadTemplate()"
+      ></app-button>
+      <app-button
+        label="Cargar archivo"
+        icon="pi pi-upload"
+        [loading]="isUploading()"
+        [disabled]="isDownloading() || isUploading()"
+        (clicked)="onUploadFile()"
+      ></app-button>
+
+      <input
+        type="file"
+        id="fileInput"
+        #fileInput
+        style="display: none"
+        accept=".xls, .xlsx"
+        (change)="onFileSelected($event)"
+      />
+    </div>
+  </div>
+</app-dialog-shell>

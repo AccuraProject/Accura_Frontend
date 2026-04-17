@@ -357,7 +357,7 @@ export function generateDefaultRuleConfig(dataType: string): Record<string, unkn
     case 'Teléfono':
       return { 'Longitud mínima': 1, 'Código de país': '+00' };
     case 'Correo':
-      return { Formato: 'usuario@dominio.com', 'Longitud máxima': 1 };
+      return { Formato: '^[^\s@]+@[^\s@]+\.[^\s@]+$', 'Longitud máxima': 1 };
     case 'Fecha':
       return { Formato: 'yyyy-MM-dd', 'Fecha mínima': '1900-01-01', 'Fecha máxima': '2100-12-31' };
     case 'Dependencia':

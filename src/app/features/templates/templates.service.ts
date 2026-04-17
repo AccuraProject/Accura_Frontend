@@ -55,13 +55,15 @@ export interface TemplateAccessResponse {
 }
 
 export interface TemplateColumnRulePayload {
-  id: number | string;
+  id: number;
   'header rule'?: string[];
   rule?: unknown;
   payload?: unknown;
   data?: unknown;
   'Campo obligatorio'?: unknown;
   [key: string]: unknown;
+  summary?: Record<string, string>;
+  attachment?: string;
 }
 
 export interface TemplateColumnPayload {
@@ -288,6 +290,26 @@ export class TemplatesService {
     }
 
     return this.parseTemplateResponse(data);
+  }
+
+  getTemplateDetail(templateId: number): Observable<TemplateResponse> {
+    return this.store.select(selectSessionState).pipe(
+      take(1),
+      switchMap((session) => {
+        if (!session.accessToken) {
+          return throwError(() => new Error('No hay un token de autenticación disponible.'));
+        }
+
+        const tokenType = session.tokenType ?? 'Bearer';
+        const headers = new HttpHeaders({
+          Authorization: `${tokenType} ${session.accessToken}`,
+        });
+
+        return this.http.get<TemplateResponse>(`${this.baseUrl}/templates/${templateId}/detail`, {
+          headers,
+        });
+      }),
+    );
   }
 
   async fetchTemplateDetail(templateId: number | string): Promise<TemplateResponse | null> {

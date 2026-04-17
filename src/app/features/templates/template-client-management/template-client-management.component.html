@@ -1,0 +1,36 @@
+<section class="page-header" style="margin-bottom: 1.5rem;">
+  <div>
+    <p class="page-header__pretitle">Plantillas Disponibles</p>
+    <h1 class="page-header__title">Explora las plantillas a las que tienes acceso</h1>
+    <p class="page-header__subtitle">
+      Visualiza rápidamente la información clave de cada plantilla asignada a tu usuario.
+    </p>
+  </div>
+</section>
+
+<div class="card">
+  <app-page-actions
+    [showCreate]="false"
+    [showEdit]="false"
+    [showDelete]="false"
+    [showExtraAction]="true"
+    extraActionIcon="pi pi-eye"
+    extraActionLabel="Ver detalle"
+    [disableExtraAction]="!selectedTemplate"
+    (extraAction)="onViewDetail()"
+  ></app-page-actions>
+
+  <app-data-table
+    [columns]="clientColumns"
+    [value]="templates"
+    [selection]="selectedTemplate"
+    [loading]="templatesLoading"
+    (rowSelect)="onRowSelect($event)"
+    (rowUnselect)="onRowUnselect()"
+  ></app-data-table>
+</div>
+
+<app-template-detail-dialog
+  [(visible)]="detailDialogVisible"
+  [data]="detailDialogData"
+></app-template-detail-dialog>

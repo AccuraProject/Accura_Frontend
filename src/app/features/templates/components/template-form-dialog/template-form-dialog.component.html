@@ -1,6 +1,7 @@
 <app-dialog-shell
   [(visible)]="visible"
   [title]="title"
+  [loading]="loading || isSubmittingStep1()"
   [description]="description"
   width="min(92vw, 1240px)"
   [showFooter]="false"

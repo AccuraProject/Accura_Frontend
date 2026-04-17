@@ -472,7 +472,7 @@ export class TemplateFormDialogComponent {
           .filter((rule) => rule.id !== null && rule.id !== '')
           .map((rule) => {
             const rulePayload: TemplateColumnRulePayload = {
-              id: rule.id as number | string,
+              id: rule.id as number
             };
 
             if (rule.headerRule?.length) {
