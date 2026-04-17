@@ -1,13 +1,21 @@
 import { Component, OnDestroy, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { firstValueFrom, Subject, takeUntil } from 'rxjs';
+import { catchError, finalize, firstValueFrom, forkJoin, of, Subject, takeUntil } from 'rxjs';
 import { TemplatesService, TemplateResponse } from '../templates/templates.service';
 import { UserService } from '../../core/services/user.service';
 import { UserResponse } from '../../core/models/user.model';
 import { PageActionsComponent } from '../../shared/components/ui/page-actions/page-actions';
 import { DataTableComponent } from '../../shared/components/data/data-table/data-table';
-import { PermissionFormDialogComponent } from './components/permission-form-dialog/permission-form-dialog.component';
+import {
+  AssignedTemplateView,
+  AvailableTemplateView,
+  EMPTY_PERMISSION_USER_DATA,
+  PermissionFormDialogComponent,
+  PermissionFormDialogData,
+} from './components/permission-form-dialog/permission-form-dialog.component';
+import { ToastService } from '../../shared/services/toast.service';
+import { TemplateUserAccessResponse } from '../templates/models/template-user-access';
 
 interface PermissionUser {
   id: number;
@@ -21,18 +29,6 @@ interface TemplatePreview {
   id: number;
   name: string;
   code: string;
-}
-
-const EMPTY_PERMISSION_USER_DATA: PermissionFormDialogData = {
-  id: 0,
-  name: '',
-  email: '',
-};
-
-interface PermissionFormDialogData {
-  id: number;
-  name: string;
-  email: string;
 }
 
 @Component({
@@ -70,6 +66,7 @@ export class PermissionsComponent implements OnInit, OnDestroy {
   constructor(
     private readonly userService: UserService,
     private readonly templatesService: TemplatesService,
+    private readonly toast: ToastService,
   ) {}
 
   async ngOnInit(): Promise<void> {
@@ -100,9 +97,104 @@ export class PermissionsComponent implements OnInit, OnDestroy {
       id: this.selectedUser.id,
       name: this.selectedUser.name,
       email: this.selectedUser.email,
+      availableTemplates: [],
+      assignedTemplates: [],
     };
 
     this.permissionDialogVisible = true;
+    this.reloadPermissionDialogData();
+  }
+
+  reloadPermissionDialogData(): void {
+    if (!this.selectedUser) return;
+
+    this.permissionDialogLoading = true;
+
+    forkJoin({
+      allTemplates: this.templatesService.getTemplates(),
+      userAccesses: this.templatesService.getTemplatesForUser(this.selectedUser.id),
+    })
+      .pipe(
+        finalize(() => (this.permissionDialogLoading = false)),
+        catchError((error: unknown) => {
+          const message = this.templatesService.getErrorMessage(error);
+          this.toast.error(message);
+
+          this.permissionDialogData = {
+            id: this.selectedUser!.id,
+            name: this.selectedUser!.name,
+            email: this.selectedUser!.email,
+            availableTemplates: [],
+            assignedTemplates: [],
+          };
+
+          return of({
+            allTemplates: [] as TemplateResponse[],
+            userAccesses: [] as TemplateUserAccessResponse[],
+          });
+        }),
+      )
+      .subscribe(({ allTemplates, userAccesses }) => {
+        const templatesById = new Map<number, TemplateResponse>();
+        for (const template of allTemplates) {
+          templatesById.set(template.id, template);
+        }
+
+        const sortedAccesses = [...userAccesses].sort(
+          (a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime(),
+        );
+
+        const latestAccessByTemplateId = new Map<number, TemplateUserAccessResponse>();
+        for (const access of sortedAccesses) {
+          if (!latestAccessByTemplateId.has(access.template_id)) {
+            latestAccessByTemplateId.set(access.template_id, access);
+          }
+        }
+
+        const latestAccesses = Array.from(latestAccessByTemplateId.values());
+
+        const activeAccesses = latestAccesses.filter((access) => !access.revoked_at);
+
+        const assignedTemplates = activeAccesses
+          .map((access): AssignedTemplateView | null => {
+            const template = templatesById.get(access.template_id);
+
+            if (!template) {
+              return null;
+            }
+
+            return {
+              id: template.id,
+              name: template.name,
+              description: template.description || '',
+              start_date: access.start_date ? new Date(access.start_date) : null,
+              end_date: access.end_date ? new Date(access.end_date) : null,
+              revoked_at: access.revoked_at ? new Date(access.revoked_at) : null,
+            };
+          })
+          .filter((item): item is AssignedTemplateView => item !== null);
+
+        const activeAssignedIds = new Set(assignedTemplates.map((template) => template.id));
+
+        const availableTemplates = allTemplates
+          .filter((template) => {
+            const status = template.status?.toLowerCase()?.trim() ?? '';
+            return status === 'published' && !activeAssignedIds.has(template.id);
+          })
+          .map((template) => ({
+            id: template.id,
+            name: template.name,
+            description: template.description || ''
+          }));
+
+        this.permissionDialogData = {
+          id: this.selectedUser!.id,
+          name: this.selectedUser!.name,
+          email: this.selectedUser!.email,
+          availableTemplates,
+          assignedTemplates,
+        };
+      });
   }
 
   protected get filteredUsers(): PermissionUser[] {

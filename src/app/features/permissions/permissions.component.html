@@ -37,6 +37,7 @@
   [data]="permissionDialogData"
   [loading]="permissionDialogLoading"
   (cancelDialog)="closePermissionDialog()"
+  (accessUpdated)="reloadPermissionDialogData()"
 />
 
 <!-- <table class="permissions-table">

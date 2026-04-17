@@ -234,12 +234,6 @@ export class TemplateFormDialogComponent {
   }
 
   private loadRulesAndGoToStep2(): void {
-    if (this.ruleOptions.length) {
-      this.populateColumnsForm(this.template?.columns ?? []);
-      this.currentStep.set(2);
-      return;
-    }
-
     this.rulesLoading = true;
     this.rulesError = null;
 

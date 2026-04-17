@@ -166,6 +166,7 @@
                       @case ('Lista') {
                         <div class="form-grid__full">
                           <app-rule-table-editor
+                            ruleType="Lista"
                             [columns]="getTableColumns()"
                             [rows]="getTableRows()"
                             mode="unique-row"
@@ -176,6 +177,7 @@
                       @case ('Lista compleja') {
                         <div class="form-grid__full">
                           <app-rule-table-editor
+                            ruleType="Lista compleja"
                             [columns]="getTableColumns()"
                             [rows]="getTableRows()"
                             mode="unique-row"
@@ -241,6 +243,7 @@
                       @case ('Dependencia') {
                         <div class="form-grid__full">
                           <app-rule-table-editor
+                            ruleType="Dependencia"
                             [columns]="getTableColumns()"
                             [rows]="getTableRows()"
                             mode="dependency"

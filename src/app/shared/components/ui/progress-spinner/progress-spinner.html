@@ -1,0 +1,8 @@
+@if (loading) {
+  <div class="spinner-overlay" [ngClass]="backgroundClass">
+    <p-progress-spinner
+      [style]="{ width: size + 'px', height: size + 'px' }"
+      strokeWidth="5"
+    ></p-progress-spinner>
+  </div>
+}

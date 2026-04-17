@@ -27,6 +27,7 @@ type RuleTableMode = 'standard' | 'unique-row' | 'dependency';
   styleUrl: './rule-table-editor.scss',
 })
 export class RuleTableEditorComponent implements OnChanges {
+  @Input() ruleType: string = 'Lista';
   @Input() columns: string[] = [];
   @Input() rows: Record<string, string>[] = [];
   @Input() mode: RuleTableMode = 'standard';
@@ -321,7 +322,7 @@ export class RuleTableEditorComponent implements OnChanges {
   }
 
   private buildTemplateFileName(): string {
-    const base = this.columns.length ? this.columns.join('_') : 'plantilla';
+    const base = 'Plantilla_' + this.ruleType;
     return `${base.replace(/\s+/g, '_').toLowerCase()}.xlsx`;
   }
 

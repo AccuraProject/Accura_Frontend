@@ -136,32 +136,32 @@ export class PermissionManageDialogComponent implements OnInit {
 
     this.errorMessage = null;
 
-    const payload: TemplateAccessGrantPayload[] = [
-      {
-        template_id: templateId,
-        user_id: this.data.user.id,
-        start_date: range.startDate,
-        end_date: range.endDate
-      }
-    ];
+    // const payload: TemplateAccessGrantPayload[] = [
+    //   {
+    //     template_id: templateId,
+    //     user_id: this.data.user.id,
+    //     start_date: range.startDate,
+    //     end_date: range.endDate
+    //   }
+    // ];
 
-    try {
-      await this.withPending(templateId, async () => {
-        await this.templatesService.grantTemplateAccess(payload);
-        this.hasUpdates = true;
-      });
-    } catch {
-      return;
-    }
+    // try {
+    //   await this.withPending(templateId, async () => {
+    //     await this.templatesService.grantTemplateAccess(payload);
+    //     this.hasUpdates = true;
+    //   });
+    // } catch {
+    //   return;
+    // }
 
-    this.dateRanges.delete(templateId);
+    // this.dateRanges.delete(templateId);
 
-    const successText = `Se otorgó acceso a "${template.name}".`;
-    await this.loadTemplates();
+    // const successText = `Se otorgó acceso a "${template.name}".`;
+    // await this.loadTemplates();
 
-    if (!this.errorMessage) {
-      this.successMessage = successText;
-    }
+    // if (!this.errorMessage) {
+    //   this.successMessage = successText;
+    // }
   }
 
   protected async revokeTemplate(template: TemplateResponse): Promise<void> {

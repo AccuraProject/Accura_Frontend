@@ -6,6 +6,7 @@ import { switchMap, take } from 'rxjs/operators';
 
 import { environment } from '../../../environments/environment';
 import { selectSessionState } from '../../core/store/session/session.reducer';
+import { TemplateUserAccessResponse } from './models/template-user-access';
 
 export interface TemplateCreatePayload {
   name: string;
@@ -130,6 +131,29 @@ export class TemplatesService {
     );
   }
 
+  getTemplatesForUser(userId: number): Observable<TemplateUserAccessResponse[]> {
+    return this.store.select(selectSessionState).pipe(
+      take(1),
+      switchMap((session) => {
+        if (!session.accessToken) {
+          return throwError(() => new Error('No hay un token de autenticación disponible.'));
+        }
+
+        const tokenType = session.tokenType ?? 'Bearer';
+        const headers = new HttpHeaders({
+          Authorization: `${tokenType} ${session.accessToken}`,
+        });
+
+        return this.http.get<TemplateUserAccessResponse[]>(
+          `${this.baseUrl}/templates/users/${userId}/access`,
+          {
+            headers,
+          },
+        );
+      }),
+    );
+  }
+
   saveTemplate(template: TemplateCreatePayload): Observable<TemplateResponse> {
     return this.store.select(selectSessionState).pipe(
       take(1),
@@ -195,16 +219,18 @@ export class TemplatesService {
 
         const body = { status };
 
-        return this.http.patch<TemplateResponse>(`${this.baseUrl}/templates/${templateId}/status`, body, {
-          headers,
-        });
+        return this.http.patch<TemplateResponse>(
+          `${this.baseUrl}/templates/${templateId}/status`,
+          body,
+          {
+            headers,
+          },
+        );
       }),
     );
   }
 
-  deleteTemplate(
-    templateId: number
-  ): Observable<void> {
+  deleteTemplate(templateId: number): Observable<void> {
     return this.store.select(selectSessionState).pipe(
       take(1),
       switchMap((session) => {
@@ -224,9 +250,7 @@ export class TemplatesService {
     );
   }
 
-  duplicateTemplate(
-    templateId: number
-  ): Observable<TemplateResponse> {
+  duplicateTemplate(templateId: number): Observable<TemplateResponse> {
     return this.store.select(selectSessionState).pipe(
       take(1),
       switchMap((session) => {
@@ -239,9 +263,12 @@ export class TemplatesService {
           Authorization: `${tokenType} ${session.accessToken}`,
         });
 
-        return this.http.post<TemplateResponse>(`${this.baseUrl}/templates/${templateId}/duplicate`, {
-          headers,
-        });
+        return this.http.post<TemplateResponse>(
+          `${this.baseUrl}/templates/${templateId}/duplicate`,
+          {
+            headers,
+          },
+        );
       }),
     );
   }
@@ -471,27 +498,56 @@ export class TemplatesService {
     return [];
   }
 
-  async grantTemplateAccess(payload: TemplateAccessGrantPayload[]): Promise<void> {
-    if (!payload.length) {
-      return;
-    }
+  grantTemplateAccess(payload: TemplateAccessGrantPayload[]): Observable<void> {
+    return this.store.select(selectSessionState).pipe(
+      take(1),
+      switchMap((session) => {
+        if (!session.accessToken) {
+          return throwError(() => new Error('No hay un token de autenticación disponible.'));
+        }
 
-    const headers = await this.buildAuthHeaders();
-    await firstValueFrom(
-      this.http.post<void>(`${this.baseUrl}/templates/access`, payload, { headers }),
+        const tokenType = session.tokenType ?? 'Bearer';
+        const headers = new HttpHeaders({
+          Authorization: `${tokenType} ${session.accessToken}`,
+        });
+
+        return this.http.post<void>(`${this.baseUrl}/templates/access`, payload, {
+          headers,
+        });
+      }),
     );
   }
 
-  async revokeTemplateAccess(payload: TemplateAccessRevokePayload[]): Promise<void> {
-    if (!payload.length) {
-      return;
-    }
+  revokeTemplateAccess(payload: TemplateAccessRevokePayload[]): Observable<void> {
+    return this.store.select(selectSessionState).pipe(
+      take(1),
+      switchMap((session) => {
+        if (!session.accessToken) {
+          return throwError(() => new Error('No hay un token de autenticación disponible.'));
+        }
 
-    const headers = await this.buildAuthHeaders();
-    await firstValueFrom(
-      this.http.post<void>(`${this.baseUrl}/templates/access/revoke`, payload, { headers }),
+        const tokenType = session.tokenType ?? 'Bearer';
+        const headers = new HttpHeaders({
+          Authorization: `${tokenType} ${session.accessToken}`,
+        });
+
+        return this.http.post<void>(`${this.baseUrl}/templates/access/revoke`, payload, {
+          headers,
+        });
+      }),
     );
   }
+
+  // async revokeTemplateAccess(payload: TemplateAccessRevokePayload[]): Promise<void> {
+  //   if (!payload.length) {
+  //     return;
+  //   }
+
+  //   const headers = await this.buildAuthHeaders();
+  //   await firstValueFrom(
+  //     this.http.post<void>(`${this.baseUrl}/templates/access/revoke`, payload, { headers }),
+  //   );
+  // }
 
   async fetchTemplateColumns(templateId: number | string): Promise<TemplateColumnResponse[]> {
     const headers = await this.buildAuthHeaders();
