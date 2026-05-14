@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, Input, OnDestroy, OnInit, inject } from '@angular/core';
+import { Component, Input, OnDestroy, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatMenuModule } from '@angular/material/menu';
@@ -99,7 +99,7 @@ export class TemplateClientManagementComponent implements OnInit, OnDestroy {
   private uploadSubscriptions: Record<string, Subscription | null> = {};
 
   protected templates: TemplateRow[] = [];
-  protected templatesLoading = false;
+  protected templatesLoading = signal(false);
   protected templatesError: string | null = null;
 
   protected selectedTemplate: TemplateRow | null = null;
@@ -156,11 +156,11 @@ export class TemplateClientManagementComponent implements OnInit, OnDestroy {
   }
 
   private loadTemplates() {
-    if (this.templatesLoading || !this.sessionUserId) {
+    if (this.templatesLoading() || !this.sessionUserId) {
       return;
     }
 
-    this.templatesLoading = true;
+    this.templatesLoading.set(true);
     this.templatesError = null;
 
     this.templatesService
@@ -186,13 +186,14 @@ export class TemplateClientManagementComponent implements OnInit, OnDestroy {
           this.templates = templatesWithAccess.map(({ template, access }) =>
             this.mapToTemplateRow(template, access),
           );
-          this.templatesLoading = false;
         },
         error: (error: unknown) => {
           this.templates = [];
           this.templatesError = this.templatesService.getErrorMessage(error);
-          this.templatesLoading = false;
           console.error(this.templatesError);
+        },
+        complete: () => {
+          this.templatesLoading.set(false);
         },
       });
   }

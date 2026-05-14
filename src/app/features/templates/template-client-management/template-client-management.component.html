@@ -24,7 +24,7 @@
     [columns]="clientColumns"
     [value]="templates"
     [selection]="selectedTemplate"
-    [loading]="templatesLoading"
+    [loading]="templatesLoading()"
     (rowSelect)="onRowSelect($event)"
     (rowUnselect)="onRowUnselect()"
   ></app-data-table>
