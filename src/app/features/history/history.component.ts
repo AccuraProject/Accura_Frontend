@@ -13,7 +13,10 @@ import {
 } from '../../core/models/notification.model';
 import { selectIsUser } from '../../core/store/session/session.selectors';
 import { PageActionsComponent } from '../../shared/components/ui/page-actions/page-actions';
-import { DataTableComponent } from '../../shared/components/data/data-table/data-table';
+import {
+  DataTableColumn,
+  DataTableComponent,
+} from '../../shared/components/data/data-table/data-table';
 import { formatDate } from '../../shared/utils/date-util';
 import { formatNumber } from '../../shared/utils/number-util';
 import {
@@ -105,14 +108,25 @@ export class HistoryComponent implements OnInit {
   protected readonly pageSize = 10;
   protected currentPage = 1;
 
-  columns = [
+  columns: DataTableColumn[] = [
     { field: 'fileName', header: 'Archivo' },
     { field: 'templateName', header: 'Plantilla' },
     { field: 'uploadedBy', header: 'Cargado por' },
-    { field: 'uploadedAt', header: 'Fecha de Carga' },
-    { field: 'validatedRows', header: 'Filas Validadas' },
-    { field: 'totalRows', header: 'Filas Procesadas' },
-    { field: 'status', header: 'Estado' },
+    { field: 'uploadedAt', header: 'Fecha de carga', align: 'center' },
+    { field: 'validatedRows', header: 'Filas exitosas', align: 'center' },
+    { field: 'totalRows', header: 'Filas procesadas', align: 'center' },
+    {
+      field: 'status',
+      header: 'Estado',
+      align: 'center',
+      isBadge: true,
+      badgeSeverityMap: {
+        'Procesando': 'secondary',
+        'Validado exitosamente': 'success',
+        'Validado con errores': 'warn',
+        'Fallido': 'danger',
+      },
+    },
   ];
 
   protected detailDialogVisible = false;

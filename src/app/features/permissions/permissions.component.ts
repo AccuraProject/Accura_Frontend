@@ -6,16 +6,16 @@ import { TemplatesService, TemplateResponse } from '../templates/templates.servi
 import { UserService } from '../../core/services/user.service';
 import { UserResponse } from '../../core/models/user.model';
 import { PageActionsComponent } from '../../shared/components/ui/page-actions/page-actions';
-import { DataTableComponent } from '../../shared/components/data/data-table/data-table';
+import { DataTableColumn, DataTableComponent } from '../../shared/components/data/data-table/data-table';
 import {
   AssignedTemplateView,
-  AvailableTemplateView,
   EMPTY_PERMISSION_USER_DATA,
   PermissionFormDialogComponent,
   PermissionFormDialogData,
 } from './components/permission-form-dialog/permission-form-dialog.component';
 import { ToastService } from '../../shared/services/toast.service';
 import { TemplateUserAccessResponse } from '../templates/models/template-user-access';
+import { formatDate } from '../../shared/utils/date-util';
 
 interface PermissionUser {
   id: number;
@@ -45,10 +45,10 @@ export class PermissionsComponent implements OnInit, OnDestroy {
   protected isTableLoading = signal(false);
   protected usersLoadError: string | null = null;
 
-  columns = [
+  columns: DataTableColumn[] = [
     { field: 'name', header: 'Usuario' },
     { field: 'templates', header: 'Plantillas asignadas' },
-    { field: 'lastUpdated', header: 'Última actualización' },
+    { field: 'lastUpdated', header: 'Última actualización', align: 'center' },
   ];
 
   protected permissionDialogVisible = false;
@@ -239,7 +239,7 @@ export class PermissionsComponent implements OnInit, OnDestroy {
       id: user.id,
       name: user.name,
       email: user.email,
-      lastUpdated: this.formatDate(user.updated_at ?? user.created_at),
+      lastUpdated: formatDate(user.updated_at ?? user.created_at),
       templates: concatenatedTemplateNames,
     };
   }
@@ -261,19 +261,6 @@ export class PermissionsComponent implements OnInit, OnDestroy {
       console.error(`Error al obtener las plantillas del usuario ${userId}.`, error);
       return [];
     }
-  }
-
-  private formatDate(value: string | null | undefined): string {
-    if (!value) {
-      return '—';
-    }
-
-    const parsed = new Date(value);
-    if (Number.isNaN(parsed.getTime())) {
-      return value.slice(0, 10);
-    }
-
-    return parsed.toISOString().slice(0, 10);
   }
 
   protected closePermissionDialog(): void {

@@ -5,20 +5,24 @@ import { InputTextModule } from 'primeng/inputtext';
 import { SelectItem } from 'primeng/api';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
+import { TagModule } from 'primeng/tag';
 
-interface DataTableColumn {
+export interface DataTableColumn {
   field: string;
   header: string;
   sortable?: boolean;
   filter?: boolean;
+  isBadge?: boolean;
+  badgeSeverityMap?: Record<string, string>;
+  align?: 'left' | 'center' | 'right';
 }
 
 @Component({
   selector: 'app-data-table',
   standalone: true,
-  imports: [TableModule, IconFieldModule, InputIconModule,  ButtonModule, InputTextModule],
+  imports: [TableModule, IconFieldModule, InputIconModule, ButtonModule, InputTextModule, TagModule],
   templateUrl: './data-table.html',
-  styleUrls: ['./data-table.scss']
+  styleUrls: ['./data-table.scss'],
 })
 export class DataTableComponent<T> {
   @Input() value: T[] = [];

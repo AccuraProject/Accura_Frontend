@@ -15,7 +15,10 @@ import {
 } from '../templates.service';
 import { normalizeAiPayload } from '../../validation-rules/validation-rule-ai.utils';
 import { PageActionsComponent } from '../../../shared/components/ui/page-actions/page-actions';
-import { DataTableComponent } from '../../../shared/components/data/data-table/data-table';
+import {
+  DataTableColumn,
+  DataTableComponent,
+} from '../../../shared/components/data/data-table/data-table';
 import { ToastService } from '../../../shared/services/toast.service';
 import { ConfirmService } from '../../../shared/services/confirm.service';
 import { formatDate, formatDateOnly } from '../../../shared/utils/date-util';
@@ -105,12 +108,12 @@ export class TemplateClientManagementComponent implements OnInit, OnDestroy {
   protected selectedTemplate: TemplateRow | null = null;
   protected isEditingClient = false;
 
-  clientColumns = [
+  clientColumns: DataTableColumn[] = [
     { field: 'name', header: 'Nombre' },
     { field: 'description', header: 'Descripción' },
-    { field: 'start_date', header: 'Fecha de inicio' },
-    { field: 'end_date', header: 'Fecha de fin' },
-    { field: 'lastUpdated', header: 'Última actualización' },
+    { field: 'start_date', header: 'Fecha de inicio', align: 'center' },
+    { field: 'end_date', header: 'Fecha de fin', align: 'center' },
+    { field: 'lastUpdated', header: 'Última actualización', align: 'center' },
   ];
 
   protected detailDialogVisible = false;

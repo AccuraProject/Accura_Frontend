@@ -88,10 +88,6 @@ a {
   text-decoration: none;
 }
 
-// .p-iconfield:focus-within .p-inputicon {
-//   color: var(--p-primary-color);
-// }
-
 .p-datatable-header {
   padding: 0.75rem 0 !important;
 }
@@ -99,6 +95,12 @@ a {
 .p-fieldset-toggle-button {
   font-family: 'Poppins', sans-serif;
   color: var(--p-content-color);
+}
+
+.btn-delete:not([disabled]):hover {
+  background: var(--p-button-outlined-danger-hover-background) !important;
+  border-color: var(--p-button-outlined-danger-border-color) !important;
+  color: var(--p-button-outlined-danger-color) !important;
 }
 
 .toolbar-menubutton.p-button {

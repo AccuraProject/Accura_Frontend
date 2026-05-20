@@ -111,8 +111,6 @@ export class HistoryDetailDialogComponent {
         return 'warn';
       case 'Fallido':
         return 'danger';
-      case 'Procesando':
-        return 'info';
       default:
         return 'secondary';
     }

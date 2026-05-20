@@ -7,12 +7,12 @@ import { Store } from '@ngrx/store';
 import { Observable, Subscription } from 'rxjs';
 import { finalize } from 'rxjs/operators';
 import { selectIsAdmin, selectSessionUser } from '../../../core/store/session/session.selectors';
-import {
-  TemplateResponse,
-  TemplatesService,
-} from '../templates.service';
+import { TemplateResponse, TemplatesService } from '../templates.service';
 import { PageActionsComponent } from '../../../shared/components/ui/page-actions/page-actions';
-import { DataTableComponent } from '../../../shared/components/data/data-table/data-table';
+import {
+  DataTableColumn,
+  DataTableComponent,
+} from '../../../shared/components/data/data-table/data-table';
 import { ToastService } from '../../../shared/services/toast.service';
 import { ConfirmService } from '../../../shared/services/confirm.service';
 import { formatDate } from '../../../shared/utils/date-util';
@@ -95,13 +95,22 @@ export class TemplateManagementComponent implements OnInit, OnDestroy {
   protected readonly pageSize = 10;
   protected currentPage = 1;
 
-  columns = [
+  columns: DataTableColumn[] = [
     { field: 'name', header: 'Nombre' },
     { field: 'version', header: 'Versión' },
     { field: 'description', header: 'Descripción' },
-    { field: 'createdAt', header: 'Fecha de creación' },
-    { field: 'lastUpdated', header: 'Última actualización' },
-    { field: 'status', header: 'Estado' },
+    { field: 'createdAt', header: 'Fecha de creación', align: 'center' },
+    { field: 'lastUpdated', header: 'Última actualización', align: 'center' },
+    {
+      field: 'status',
+      header: 'Estado',
+      align: 'center',
+      isBadge: true,
+      badgeSeverityMap: {
+        'Publicado': 'success',
+        'Borrador': 'info',
+      },
+    },
   ];
 
   protected templateDialogVisible = false;

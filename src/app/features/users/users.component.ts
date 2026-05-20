@@ -12,10 +12,14 @@ import { UserService } from '../../core/services/user.service';
 import { UpdateUserPayload, UserResponse, UserRole } from '../../core/models/user.model';
 import { PageActionsComponent } from '../../shared/components/ui/page-actions/page-actions';
 import { CardModule } from 'primeng/card';
-import { DataTableComponent } from '../../shared/components/data/data-table/data-table';
+import {
+  DataTableColumn,
+  DataTableComponent,
+} from '../../shared/components/data/data-table/data-table';
 import { ToastService } from '../../shared/services/toast.service';
 import { ConfirmService } from '../../shared/services/confirm.service';
 import { finalize } from 'rxjs';
+import { formatDateOnly } from '../../shared/utils/date-util';
 
 interface UserRow {
   id: number;
@@ -59,12 +63,21 @@ export class UsersComponent implements OnInit {
   protected readonly pageSize = 10;
   protected currentPage = 1;
 
-  columns = [
+  columns: DataTableColumn[] = [
     { field: 'name', header: 'Nombre' },
     { field: 'email', header: 'Email' },
-    { field: 'role', header: 'Rol' },
-    { field: 'status', header: 'Estado' },
-    { field: 'createdAt', header: 'Fecha de Creación' },
+    { field: 'role', header: 'Rol', align: 'center' },
+    {
+      field: 'status',
+      header: 'Estado',
+      align: 'center',
+      isBadge: true,
+      badgeSeverityMap: {
+        'Activo': 'success',
+        'Inactivo': 'danger',
+      },
+    },
+    { field: 'createdAt', header: 'Fecha de creación', align: 'center' },
   ];
 
   protected userDialogVisible = false;
@@ -303,7 +316,7 @@ export class UsersComponent implements OnInit {
       user.email,
       user.role?.id ?? null,
       user.is_active,
-      this.formatDate(user.created_at),
+      formatDateOnly(user.created_at),
       this.getRoleDisplayName(user.role),
     );
   }
@@ -347,18 +360,5 @@ export class UsersComponent implements OnInit {
 
   private getStatusLabel(isActive: boolean): string {
     return isActive ? 'Activo' : 'Inactivo';
-  }
-
-  private formatDate(value: string | null | undefined): string {
-    if (!value) {
-      return '';
-    }
-
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) {
-      return '';
-    }
-
-    return new Intl.DateTimeFormat('es-ES').format(date);
   }
 }

@@ -4,6 +4,7 @@
   [description]="description"
   width="min(92vw, 1240px)"
   [showFooter]="false"
+  [loading]="isSubmittingAi() || loading"
   (cancel)="cancel()"
 >
   <p-stepper [value]="currentStep()" [linear]="true">

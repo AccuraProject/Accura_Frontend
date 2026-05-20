@@ -7,7 +7,10 @@ import { RuleFormDialogData } from './components/rule-form-dialog/rule-form-dial
 import { ValidationRulesService } from './validation-rules.service';
 import { PageActionsComponent } from '../../shared/components/ui/page-actions/page-actions';
 import { ConfirmService } from '../../shared/services/confirm.service';
-import { DataTableComponent } from '../../shared/components/data/data-table/data-table';
+import {
+  DataTableColumn,
+  DataTableComponent,
+} from '../../shared/components/data/data-table/data-table';
 import { RuleExample, RulePayload, RuleResponse } from './models/rule.model';
 import {
   RuleFormDialogComponent,
@@ -16,6 +19,7 @@ import {
 import { finalize } from 'rxjs';
 import { ToastService } from '../../shared/services/toast.service';
 import { capitalizeFirstLetter } from '../../shared/utils/text-utils';
+import { formatDateOnly } from '../../shared/utils/date-util';
 
 interface AiRuleOption {
   id: string;
@@ -27,6 +31,7 @@ interface RuleRow {
   name: string;
   dataType: string;
   mandatory: string;
+  createdAt: string;
   status: string;
   statusAssigned: string;
   description: string;
@@ -70,11 +75,31 @@ export class ValidationRulesComponent implements OnInit {
   protected readonly pageSize = 10;
   protected currentPage = 1;
 
-  columns = [
+  columns: DataTableColumn[] = [
     { field: 'name', header: 'Nombre' },
     { field: 'dataType', header: 'Tipo de dato' },
-    { field: 'mandatory', header: 'Obligatoria' },
-    { field: 'statusAssigned', header: 'Estado' },
+    { field: 'mandatory', header: 'Obligatoria', align: 'center' },
+    { field: 'createdAt', header: 'Fecha de creación', align: 'center' },
+    {
+      field: 'status',
+      header: 'Estado',
+      align: 'center',
+      isBadge: true,
+      badgeSeverityMap: {
+        'Activo': 'success',
+        'Inactivo': 'danger',
+      },
+    },
+    {
+      field: 'statusAssigned',
+      header: 'Asignación',
+      align: 'center',
+      isBadge: true,
+      badgeSeverityMap: {
+        'Asignada': 'info',
+        'Borrador': 'secondary',
+      },
+    },
   ];
 
   protected ruleDialogVisible = false;
@@ -253,6 +278,7 @@ export class ValidationRulesComponent implements OnInit {
       payload['Nombre de la regla'],
       payload['Tipo de dato'],
       payload['Campo obligatorio'],
+      ruleResponse.created_at,
       ruleResponse.is_active,
       ruleResponse.status,
       payload['Descripción'],
@@ -269,6 +295,7 @@ export class ValidationRulesComponent implements OnInit {
     name: string,
     dataType: string,
     mandatory: boolean,
+    createdAt: string,
     isActive: boolean,
     statusAssigned: string,
     description: string,
@@ -283,8 +310,9 @@ export class ValidationRulesComponent implements OnInit {
       name,
       dataType,
       mandatory: this.getMandatoryLabel(mandatory),
+      createdAt: formatDateOnly(createdAt),
       status: this.getStatusLabel(isActive),
-      statusAssigned: this.getStatusLabel(isActive) + ' | ' + capitalizeFirstLetter(statusAssigned),
+      statusAssigned: capitalizeFirstLetter(statusAssigned),
       description,
       header,
       headerRule,

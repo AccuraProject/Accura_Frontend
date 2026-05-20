@@ -38,7 +38,7 @@
   <ng-template #header let-columns>
     <tr>
       @for (col of columns; track col) {
-        <th>
+        <th [style.text-align]="col.align || 'left'">
           {{ col.header }}
         </th>
       }
@@ -48,8 +48,16 @@
   <ng-template #body let-rowData let-columns="columns">
     <tr [pSelectableRow]="rowData">
       @for (col of columns; track col) {
-        <td>
-          {{ rowData[col.field] }}
+        <td [style.text-align]="col.align || 'left'">
+          @if (col.isBadge) {
+            <p-tag
+              [value]="rowData[col.field]"
+              [rounded]="true"
+              [severity]="col.badgeSeverityMap ? col.badgeSeverityMap[rowData[col.field]] : 'info'"
+            ></p-tag>
+          } @else {
+            {{ rowData[col.field] }}
+          }
         </td>
       }
     </tr>
