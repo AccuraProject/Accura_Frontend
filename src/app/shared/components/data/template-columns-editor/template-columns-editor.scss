@@ -26,6 +26,12 @@
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+    padding: 0.5rem;
+
+    &.with-header-rule {
+      background-color: var(--p-surface-100);
+      border-radius: var(--p-content-border-radius);
+    }
   }
 
   .rules-cell__item app-select-field {

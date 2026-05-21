@@ -79,7 +79,10 @@
                 let ruleIndex = $index
               ) {
                 <div class="rules-cell__item" [formGroupName]="ruleIndex">
-                  <div class="rules-cell__inputs">
+                  <div
+                    class="rules-cell__inputs"
+                    [class.with-header-rule]="shouldShowHeaderRuleSelect(rule.controls.id.value)"
+                  >
                     <app-select-field
                       inputId="rule-{{ rowIndex }}-{{ ruleIndex }}"
                       [control]="rule.controls.id"
