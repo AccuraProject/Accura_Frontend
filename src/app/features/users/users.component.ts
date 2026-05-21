@@ -48,7 +48,6 @@ interface UserRow {
 })
 export class UsersComponent implements OnInit {
   private readonly cdr = inject(ChangeDetectorRef);
-  protected searchTerm = '';
 
   protected readonly roles: UserRoleOption[] = [
     // { id: 1, label: 'Administrador' },

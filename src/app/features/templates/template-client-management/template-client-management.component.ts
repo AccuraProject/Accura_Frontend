@@ -3,9 +3,8 @@ import { Component, Input, OnDestroy, OnInit, inject, signal } from '@angular/co
 import { FormsModule } from '@angular/forms';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatMenuModule } from '@angular/material/menu';
-import { HttpEventType } from '@angular/common/http';
 import { Subscription, forkJoin } from 'rxjs';
-import { finalize, map, switchMap } from 'rxjs/operators';
+import { map, switchMap } from 'rxjs/operators';
 import { TemplateDetailDialogComponent } from '../components/template-detail-dialog/template-detail-dialog.component';
 import {
   TemplateColumnResponse,
@@ -109,11 +108,23 @@ export class TemplateClientManagementComponent implements OnInit, OnDestroy {
   protected isEditingClient = false;
 
   clientColumns: DataTableColumn[] = [
-    { field: 'name', header: 'Nombre' },
-    { field: 'description', header: 'Descripción' },
-    { field: 'start_date', header: 'Fecha de inicio', align: 'center' },
-    { field: 'end_date', header: 'Fecha de fin', align: 'center' },
-    { field: 'lastUpdated', header: 'Última actualización', align: 'center' },
+    { field: 'name', header: 'Nombre', sortable: true },
+    { field: 'description', header: 'Descripción', sortable: true },
+    {
+      field: 'start_date',
+      header: 'Fecha de inicio',
+      align: 'center',
+      sortable: true,
+      type: 'date',
+    },
+    { field: 'end_date', header: 'Fecha de fin', align: 'center', sortable: true, type: 'date' },
+    {
+      field: 'lastUpdated',
+      header: 'Última actualización',
+      align: 'center',
+      sortable: true,
+      type: 'date',
+    },
   ];
 
   protected detailDialogVisible = false;

@@ -57,37 +57,33 @@ interface RuleRow {
 })
 export class ValidationRulesComponent implements OnInit {
   private readonly cdr = inject(ChangeDetectorRef);
-  protected searchTerm = '';
 
   protected rules: RuleRow[] = [];
   protected rulesLoading = false;
   protected rulesError: string | null = null;
 
-  protected aiRuleOptions: AiRuleOption[] = [];
-  protected selectedAiRuleId: string | null = null;
-  protected aiIsLoading = false;
-  protected aiError: string | null = null;
-  protected hasAiFetched = false;
-  protected assistantPanelOpen = false;
-
-  protected ruleSyncError: string | null = null;
-
   protected readonly pageSize = 10;
   protected currentPage = 1;
 
   columns: DataTableColumn[] = [
-    { field: 'name', header: 'Nombre' },
-    { field: 'dataType', header: 'Tipo de dato' },
+    { field: 'name', header: 'Nombre', sortable: true },
+    { field: 'dataType', header: 'Tipo de dato', sortable: true },
     { field: 'mandatory', header: 'Obligatoria', align: 'center' },
-    { field: 'createdAt', header: 'Fecha de creación', align: 'center' },
+    {
+      field: 'createdAt',
+      header: 'Fecha de creación',
+      align: 'center',
+      sortable: true,
+      type: 'date',
+    },
     {
       field: 'status',
       header: 'Estado',
       align: 'center',
       isBadge: true,
       badgeSeverityMap: {
-        'Activo': 'success',
-        'Inactivo': 'danger',
+        Activo: 'success',
+        Inactivo: 'danger',
       },
     },
     {
@@ -96,8 +92,8 @@ export class ValidationRulesComponent implements OnInit {
       align: 'center',
       isBadge: true,
       badgeSeverityMap: {
-        'Asignada': 'info',
-        'Borrador': 'secondary',
+        Asignada: 'info',
+        Borrador: 'secondary',
       },
     },
   ];

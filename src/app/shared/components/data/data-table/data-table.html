@@ -7,17 +7,12 @@
   [paginator]="true"
   [rows]="rows"
   selectionMode="single"
+  [customSort]="true"
+  (sortFunction)="customSort($event)"
   (onRowSelect)="onRowSelect($event)"
   (onRowUnselect)="onRowUnselect($event)"
   [metaKeySelection]="false"
 >
-  <!-- Filtro y búsqueda -->
-  <!-- <ng-template pTemplate="caption">
-    <div class="table-search">
-      <input pInputText type="text" (input)="onSearchChange($event)" placeholder="Buscar..." />
-    </div>
-  </ng-template> -->
-
   <ng-template #caption>
     <div class="table-search">
       <p-iconfield iconPosition="left">
@@ -38,8 +33,18 @@
   <ng-template #header let-columns>
     <tr>
       @for (col of columns; track col) {
-        <th [style.text-align]="col.align || 'left'">
-          {{ col.header }}
+        <th
+          [pSortableColumn]="col.sortable ? col.field : null"
+          [style.text-align]="col.align || 'left'"
+        >
+          @if (col.sortable) {
+            <div class="flex items-center gap-2">
+              {{ col.header }}
+              <p-sortIcon [field]="col.field"></p-sortIcon>
+            </div>
+          } @else {
+            {{ col.header }}
+          }
         </th>
       }
     </tr>

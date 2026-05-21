@@ -109,22 +109,40 @@ export class HistoryComponent implements OnInit {
   protected currentPage = 1;
 
   columns: DataTableColumn[] = [
-    { field: 'fileName', header: 'Archivo' },
-    { field: 'templateName', header: 'Plantilla' },
-    { field: 'uploadedBy', header: 'Cargado por' },
-    { field: 'uploadedAt', header: 'Fecha de carga', align: 'center' },
-    { field: 'validatedRows', header: 'Filas exitosas', align: 'center' },
-    { field: 'totalRows', header: 'Filas procesadas', align: 'center' },
+    { field: 'fileName', header: 'Archivo', sortable: true },
+    { field: 'templateName', header: 'Plantilla', sortable: true },
+    { field: 'uploadedBy', header: 'Cargado por', sortable: true },
+    {
+      field: 'uploadedAt',
+      header: 'Fecha de carga',
+      align: 'center',
+      sortable: true,
+      type: 'date',
+    },
+    {
+      field: 'validatedRows',
+      header: 'Filas exitosas',
+      align: 'center',
+      sortable: true,
+      type: 'number',
+    },
+    {
+      field: 'totalRows',
+      header: 'Filas procesadas',
+      align: 'center',
+      sortable: true,
+      type: 'number',
+    },
     {
       field: 'status',
       header: 'Estado',
       align: 'center',
       isBadge: true,
       badgeSeverityMap: {
-        'Procesando': 'secondary',
+        Procesando: 'secondary',
         'Validado exitosamente': 'success',
         'Validado con errores': 'warn',
-        'Fallido': 'danger',
+        Fallido: 'danger',
       },
     },
   ];

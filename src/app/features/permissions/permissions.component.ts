@@ -6,7 +6,10 @@ import { TemplatesService, TemplateResponse } from '../templates/templates.servi
 import { UserService } from '../../core/services/user.service';
 import { UserResponse } from '../../core/models/user.model';
 import { PageActionsComponent } from '../../shared/components/ui/page-actions/page-actions';
-import { DataTableColumn, DataTableComponent } from '../../shared/components/data/data-table/data-table';
+import {
+  DataTableColumn,
+  DataTableComponent,
+} from '../../shared/components/data/data-table/data-table';
 import {
   AssignedTemplateView,
   EMPTY_PERMISSION_USER_DATA,
@@ -46,9 +49,15 @@ export class PermissionsComponent implements OnInit, OnDestroy {
   protected usersLoadError: string | null = null;
 
   columns: DataTableColumn[] = [
-    { field: 'name', header: 'Usuario' },
-    { field: 'templates', header: 'Plantillas asignadas' },
-    { field: 'lastUpdated', header: 'Última actualización', align: 'center' },
+    { field: 'name', header: 'Usuario', sortable: true },
+    { field: 'templates', header: 'Plantillas asignadas', sortable: true },
+    {
+      field: 'lastUpdated',
+      header: 'Última actualización',
+      align: 'center',
+      sortable: true,
+      type: 'date',
+    },
   ];
 
   protected permissionDialogVisible = false;

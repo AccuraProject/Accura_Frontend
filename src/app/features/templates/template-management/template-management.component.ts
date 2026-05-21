@@ -1,12 +1,10 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, OnDestroy, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import { MatMenuModule } from '@angular/material/menu';
 import { Store } from '@ngrx/store';
 import { Observable, Subscription } from 'rxjs';
 import { finalize } from 'rxjs/operators';
-import { selectIsAdmin, selectSessionUser } from '../../../core/store/session/session.selectors';
+import { selectIsAdmin } from '../../../core/store/session/session.selectors';
 import { TemplateResponse, TemplatesService } from '../templates.service';
 import { PageActionsComponent } from '../../../shared/components/ui/page-actions/page-actions';
 import {
@@ -44,8 +42,6 @@ interface TemplateRow {
   imports: [
     CommonModule,
     FormsModule,
-    MatDialogModule,
-    MatMenuModule,
     PageActionsComponent,
     DataTableComponent,
     TemplateFormDialogComponent,
@@ -57,10 +53,8 @@ export class TemplateManagementComponent implements OnInit, OnDestroy {
   private readonly cdr = inject(ChangeDetectorRef);
   protected searchTerm = '';
 
-  private readonly dialog = inject(MatDialog);
   private readonly store = inject(Store);
   private readonly templatesService = inject(TemplatesService);
-  private readonly sessionUser$ = this.store.select(selectSessionUser);
 
   protected statusFilter: ManagementTemplateStatus | 'Todos' = 'Todos';
   protected uploadTemplateId: string | null = null;
@@ -96,19 +90,31 @@ export class TemplateManagementComponent implements OnInit, OnDestroy {
   protected currentPage = 1;
 
   columns: DataTableColumn[] = [
-    { field: 'name', header: 'Nombre' },
-    { field: 'version', header: 'Versión' },
-    { field: 'description', header: 'Descripción' },
-    { field: 'createdAt', header: 'Fecha de creación', align: 'center' },
-    { field: 'lastUpdated', header: 'Última actualización', align: 'center' },
+    { field: 'name', header: 'Nombre', sortable: true },
+    { field: 'version', header: 'Versión', sortable: true },
+    { field: 'description', header: 'Descripción', sortable: true },
+    {
+      field: 'createdAt',
+      header: 'Fecha de creación',
+      align: 'center',
+      sortable: true,
+      type: 'date',
+    },
+    {
+      field: 'lastUpdated',
+      header: 'Última actualización',
+      align: 'center',
+      sortable: true,
+      type: 'date',
+    },
     {
       field: 'status',
       header: 'Estado',
       align: 'center',
       isBadge: true,
       badgeSeverityMap: {
-        'Publicado': 'success',
-        'Borrador': 'info',
+        Publicado: 'success',
+        Borrador: 'info',
       },
     },
   ];
