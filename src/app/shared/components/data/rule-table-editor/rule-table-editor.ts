@@ -31,6 +31,7 @@ export class RuleTableEditorComponent implements OnChanges {
   @Input() columns: string[] = [];
   @Input() rows: Record<string, string>[] = [];
   @Input() mode: RuleTableMode = 'standard';
+  @Input() subMode: string | null = null;
 
   @Output() rowsChange = new EventEmitter<Record<string, string>[]>();
 
@@ -215,60 +216,81 @@ export class RuleTableEditorComponent implements OnChanges {
     currentRows: Record<string, string>[],
     newRow: Record<string, string>,
   ): Record<string, string>[] {
-    const [sourceColumn, targetColumn] = this.columns;
+    const [sourceColumn, ...targetColumns] = this.columns;
 
-    if (!sourceColumn || !targetColumn) {
-      return currentRows;
-    }
+    if (!sourceColumn || !targetColumns.length) return currentRows;
 
     const sourceValue = newRow[sourceColumn];
-    const targetValue = newRow[targetColumn];
 
     const existingIndex = currentRows.findIndex(
-      (row) => this.normalizeValue(row[sourceColumn]) === this.normalizeValue(sourceValue),
+      (row) => this.normalizeValue(row[sourceColumn]) === this.normalizeValue(sourceValue)
     );
 
-    if (existingIndex === -1) {
-      const normalizedNewTargets = this.splitDependencyValues(targetValue);
+    const handleListType = () => {
+      const targetColumn = targetColumns[0];
+      const normalizedNewTargets = this.splitDependencyValues(newRow[targetColumn]);
+      if (!normalizedNewTargets.length) return currentRows;
 
-      if (!normalizedNewTargets.length) {
+      if (existingIndex === -1) {
+        return [...currentRows, { ...newRow, [targetColumn]: normalizedNewTargets.join(', ') }];
+      }
+
+      const updatedRows = [...currentRows];
+      const existingRow = { ...updatedRows[existingIndex] };
+      const existingTargetValues = this.splitDependencyValues(existingRow[targetColumn]);
+      const incomingTargetValues = normalizedNewTargets;
+
+      const existingNormalizedSet = new Set(
+        existingTargetValues.map((v) => this.normalizeValue(v))
+      );
+
+      const valuesToAdd = incomingTargetValues.filter(
+        (v) => !existingNormalizedSet.has(this.normalizeValue(v))
+      );
+
+      if (!valuesToAdd.length) {
+        if (!this.isImporting) this.toast.warn('El elemento ya existe en la lista.');
         return currentRows;
       }
 
-      return [
-        ...currentRows,
-        {
-          ...newRow,
-          [targetColumn]: normalizedNewTargets.join(', '),
-        },
-      ];
-    }
+      existingRow[targetColumn] = [...existingTargetValues, ...valuesToAdd].join(', ');
+      updatedRows[existingIndex] = existingRow;
+      return updatedRows;
+    };
 
-    const updatedRows = [...currentRows];
-    const existingRow = { ...updatedRows[existingIndex] };
+    const handleOtherTypes = () => {
+      const updatedRows = [...currentRows];
 
-    const existingTargetValues = this.splitDependencyValues(existingRow[targetColumn]);
-    const incomingTargetValues = this.splitDependencyValues(targetValue);
-
-    const existingNormalizedSet = new Set(
-      existingTargetValues.map((value) => this.normalizeValue(value)),
-    );
-
-    const valuesToAdd = incomingTargetValues.filter(
-      (value) => !existingNormalizedSet.has(this.normalizeValue(value)),
-    );
-
-    if (!valuesToAdd.length) {
-      if (!this.isImporting) {
-        this.toast.warn('El elemento ya existe en la lista.');
+      if (existingIndex === -1) {
+        return [...currentRows, { ...newRow }];
       }
-      return currentRows;
+
+      const existingRow = { ...updatedRows[existingIndex] };
+      let hasChanges = false;
+
+      targetColumns.forEach((col) => {
+        const newValue = newRow[col] ?? '';
+        const oldValue = existingRow[col] ?? '';
+        if (newValue && newValue !== oldValue) {
+          existingRow[col] = newValue;
+          hasChanges = true;
+        }
+      });
+
+      if (!hasChanges) {
+        if (!this.isImporting) this.toast.warn('El elemento ya existe en la lista.');
+        return currentRows;
+      }
+
+      updatedRows[existingIndex] = existingRow;
+      return updatedRows;
+    };
+
+    if (this.subMode === 'Lista') {
+      return handleListType();
+    } else {
+      return handleOtherTypes();
     }
-
-    existingRow[targetColumn] = [...existingTargetValues, ...valuesToAdd].join(', ');
-    updatedRows[existingIndex] = existingRow;
-
-    return updatedRows;
   }
 
   private buildNormalizedDraftRow(): Record<string, string> {

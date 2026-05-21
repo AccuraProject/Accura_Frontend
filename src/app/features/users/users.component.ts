@@ -64,8 +64,8 @@ export class UsersComponent implements OnInit {
   protected currentPage = 1;
 
   columns: DataTableColumn[] = [
-    { field: 'name', header: 'Nombre' },
-    { field: 'email', header: 'Email' },
+    { field: 'name', header: 'Nombre', sortable: true },
+    { field: 'email', header: 'Email', sortable: true },
     { field: 'role', header: 'Rol', align: 'center' },
     {
       field: 'status',
@@ -73,11 +73,17 @@ export class UsersComponent implements OnInit {
       align: 'center',
       isBadge: true,
       badgeSeverityMap: {
-        'Activo': 'success',
-        'Inactivo': 'danger',
+        Activo: 'success',
+        Inactivo: 'danger',
       },
     },
-    { field: 'createdAt', header: 'Fecha de creación', align: 'center' },
+    {
+      field: 'createdAt',
+      header: 'Fecha de creación',
+      align: 'center',
+      sortable: true,
+      type: 'date',
+    },
   ];
 
   protected userDialogVisible = false;

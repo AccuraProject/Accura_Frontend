@@ -248,6 +248,7 @@
                             [columns]="getTableColumns()"
                             [rows]="getTableRows()"
                             mode="dependency"
+                            [subMode]="dependencyTargetKey"
                             (rowsChange)="updateTableRows($event)"
                           ></app-rule-table-editor>
                         </div>

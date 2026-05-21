@@ -1,5 +1,5 @@
-import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, Output, computed, inject, signal } from '@angular/core';
+import {CommonModule} from '@angular/common';
+import {Component, EventEmitter, Input, Output, computed, inject, signal} from '@angular/core';
 import {
   AbstractControl,
   FormBuilder,
@@ -9,24 +9,24 @@ import {
   ValidatorFn,
   Validators,
 } from '@angular/forms';
-import { InputTextModule } from 'primeng/inputtext';
-import { SelectModule } from 'primeng/select';
-import { DialogShellComponent } from '../../../../shared/components/overlay/dialog/dialog-shell/dialog-shell';
-import { TextFieldComponent } from '../../../../shared/components/ui/field/text-field/text-field';
-import { SelectFieldComponent } from '../../../../shared/components/ui/field/select-field/select-field';
-import { RuleExample, RulePayload } from '../../models/rule.model';
-import { TextAreaFieldComponent } from '../../../../shared/components/ui/field/textarea-field/textarea-field';
-import { ButtonComponent } from '../../../../shared/components/ui/button/button';
-import { ValidationRulesService } from '../../validation-rules.service';
-import { finalize } from 'rxjs';
-import { ToastService } from '../../../../shared/services/toast.service';
-import { StepperModule } from 'primeng/stepper';
-import { CheckboxFieldComponent } from '../../../../shared/components/ui/field/checkbox-field/checkbox-field';
-import { NumberFieldComponent } from '../../../../shared/components/ui/field/number-field/number-field';
-import { DateFieldComponent } from '../../../../shared/components/ui/field/date-field/date-field';
-import { generateDefaultRuleConfig } from '../../validation-rule-ai.utils';
-import { RuleTableEditorComponent } from '../../../../shared/components/data/rule-table-editor/rule-table-editor';
-import { FieldsetModule } from 'primeng/fieldset';
+import {InputTextModule} from 'primeng/inputtext';
+import {SelectModule} from 'primeng/select';
+import {DialogShellComponent} from '../../../../shared/components/overlay/dialog/dialog-shell/dialog-shell';
+import {TextFieldComponent} from '../../../../shared/components/ui/field/text-field/text-field';
+import {SelectFieldComponent} from '../../../../shared/components/ui/field/select-field/select-field';
+import {RuleExample, RulePayload} from '../../models/rule.model';
+import {TextAreaFieldComponent} from '../../../../shared/components/ui/field/textarea-field/textarea-field';
+import {ButtonComponent} from '../../../../shared/components/ui/button/button';
+import {ValidationRulesService} from '../../validation-rules.service';
+import {finalize} from 'rxjs';
+import {ToastService} from '../../../../shared/services/toast.service';
+import {StepperModule} from 'primeng/stepper';
+import {CheckboxFieldComponent} from '../../../../shared/components/ui/field/checkbox-field/checkbox-field';
+import {NumberFieldComponent} from '../../../../shared/components/ui/field/number-field/number-field';
+import {DateFieldComponent} from '../../../../shared/components/ui/field/date-field/date-field';
+import {generateDefaultRuleConfig} from '../../validation-rule-ai.utils';
+import {RuleTableEditorComponent} from '../../../../shared/components/data/rule-table-editor/rule-table-editor';
+import {FieldsetModule} from 'primeng/fieldset';
 
 interface AiSuggestion {
   id: string;
@@ -89,14 +89,14 @@ export class RuleFormDialogComponent {
   protected actionLabel = 'Crear regla';
 
   protected readonly statusOptions = [
-    { label: 'Activo', value: true },
-    { label: 'Inactivo', value: false },
+    {label: 'Activo', value: true},
+    {label: 'Inactivo', value: false},
   ];
 
   protected readonly dateFormatOptions = [
-    { label: 'yyyy-MM-dd', value: 'yyyy-MM-dd' },
-    { label: 'dd/MM/yyyy', value: 'dd/MM/yyyy' },
-    { label: 'MM-dd-yyyy', value: 'MM-dd-yyyy' },
+    {label: 'yyyy-MM-dd', value: 'yyyy-MM-dd'},
+    {label: 'dd/MM/yyyy', value: 'dd/MM/yyyy'},
+    {label: 'MM-dd-yyyy', value: 'MM-dd-yyyy'},
   ];
 
   private readonly fb = inject(FormBuilder);
@@ -107,7 +107,7 @@ export class RuleFormDialogComponent {
 
   readonly ruleForm = this.fb.group({
     name: this.fb.control<string | null>(null, [Validators.required]),
-    dataType: this.fb.control<string | null>({ value: 'Fecha', disabled: true }, [
+    dataType: this.fb.control<string | null>({value: 'Fecha', disabled: true}, [
       Validators.required,
     ]),
     mandatory: this.fb.control<boolean>(false),
@@ -124,13 +124,9 @@ export class RuleFormDialogComponent {
 
   readonly currentStep = signal<1 | 2>(1);
 
-  readonly isStep1 = computed(() => this.currentStep() === 1);
-  readonly isStep2 = computed(() => this.currentStep() === 2);
-
-  readonly saveLabel = computed(() => 'Crear regla');
-
   readonly isSubmittingAi = signal(false);
   protected aiSuggestion: AiSuggestion | null = null;
+  protected dependencyTargetKey: string | null = null;
 
   @Input() visible = false;
   @Output() visibleChange = new EventEmitter<boolean>();
@@ -139,6 +135,7 @@ export class RuleFormDialogComponent {
   @Output() cancelDialog = new EventEmitter<void>();
 
   @Input() loading = false;
+
   @Input() set data(value: RuleFormDialogData | null) {
     if (!value) {
       this.resetDialogState();
@@ -154,7 +151,7 @@ export class RuleFormDialogComponent {
     this.actionLabel = this.isEditMode ? 'Guardar cambios' : 'Crear regla';
 
     this.aiSuggestion = null;
-    this.aiForm.reset({ description: null });
+    this.aiForm.reset({description: null});
 
     if (this.isEditMode && value.payload) {
       this.applyRulePayload(value.payload, value.isActive);
@@ -169,7 +166,8 @@ export class RuleFormDialogComponent {
   constructor(
     private readonly validationRulesService: ValidationRulesService,
     private readonly toast: ToastService,
-  ) {}
+  ) {
+  }
 
   private resetDialogState(): void {
     this.isEditMode = false;
@@ -181,7 +179,7 @@ export class RuleFormDialogComponent {
 
     this.aiSuggestion = null;
 
-    this.aiForm.reset({ description: null });
+    this.aiForm.reset({description: null});
     this.resetRuleForm();
     this.currentStep.set(1);
   }
@@ -371,15 +369,15 @@ export class RuleFormDialogComponent {
   }
 
   private regexValidator() {
-  return (control: AbstractControl) => {
-    try {
-      new RegExp(control.value);
-      return null;
-    } catch (e) {
-      return { 'invalidRegex': true };
-    }
-  };
-}
+    return (control: AbstractControl) => {
+      try {
+        new RegExp(control.value);
+        return null;
+      } catch (e) {
+        return {invalidRegex: true};
+      }
+    };
+  }
 
   private generateSuggestionId(): string {
     return `ai-suggestion-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
@@ -482,32 +480,39 @@ export class RuleFormDialogComponent {
     values: Record<string, unknown>[],
     columns: string[],
   ): Record<string, string>[] {
-    const [sourceColumn, targetColumn] = columns;
+    if (!columns || columns.length < 1) return [];
 
-    if (!sourceColumn || !targetColumn) {
-      return [];
-    }
+    const sourceColumn = columns[0];
+    const targetColumns = columns.slice(1);
 
     return values.map((row) => {
-      const sourceValue = typeof row?.[sourceColumn] === 'string' ? row[sourceColumn] : '';
+      const sourceValue = String(row[sourceColumn] ?? '');
+      const targetRow: Record<string, string> = {[sourceColumn]: sourceValue};
 
-      const lista = row?.['Lista'];
-      let targetValue = '';
-
-      if (lista && typeof lista === 'object' && !Array.isArray(lista)) {
-        const nestedValues = (lista as Record<string, unknown>)[targetColumn];
-
-        if (Array.isArray(nestedValues)) {
-          targetValue = nestedValues
-            .filter((item): item is string => typeof item === 'string')
-            .join(', ');
-        }
+      if (!this.dependencyTargetKey) {
+        const keyCandidates = Object.keys(row).filter((k) => k !== sourceColumn && typeof row[k] === 'object');
+        this.dependencyTargetKey = keyCandidates.length ? keyCandidates[0] : null;
       }
 
-      return {
-        [sourceColumn]: sourceValue,
-        [targetColumn]: targetValue,
-      };
+      const targetData = this.dependencyTargetKey ? (row[this.dependencyTargetKey] as Record<string, unknown>) : null;
+
+      targetColumns.forEach((targetColumn) => {
+        let value = '';
+
+        if (targetData) {
+          const nested = targetData[targetColumn];
+
+          if (Array.isArray(nested)) {
+            value = nested.filter((item): item is string => typeof item === 'string').join(', ');
+          } else if (nested !== undefined) {
+            value = String(nested);
+          }
+        }
+
+        targetRow[targetColumn] = value;
+      });
+
+      return targetRow;
     });
   }
 
@@ -515,35 +520,32 @@ export class RuleFormDialogComponent {
     rows: Record<string, string>[],
     columns: string[],
   ): Record<string, unknown>[] {
-    const [sourceColumn, targetColumn] = columns;
+    if (!columns || columns.length < 1) return [];
 
-    if (!sourceColumn || !targetColumn) {
-      return [];
-    }
+    const sourceColumn = columns[0];
+    const targetColumns = columns.slice(1);
+    const targetKey = this.dependencyTargetKey;
 
-    return rows
-      .map((row): Record<string, unknown> & { Lista: Record<string, string[]> } => {
-        const sourceValue = row[sourceColumn]?.trim() ?? '';
-        const rawTargetValue = row[targetColumn]?.trim() ?? '';
+    return rows.map((row) => {
+      const sourceValue = row[sourceColumn]?.trim() ?? '';
+      const targetData: Record<string, unknown> = {};
 
-        const targetValues = rawTargetValue
-          .split(',')
-          .map((item) => item.trim())
-          .filter((item) => item.length > 0);
-
-        return {
-          [sourceColumn]: sourceValue,
-          Lista: {
-            [targetColumn]: targetValues,
-          },
-        };
-      })
-      .filter((row) => {
-        const sourceValue = row[sourceColumn] as string;
-        const nestedValues = row.Lista[targetColumn] as string[];
-
-        return sourceValue.length > 0 && nestedValues.length > 0;
+      targetColumns.forEach((col) => {
+        const cellValue = row[col]?.trim() ?? '';
+        if (targetKey === 'Lista') {
+          targetData[col] = cellValue
+            ? cellValue.split(',').map((v) => v.trim()).filter((v) => v.length > 0)
+            : [];
+        } else {
+          targetData[col] = cellValue;
+        }
       });
+
+      return targetKey ? {[sourceColumn]: sourceValue, [targetKey]: targetData} : {
+        [sourceColumn]: sourceValue,
+        Lista: targetData
+      };
+    });
   }
 
   protected submitRuleForm(): void {
@@ -576,6 +578,9 @@ export class RuleFormDialogComponent {
       isActive: rawValue.status ?? true,
     };
 
+    console.log(payload);
+    return;
+
     this.saveRule.emit(payload);
   }
 
@@ -590,6 +595,7 @@ export class RuleFormDialogComponent {
 
   private close(): void {
     this.visible = false;
+    this.dependencyTargetKey = null;
     this.visibleChange.emit(false);
   }
 }
