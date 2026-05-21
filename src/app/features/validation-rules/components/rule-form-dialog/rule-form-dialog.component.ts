@@ -578,9 +578,6 @@ export class RuleFormDialogComponent {
       isActive: rawValue.status ?? true,
     };
 
-    console.log(payload);
-    return;
-
     this.saveRule.emit(payload);
   }
 
