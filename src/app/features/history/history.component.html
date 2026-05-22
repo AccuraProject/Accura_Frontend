@@ -1,0 +1,52 @@
+<section class="page-header">
+  <div>
+    <p class="page-header__pretitle">Historial Global</p>
+    <h1 class="page-header__title">Monitorea todas las cargas de archivos del sistema</h1>
+    <p class="page-header__subtitle">
+      Consulta el estado de las últimas ejecuciones, analiza su desempeño y mantén el control
+      operativo de cada carga realizada.
+    </p>
+  </div>
+</section>
+
+<section class="stats-container">
+  @for (metric of metrics; track $index) {
+    <div class="stats-card">
+      <div class="stats-card__header">
+        <h3>{{ metric.label }}</h3>
+        <i class="pi {{ metric.icon }}"></i>
+      </div>
+      <div class="stats-card__body">
+        <strong>{{ metric.value }}</strong>
+        <div>{{ metric.description }}</div>
+      </div>
+    </div>
+  }
+</section>
+
+<div class="card">
+  <app-page-actions
+    [showCreate]="false"
+    [showEdit]="false"
+    [showDelete]="false"
+    [showExtraAction]="true"
+    extraActionIcon="pi pi-eye"
+    extraActionLabel="Ver detalle"
+    [disableExtraAction]="isViewDetailDisabled"
+    (extraAction)="onViewDetail()"
+  ></app-page-actions>
+
+  <app-data-table
+    [columns]="visibleColumns"
+    [value]="historyRecords"
+    [selection]="selectedRecord"
+    [loading]="isTableLoading()"
+    (rowSelect)="onRowSelect($event)"
+    (rowUnselect)="onRowUnselect()"
+  ></app-data-table>
+</div>
+
+<app-history-detail-dialog
+  [(visible)]="detailDialogVisible"
+  [data]="detailDialogData"
+/>

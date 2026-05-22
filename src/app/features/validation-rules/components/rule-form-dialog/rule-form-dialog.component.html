@@ -1,0 +1,336 @@
+<app-dialog-shell
+  [(visible)]="visible"
+  [title]="title"
+  [description]="description"
+  width="min(92vw, 1240px)"
+  [showFooter]="false"
+  [loading]="isSubmittingAi() || loading"
+  (cancel)="cancel()"
+>
+  <p-stepper [value]="currentStep()" [linear]="true">
+    <p-step-list>
+      <p-step [value]="1">Generación con IA</p-step>
+      <p-step [value]="2">Configuración de la regla</p-step>
+    </p-step-list>
+
+    <p-step-panels>
+      <p-step-panel [value]="1">
+        <ng-template #content>
+          <div class="ai-help-card">
+            <div class="ai-help-card__content">
+              <div class="ai-help-card__icon">
+                <i class="pi pi-info-circle"></i>
+              </div>
+
+              <div>
+                <h4 class="ai-help-card__title">Antes de generar una regla</h4>
+                <p class="ai-help-card__description">
+                  Redacta una descripción clara indicando el campo, tipo de dato, condición, mensaje
+                  de error y ejemplos. Revisa el manual si necesitas una guía para escribir
+                  correctamente el prompt.
+                </p>
+              </div>
+            </div>
+
+            <div class="ai-help-card__action">
+              <app-button
+                icon="pi pi-arrow-up-right"
+                label="Ver manual"
+                [outlined]="true"
+                type="button"
+                (clicked)="goToUserManual()"
+                style="text-wrap: nowrap"
+              ></app-button>
+            </div>
+          </div>
+          <form class="form" [formGroup]="aiForm" (ngSubmit)="submitAiForm()">
+            <div class="form-body">
+              <app-textarea-field
+                inputId="description"
+                label="Descripción"
+                placeholder="Ej: El precio debe ser un número entre 0 y 10000 con máximo 2 decimales"
+                [control]="aiForm.controls.description"
+                [rows]="5"
+                [autoResize]="true"
+                errorMessage="Ingresa una descripción válida."
+              ></app-textarea-field>
+            </div>
+
+            <div class="form-footer">
+              <app-button
+                label="Cancelar"
+                variant="secondary"
+                [outlined]="true"
+                type="button"
+                (clicked)="cancel()"
+              ></app-button>
+
+              <app-button
+                [label]="isSubmittingAi() ? 'Generando...' : 'Continuar'"
+                icon="pi pi-arrow-right"
+                [iconPos]="isSubmittingAi() ? 'left' : 'right'"
+                type="submit"
+                [loading]="isSubmittingAi()"
+                [disabled]="aiForm.invalid || isSubmittingAi()"
+              ></app-button>
+            </div>
+          </form>
+        </ng-template>
+      </p-step-panel>
+
+      <p-step-panel [value]="2">
+        <ng-template #content>
+          <form class="form" [formGroup]="ruleForm" (ngSubmit)="submitRuleForm()">
+            <div class="form-body">
+              <p-fieldset legend="Configuración general" [toggleable]="true">
+                <div class="form-section__body form-grid">
+                  <app-text-field
+                    inputId="name"
+                    type="text"
+                    label="Nombre de la regla"
+                    [control]="ruleForm.controls.name"
+                  ></app-text-field>
+
+                  <app-text-field
+                    inputId="dataType"
+                    type="text"
+                    label="Tipo de dato"
+                    [control]="ruleForm.controls.dataType"
+                  ></app-text-field>
+
+                  <div class="checkbox-wrapper">
+                    <app-checkbox-field
+                      inputId="mandatory"
+                      label="Campo obligatorio"
+                      [control]="ruleForm.controls.mandatory"
+                    />
+                  </div>
+
+                  <app-select-field
+                    inputId="status"
+                    label="Estado"
+                    [control]="ruleForm.controls.status"
+                    [options]="statusOptions"
+                    optionLabel="label"
+                    optionValue="value"
+                  >
+                  </app-select-field>
+
+                  <div class="form-grid__full">
+                    <app-textarea-field
+                      inputId="description"
+                      label="Descripción"
+                      placeholder="Describe la validación y su contexto"
+                      [control]="ruleForm.controls.description"
+                      [rows]="3"
+                      [autoResize]="true"
+                    ></app-textarea-field>
+                  </div>
+                </div>
+              </p-fieldset>
+
+              <div class="form-section">
+                <p-fieldset legend="Configuración avanzada" [toggleable]="true">
+                  <div class="form-section__body form-grid">
+                    @switch (ruleForm.controls.dataType.value) {
+                      @case ('Texto') {
+                        <app-number-field
+                          inputId="rule-textMin"
+                          label="Logitud mínima"
+                          [control]="getRuleControl('Longitud mínima')"
+                          [min]="0"
+                          [showButtons]="true"
+                        ></app-number-field>
+
+                        <app-number-field
+                          inputId="rule-textMax"
+                          label="Logitud máxima"
+                          [control]="getRuleControl('Longitud máxima')"
+                          [min]="0"
+                          [showButtons]="true"
+                        ></app-number-field>
+                      }
+                      @case ('Número') {
+                        <app-number-field
+                          inputId="rule-numbertMin"
+                          label="Valor mínimo"
+                          [control]="getRuleControl('Valor mínimo')"
+                          [minFractionDigits]="0"
+                          [maxFractionDigits]="10"
+                        ></app-number-field>
+
+                        <app-number-field
+                          inputId="rule-numberMax"
+                          label="Valor máximo"
+                          [control]="getRuleControl('Valor máximo')"
+                          [minFractionDigits]="0"
+                          [maxFractionDigits]="6"
+                        ></app-number-field>
+
+                        <app-number-field
+                          inputId="rule-numberDecimals"
+                          label="Número de decimales"
+                          [control]="getRuleControl('Número de decimales')"
+                          [min]="0"
+                          [max]="6"
+                          [showButtons]="true"
+                        ></app-number-field>
+                      }
+                      @case ('Documento') {
+                        <app-number-field
+                          inputId="rule-documentMin"
+                          label="Logitud mínima"
+                          [control]="getRuleControl('Longitud mínima')"
+                          [min]="1"
+                          [showButtons]="true"
+                        ></app-number-field>
+
+                        <app-number-field
+                          inputId="rule-documentMax"
+                          label="Logitud máxima"
+                          [control]="getRuleControl('Longitud máxima')"
+                          [min]="1"
+                          [showButtons]="true"
+                        ></app-number-field>
+                      }
+                      @case ('Lista') {
+                        <div class="form-grid__full">
+                          <app-rule-table-editor
+                            ruleType="Lista"
+                            [columns]="getTableColumns()"
+                            [rows]="getTableRows()"
+                            mode="unique-row"
+                            (rowsChange)="updateTableRows($event)"
+                          ></app-rule-table-editor>
+                        </div>
+                      }
+                      @case ('Lista compleja') {
+                        <div class="form-grid__full">
+                          <app-rule-table-editor
+                            ruleType="Lista compleja"
+                            [columns]="getTableColumns()"
+                            [rows]="getTableRows()"
+                            mode="unique-row"
+                            (rowsChange)="updateTableRows($event)"
+                          ></app-rule-table-editor>
+                        </div>
+                      }
+                      @case ('Teléfono') {
+                        <app-number-field
+                          inputId="rule-phoneMin"
+                          label="Logitud mínima"
+                          [control]="getRuleControl('Longitud mínima')"
+                          [min]="1"
+                          [showButtons]="true"
+                        ></app-number-field>
+
+                        <app-text-field
+                          inputId="rule-phoneCountry"
+                          type="text"
+                          label="Código de país"
+                          [control]="getRuleControl('Código de país')"
+                        ></app-text-field>
+                      }
+                      @case ('Correo') {
+                        <app-text-field
+                          inputId="rule-emailFormat"
+                          type="text"
+                          label="Patrón regex"
+                          [control]="getRuleControl('Formato')"
+                        ></app-text-field>
+
+                        <app-number-field
+                          inputId="rule-emailMax"
+                          label="Logitud máxima"
+                          [control]="getRuleControl('Longitud máxima')"
+                          [min]="1"
+                          [showButtons]="true"
+                        ></app-number-field>
+                      }
+                      @case ('Fecha') {
+                        <app-select-field
+                          inputId="rule-dateFormat"
+                          label="Formato"
+                          [control]="getRuleControl('Formato')"
+                          [options]="dateFormatOptions"
+                          optionLabel="label"
+                          optionValue="value"
+                        >
+                        </app-select-field>
+
+                        <app-date-field
+                          inputId="rule-dateMin"
+                          label="Fecha mínima"
+                          [control]="getRuleControl('Fecha mínima')"
+                        ></app-date-field>
+
+                        <app-date-field
+                          inputId="rule-dateMax"
+                          label="Fecha máxima"
+                          [control]="getRuleControl('Fecha máxima')"
+                        ></app-date-field>
+                      }
+                      @case ('Dependencia') {
+                        <div class="form-grid__full">
+                          <app-rule-table-editor
+                            ruleType="Dependencia"
+                            [columns]="getTableColumns()"
+                            [rows]="getTableRows()"
+                            mode="dependency"
+                            [subMode]="dependencyTargetKey"
+                            (rowsChange)="updateTableRows($event)"
+                          ></app-rule-table-editor>
+                        </div>
+                      }
+                      @case ('Validación conjunta') {}
+                      @case ('Duplicados') {}
+                    }
+                  </div>
+                </p-fieldset>
+              </div>
+
+              <div class="form-section">
+                <p-fieldset legend="Ejemplos de datos" [toggleable]="true">
+                  <div class="form-stack">
+                    <app-textarea-field
+                      inputId="validExample"
+                      label="Ejemplo válido"
+                      [control]="ruleForm.controls.validExample"
+                      [rows]="5"
+                      [autoResize]="true"
+                    ></app-textarea-field>
+
+                    <app-textarea-field
+                      inputId="invalidExample"
+                      label="Ejemplo inválido"
+                      [control]="ruleForm.controls.invalidExample"
+                      [rows]="5"
+                      [autoResize]="true"
+                    ></app-textarea-field>
+                  </div>
+                </p-fieldset>
+              </div>
+            </div>
+            <div class="form-footer">
+              <app-button
+                label="Atrás"
+                icon="pi pi-arrow-left"
+                variant="secondary"
+                [outlined]="true"
+                type="button"
+                (clicked)="currentStep.set(1)"
+              ></app-button>
+
+              <app-button
+                [label]="loading ? 'Guardando...' : actionLabel"
+                type="submit"
+                [loading]="loading"
+                [disabled]="ruleForm.invalid || loading"
+              ></app-button>
+            </div>
+          </form>
+        </ng-template>
+      </p-step-panel>
+    </p-step-panels>
+  </p-stepper>
+</app-dialog-shell>

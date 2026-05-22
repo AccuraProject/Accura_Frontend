@@ -1,0 +1,148 @@
+<p-table
+  #dt
+  [columns]="columns"
+  [value]="value"
+  [(selection)]="selection"
+  [loading]="loading"
+  [paginator]="true"
+  [rows]="rows"
+  selectionMode="single"
+  [customSort]="true"
+  (sortFunction)="customSort($event)"
+  (onRowSelect)="onRowSelect($event)"
+  (onRowUnselect)="onRowUnselect($event)"
+  [metaKeySelection]="false"
+>
+  <ng-template #caption>
+    <div class="table-filter">
+      <p-button label="Clear" [outlined]="true" icon="pi pi-filter-slash" (click)="clear(dt)" />
+      <p-iconfield iconPosition="left">
+        <p-inputicon>
+          <i class="pi pi-search"></i>
+        </p-inputicon>
+        <input
+          pInputText
+          type="text"
+          [value]="searchTerm"
+          (input)="onSearch($event.target.value)"
+          placeholder="Buscar..."
+        />
+      </p-iconfield>
+    </div>
+  </ng-template>
+
+  <!-- Columnas -->
+  <ng-template #header let-columns>
+    <tr>
+      @for (col of columns; track col) {
+        <th
+          [pSortableColumn]="col.sortable ? col.field : null"
+          [style.text-align]="col.align || 'left'"
+        >
+          <div class="datatable-header__content">
+            {{ col.header }}
+
+            <div class="datatable-header__actions">
+              @if (col.sortable) {
+                <p-sortIcon [field]="col.field"></p-sortIcon>
+              }
+
+              @if (col.filter) {
+                @switch (col.filterType) {
+                  @case ('text') {
+                    <p-columnFilter
+                      type="text"
+                      [field]="col.field"
+                      display="menu"
+                      matchMode="contains"
+                      [showMatchModes]="false"
+                      [showOperator]="false"
+                      [showAddButton]="false"
+                    ></p-columnFilter>
+                  }
+                  @case ('number') {
+                    <p-columnFilter
+                      type="numeric"
+                      [field]="col.field"
+                      display="menu"
+                      matchMode="equals"
+                      [showMatchModes]="false"
+                      [showOperator]="false"
+                      [showAddButton]="false"
+                    ></p-columnFilter>
+                  }
+                  @case ('date') {
+                    <p-columnFilter
+                      type="date"
+                      [field]="col.field"
+                      display="menu"
+                      matchMode="dateIs"
+                      [showMatchModes]="false"
+                      [showOperator]="false"
+                      [showAddButton]="false"
+                    ></p-columnFilter>
+                  }
+                  @case ('select') {
+                    <p-columnFilter
+                      [field]="col.field"
+                      display="menu"
+                      matchMode="equals"
+                      [showMatchModes]="false"
+                      [showOperator]="false"
+                      [showAddButton]="false"
+                    >
+                      <ng-template #filter let-value let-filter="filterCallback">
+                        <p-select
+                          [(ngModel)]="columnFilters[col.field]"
+                          [options]="col.filterOptions"
+                          (onChange)="filter($event.value)"
+                          placeholder="Seleccionar"
+                          style="width: 100%"
+                        >
+                          <ng-template let-option #item>
+                            @if (col.isBadge) {
+                              <p-tag
+                                [value]="option.label"
+                                [severity]="
+                                  col.badgeSeverityMap ? col.badgeSeverityMap[option.label] : 'info'
+                                "
+                              ></p-tag>
+                            } @else {
+                              {{ option.label }}
+                            }
+                          </ng-template>
+                        </p-select>
+                      </ng-template>
+                    </p-columnFilter>
+                  }
+                }
+              }
+            </div>
+          </div>
+        </th>
+      }
+    </tr>
+  </ng-template>
+
+  <ng-template #body let-rowData let-columns="columns">
+    <tr [pSelectableRow]="rowData">
+      @for (col of columns; track col) {
+        <td [style.text-align]="col.align || 'left'">
+          @if (col.isBadge) {
+            <p-tag
+              [value]="rowData[col.field]"
+              [rounded]="true"
+              [severity]="col.badgeSeverityMap ? col.badgeSeverityMap[rowData[col.field]] : 'info'"
+            ></p-tag>
+          } @else {
+            @if (col.type === 'date') {
+              {{ rowData[col.field] | date: (col.dateFormat ?? 'dd/MM/yyyy h:mm a') }}
+            } @else {
+              {{ rowData[col.field] }}
+            }
+          }
+        </td>
+      }
+    </tr>
+  </ng-template>
+</p-table>

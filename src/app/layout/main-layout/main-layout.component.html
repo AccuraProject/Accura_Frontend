@@ -1,0 +1,14 @@
+<div class="layout-container layout-colorscheme-menu">
+  <app-sidebar
+    [mobileNavOpen]="mobileNavOpen"
+    [collapsed]="sidebarCollapsed"
+    (requestClose)="closeMobileNav()"
+  ></app-sidebar>
+
+  <div class="layout-content-wrapper">
+    <app-toolbar (menuToggle)="toggleSidebar()"></app-toolbar>
+    <div class="layout-content">
+      <router-outlet></router-outlet>
+    </div>
+  </div>
+</div>

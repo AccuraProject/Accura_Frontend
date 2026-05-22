@@ -1,0 +1,77 @@
+:host {
+  display: block;
+  height: 100%;
+}
+
+.layout-sidebar {
+  height: 100%;
+  width: 18rem;
+  background: var(--menu-bg);
+  border-right: var(--sidebar-border);
+  box-shadow: var(--sidebar-shadow);
+  display: flex;
+  flex-direction: column;
+  transition: width 0.25s ease;
+
+  .sidebar-header {
+    padding: 2.5rem 0 2rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    .app-logo {
+      text-decoration: none;
+      color: inherit;
+      h1 {
+        margin: 0;
+      }
+    }
+  }
+
+  .layout-menu-container {
+    overflow: auto;
+    flex: 1;
+    padding-bottom: 2rem;
+
+    .layout-menu {
+      margin: 0;
+      padding: 0;
+      list-style-type: none;
+
+      .layout-root-menu-item {
+        a {
+          display: flex;
+          align-items: center;
+          position: relative;
+          outline: 0 none;
+          color: var(--menuitem-text-color);
+          cursor: pointer;
+          padding: 0.75rem 2rem;
+          transition: box-shadow 0.2s;
+
+          &.active-route {
+            font-weight: var(--font-weight-bold);
+          }
+
+          .layout-menuitem-icon {
+            font-size: 1.15rem;
+            min-width: 1.25rem;
+            color: var(--menuitem-icon-color);
+            margin-right: 0.5rem;
+          }
+        }
+        &:hover {
+          background: var(--menuitem-hover-bg-color);
+        }
+      }
+    }
+  }
+
+  &.layout-sidebar--collapsed {
+    width: 0;
+
+    .sidebar-header{
+      visibility: hidden;
+    }
+  }
+}

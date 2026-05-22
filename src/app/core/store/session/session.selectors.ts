@@ -1,0 +1,19 @@
+import { createSelector } from '@ngrx/store';
+
+import {
+  selectIsAuthenticated,
+  selectMustChangePassword,
+  selectRole,
+  selectSessionState,
+  selectUser,
+  SessionState,
+} from './session.reducer';
+
+export const selectSession = selectSessionState;
+export const selectSessionRole = selectRole;
+export const selectSessionIsAuthenticated = selectIsAuthenticated;
+export const selectSessionMustChangePassword = selectMustChangePassword;
+export const selectSessionUser = selectUser;
+
+export const selectIsAdmin = createSelector(selectRole, (role: SessionState['role']) => role === 'admin');
+export const selectIsUser = createSelector(selectRole, (role: SessionState['role']) => role === 'user');

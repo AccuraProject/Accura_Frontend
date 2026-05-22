@@ -1,0 +1,23 @@
+<div>
+  <h3 class="dialog__title">Sesión expirada</h3>
+  <p class="dialog__description">Tu sesión ha terminado por inactividad o cierre de seguridad.</p>
+</div>
+
+<div class="session-expired-dialog__content">
+  <p-message severity="info">
+    <div class="session-expired-dialog__alert">
+      <i class="pi pi-exclamation-circle" style="font-size: 1.3rem"></i>
+      <span>
+        Por tu seguridad cerraremos la sesión y te redirigiremos al inicio en {{ count }} segundos.
+      </span>
+    </div>
+  </p-message>
+
+  <div class="session-expired-dialog__status">
+    <i class="pi pi-spin pi-spinner"></i>
+    <div class="session-expired-dialog__status-text">
+      <p>Redirigiendo al inicio de sesión...</p>
+      <span>Tiempo restante: {{ countdown() }} s</span>
+    </div>
+  </div>
+</div>

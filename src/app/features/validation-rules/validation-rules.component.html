@@ -1,0 +1,76 @@
+<section class="page-header">
+  <div>
+    <p class="page-header__pretitle">Reglas de Validación</p>
+    <h1 class="page-header__title">Define reglas globales para validar los datos cargados</h1>
+    <p class="page-header__subtitle">
+      Configura validaciones reutilizables para asegurar la calidad de los datos en tus plantillas y
+      procesos.
+    </p>
+  </div>
+</section>
+
+<section class="stats-container">
+  <div class="stats-card">
+    <div class="stats-card__header">
+      <h3>Total de reglas</h3>
+      <i class="pi pi-sparkles"></i>
+    </div>
+    <div class="stats-card__body">
+      <strong>{{ totalRules }}</strong>
+      <div>Reglas configuradas</div>
+    </div>
+  </div>
+
+  <div class="stats-card">
+    <div class="stats-card__header">
+      <h3>Reglas activas</h3>
+      <i class="pi pi-check-circle"></i>
+    </div>
+    <div class="stats-card__body">
+      <strong>{{ activeRules }}</strong>
+      <div>Disponibles para validar</div>
+    </div>
+  </div>
+
+  <div class="stats-card">
+    <div class="stats-card__header">
+      <h3>Tipos de datos</h3>
+      <i class="pi pi-objects-column"></i>
+    </div>
+    <div class="stats-card__body">
+      <strong>{{ dataTypesCount }}</strong>
+      <div>Categorías cubiertas</div>
+    </div>
+  </div>
+</section>
+
+<div class="card">
+  <app-page-actions
+    [showCreate]="true"
+    [showEdit]="true"
+    [showDelete]="true"
+    [disableEdit]="!selectedRule"
+    [disableDelete]="!selectedRule"
+    (create)="onCreateRule()"
+    (edit)="onEditRule()"
+    (delete)="onDeleteRule()"
+  ></app-page-actions>
+
+  <!-- Tabla de reglas -->
+  <app-data-table
+    [columns]="columns"
+    [value]="rules"
+    [selection]="selectedRule"
+    [loading]="rulesLoading"
+    (rowSelect)="onRowSelect($event)"
+    (rowUnselect)="onRowUnselect()"
+  ></app-data-table>
+</div>
+
+<app-rule-form-dialog
+  [(visible)]="ruleDialogVisible"
+  [data]="ruleDialogData"
+  [loading]="ruleDialogLoading"
+  (saveRule)="handleSaveRule($event)"
+  (cancelDialog)="closeRuleDialog()"
+/>

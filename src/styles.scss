@@ -1,1 +1,359 @@
-/* You can add global styles to this file, and also import other style files */
+@import 'primeicons/primeicons.css';
+
+@font-face {
+  font-family: 'Poppins';
+  font-style: normal;
+  font-weight: 400;
+  src: url('./assets/fonts/poppins-v20-latin-regular-SFWTNBQB.woff2') format('woff2');
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Poppins';
+  font-style: normal;
+  font-weight: 500;
+  src: url('./assets/fonts/poppins-v20-latin-500-O53RGPUQ.woff2') format('woff2');
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Poppins';
+  font-style: normal;
+  font-weight: 600;
+  src: url('./assets/fonts/poppins-v20-latin-600-3BUSBBSI.woff2') format('woff2');
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Poppins';
+  font-style: normal;
+  font-weight: 700;
+  src: url('./assets/fonts/poppins-v20-latin-700-TKEB4KWA.woff2') format('woff2');
+  font-display: swap;
+}
+
+:root,
+:host {
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  --card-shadow: 0px 4px 30px rgba(221, 224, 255, 0.54);
+
+  --surface-card: var(--p-content-background);
+  --surface-border: var(--p-content-border-color);
+  --surface-ground: var(--p-surface-100);
+  --surface-hover: var(--p-content-hover-background);
+  --surface-overlay: var(--p-overlay-popover-background);
+
+  --sidebar-border: 1px solid transparent;
+  --sidebar-shadow: 0px 4px 50px #d9ddfc;
+}
+
+.layout-colorscheme-menu {
+  --menu-bg: var(--surface-overlay);
+  --root-menuitem-text-color: var(--p-primary-color);
+  --menuitem-text-color: var(--p-text-color);
+  --menuitem-icon-color: var(--p-primary-color);
+  --menuitem-hover-bg-color: var(--surface-hover);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px;
+}
+
+body {
+  font-weight: 400;
+  padding: 0;
+  margin: 0;
+  min-height: 100%;
+  background: var(--surface-ground);
+  -webkit-font-smoothing: antialiased;
+}
+
+app-root {
+  display: block;
+  min-height: 100%;
+}
+
+a {
+  text-decoration: none;
+}
+
+.p-datatable-header {
+  padding: 0.75rem 0 !important;
+}
+
+.p-fieldset-toggle-button {
+  font-family: 'Poppins', sans-serif;
+  color: var(--p-content-color);
+}
+
+.btn-delete:not([disabled]):hover {
+  background: var(--p-button-outlined-danger-hover-background) !important;
+  border-color: var(--p-button-outlined-danger-border-color) !important;
+  color: var(--p-button-outlined-danger-color) !important;
+}
+
+.toolbar-menubutton.p-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 2rem;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex-shrink: 0;
+  background-color: transparent;
+  border: transparent;
+  transition: background-color 0.2s;
+  color: var(--p-surface-500);
+  cursor: pointer;
+  .p-button-icon {
+    font-size: 1.25rem;
+  }
+  &:hover {
+    background-color: var(--p-primary-color);
+  }
+}
+
+.invalid-field .p-inputicon {
+  color: var(--p-red-500); /* o tu color de error */
+}
+
+.field-error-message {
+  --p-message-text-font-weight: 400;
+}
+
+// .message-center .p-message-content {
+//   display: flex;
+//   justify-content: center;
+// }
+
+.link-primary {
+  color: var(--p-primary-600);
+  font-weight: var(--font-weight-medium);
+  text-decoration: none;
+}
+
+.link-primary:hover {
+  text-decoration: underline;
+}
+
+/* MAT DIALOG CONFIG */
+.mat-mdc-dialog-surface {
+  background-color: #ffffff !important;
+}
+
+.validation-rule-dialog .mat-mdc-dialog-surface {
+  border-radius: 28px;
+}
+
+.session-expired-dialog .mat-mdc-dialog-surface {
+  border-radius: 28px;
+  padding: 0;
+}
+
+.mat-mdc-menu-panel {
+  background-color: #ffffff !important;
+  border-radius: 1rem !important;
+}
+
+.menu-item-text {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  color: #3d3d3d;
+  font-weight: 400;
+}
+
+.text-danger {
+  color: #dc2626;
+}
+
+.font-weight-semibold {
+  font-weight: var(--font-weight-semibold);
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+}
+
+.page-header__pretitle {
+  margin: 0;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #6366f1;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.page-header__title {
+  font-weight: 700;
+  color: var(--p-surface-900);
+}
+
+.page-header__subtitle {
+  margin: 0.75rem 0 0;
+  font-size: 0.95rem;
+  color: var(--p-surface-600);
+}
+
+.stats-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.5rem;
+
+  .stats-card {
+    background: var(--surface-card);
+    border: 1px solid var(--surface-border);
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: var(--card-shadow);
+    border-radius: 12px;
+
+    .stats-card__header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+
+      h3 {
+        margin: 0;
+        font-weight: var(--font-weight-semibold);
+        font-size: 1.125rem;
+        color: var(--p-primary-color);
+      }
+
+      i {
+        font-size: 1.25rem;
+        color: var(--p-primary-color);
+      }
+    }
+
+    .stats-card__body {
+      color: var(--p-surface-600);
+
+      strong {
+        font-size: 2.25rem;
+        color: var(--p-surface-900);
+      }
+    }
+  }
+}
+
+.card {
+  background: var(--surface-card);
+  border: 1px solid var(--surface-border);
+  padding: 2rem;
+  margin-bottom: 2rem;
+  box-shadow: var(--card-shadow);
+  border-radius: 12px;
+}
+
+.page-header__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  border: none;
+  border-radius: 18px;
+  padding: 0.9rem 1.75rem;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #ffffff;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 45%, #ec4899 100%);
+  box-shadow: 0 18px 40px rgba(99, 102, 241, 0.2);
+  cursor: pointer;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  background: rgba(99, 102, 241, 0.12);
+  color: #4338ca;
+}
+
+.badge::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.badge--admin {
+  background: rgba(99, 102, 241, 0.12);
+  color: #4338ca;
+}
+
+.badge--analyst {
+  background: rgba(14, 165, 233, 0.12);
+  color: #0284c7;
+}
+
+.badge--client {
+  background: rgba(16, 185, 129, 0.12);
+  color: #047857;
+}
+
+.badge--active {
+  background: rgba(16, 185, 129, 0.14);
+  color: #047857;
+}
+
+.badge--inactive {
+  background: rgba(148, 163, 184, 0.2);
+  color: #475569;
+}
+
+.badge--suspended {
+  background: rgba(249, 115, 22, 0.14);
+  color: #c2410c;
+}
+
+.form {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.form-stack {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+
+@media (max-width: 900px) {
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .page-header__cta {
+    align-self: stretch;
+    justify-content: center;
+  }
+}

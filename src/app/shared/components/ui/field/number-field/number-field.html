@@ -1,0 +1,62 @@
+<div class="flex flex-col gap-1">
+  @if (label) {
+    <p-floatlabel variant="on">
+      <p-inputnumber
+        [inputId]="computedInputId"
+        [formControl]="control"
+        [required]="required"
+        [readonly]="readonly"
+        [useGrouping]="useGrouping"
+        [min]="min"
+        [max]="max"
+        [minFractionDigits]="minFractionDigits"
+        [maxFractionDigits]="maxFractionDigits"
+        [mode]="mode"
+        [currency]="currency"
+        [locale]="locale"
+        [suffix]="suffix"
+        [prefix]="prefix"
+        [showButtons]="showButtons"
+        [buttonLayout]="buttonLayout"
+        [step]="step"
+        [fluid]="fluid"
+        [invalid]="showError"
+      />
+
+      <label [for]="computedInputId">
+        {{ label }}
+      </label>
+    </p-floatlabel>
+  }
+
+  @if (!label) {
+    <p-inputnumber
+      [inputId]="computedInputId"
+      [formControl]="control"
+      [placeholder]="placeholder"
+      [required]="required"
+      [readonly]="readonly"
+      [useGrouping]="useGrouping"
+      [min]="min"
+      [max]="max"
+      [minFractionDigits]="minFractionDigits"
+      [maxFractionDigits]="maxFractionDigits"
+      [mode]="mode"
+      [currency]="currency"
+      [locale]="locale"
+      [suffix]="suffix"
+      [prefix]="prefix"
+      [showButtons]="showButtons"
+      [buttonLayout]="buttonLayout"
+      [step]="step"
+      [fluid]="fluid"
+      [invalid]="showError"
+    />
+  }
+
+  @if (showError) {
+    <p-message severity="error" variant="simple" size="small" styleClass="field-error-message">
+      {{ errorText }}
+    </p-message>
+  }
+</div>

@@ -1,0 +1,96 @@
+<header class="layout-toolbar">
+  <div class="toolbar-start">
+    <app-button
+      icon="pi pi-bars"
+      [iconOnly]="true"
+      [rounded]="true"
+      styleClass="toolbar-menubutton"
+      (clicked)="onToggleMenu()"
+    ></app-button>
+    <!-- <nav app-breadcrumb="" class="topbar-breadcrumb">
+      <nav class="layout-breadcrumb">
+        <ol>
+          <li>Banking Dashboard</li>
+        </ol>
+      </nav>
+    </nav> -->
+  </div>
+
+  <div class="toolbar-end">
+    <div class="toolbar__notifications-trigger">
+      <app-notification-badge
+        icon="pi pi-bell"
+        [value]="unreadCount"
+        severity="danger"
+        ariaLabel="Notificaciones"
+        (clicked)="onToggleNotifications()"
+      ></app-notification-badge>
+
+      <div class="toolbar__notifications-panel" *ngIf="showNotifications">
+        <header class="toolbar__notifications-header">
+          <div class="toolbar__notifications-header-info">
+            <h2 class="toolbar__notifications-title">Notificaciones</h2>
+            <span class="toolbar__notifications-subtitle"> {{ unreadCount }} sin leer </span>
+          </div>
+
+          <button
+            class="toolbar__notifications-action"
+            type="button"
+            (click)="onMarkNotificationsAsRead()"
+            [disabled]="isMarkingNotifications || unreadCount === 0"
+          >
+            {{ isMarkingNotifications ? 'Marcando…' : 'Marcar como leídas' }}
+          </button>
+        </header>
+
+        <div class="toolbar__notifications-content" *ngIf="!isLoadingNotifications; else loading">
+          <p
+            *ngIf="markNotificationsError && !notificationsError"
+            class="toolbar__notifications-error"
+          >
+            {{ markNotificationsError }}
+          </p>
+
+          <p *ngIf="notificationsError" class="toolbar__notifications-error">
+            {{ notificationsError }}
+          </p>
+
+          <p
+            *ngIf="!notificationsError && notifications.length === 0"
+            class="toolbar__notifications-empty"
+          >
+            No tienes notificaciones por ahora.
+          </p>
+
+          <ul
+            *ngIf="!notificationsError && notifications.length > 0"
+            class="toolbar__notifications-list"
+          >
+            <li
+              *ngFor="let notification of notifications; trackBy: trackByNotificationId"
+              class="toolbar__notification"
+              [class.toolbar__notification--unread]="!notification.read_at"
+            >
+              <div class="toolbar__notification-header">
+                <h3 class="toolbar__notification-title">{{ notification.title }}</h3>
+                <time class="toolbar__notification-date" [attr.datetime]="notification.created_at">
+                  {{ notification.created_at | date: 'short' }}
+                </time>
+              </div>
+              <p class="toolbar__notification-message">{{ notification.message }}</p>
+            </li>
+          </ul>
+        </div>
+
+        <ng-template #loading>
+          <div class="toolbar__notifications-loading">Cargando notificaciones…</div>
+        </ng-template>
+      </div>
+    </div>
+    <button type="button" class="toolbar-user" (click)="userMenu.toggle($event)">
+      <span class="toolbar-user-avatar" aria-hidden="true">{{ userInitials }}</span>
+    </button>
+
+    <p-menu #userMenu [model]="userMenuItems" [popup]="true"></p-menu>
+  </div>
+</header>

@@ -1,0 +1,19 @@
+.notification-badge {
+  border: none;
+  outline: none;
+  background: var(--p-surface-200);
+  padding: 0;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  color: var(--p-surface-500);
+  cursor: pointer;
+
+  transition:
+    color 0.2s ease,
+    transform 0.1s ease;
+
+  &:hover {
+    color: var(--p-primary-color);
+  }
+}

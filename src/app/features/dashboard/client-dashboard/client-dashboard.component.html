@@ -1,0 +1,67 @@
+<section class="page-header">
+  <div>
+    <p class="page-header__pretitle">Mi Panel</p>
+    <h1 class="page-header__title">Bienvenido a tu espacio de trabajo en Accura</h1>
+    <p class="page-header__subtitle">
+      Gestiona tus plantillas, monitorea las cargas recientes y da seguimiento a los resultados de
+      tus validaciones.
+    </p>
+  </div>
+</section>
+
+<section class="client-guide">
+  <div class="client-guide__header">
+    <h2 class="client-guide__title">Guía de Usuario</h2>
+    <p class="client-guide__subtitle">Completa tu proceso en 3 pasos simples</p>
+  </div>
+  <div class="client-guide__steps">
+    <article *ngFor="let step of guideSteps" class="client-guide__step">
+      <span class="client-guide__number">{{ step.order }}</span>
+      <div>
+        <h3 class="client-guide__step-title">{{ step.title }}</h3>
+        <p class="client-guide__step-description">{{ step.description }}</p>
+      </div>
+    </article>
+  </div>
+</section>
+
+<section class="client-stats">
+  <article *ngFor="let stat of clientStats" class="client-stats__card">
+    <p class="client-stats__label">{{ stat.label }}</p>
+    <p class="client-stats__value">{{ stat.value }}</p>
+    <p class="client-stats__caption">{{ stat.caption }}</p>
+  </article>
+</section>
+
+<section class="client-recent">
+  <header class="client-recent__header">
+    <div>
+      <h2 class="client-recent__title">Cargas Recientes</h2>
+      <p class="client-recent__description">Resumen de tus últimas plantillas procesadas</p>
+    </div>
+    <button class="client-recent__action" type="button" (click)="navigateTo('/historial')">
+      Ver Detalles
+    </button>
+  </header>
+  <ul class="client-recent__list">
+    <li *ngFor="let upload of recentUploads" class="client-recent__item">
+      <div class="client-recent__avatar">📄</div>
+      <div class="client-recent__info">
+        <p class="client-recent__item-title">{{ upload.title }}</p>
+        <p class="client-recent__meta">
+          {{ upload.template }}
+          <ng-container *ngIf="upload.template && upload.date"> · </ng-container>
+          <ng-container *ngIf="upload.date">{{ upload.date }}</ng-container>
+        </p>
+      </div>
+      @if (upload.loadId) {
+        <span class="client-recent__status" [ngClass]="statusClassMap[upload.status]">
+          {{ upload.statusLabel }}
+        </span>
+        <button class="client-recent__link" type="button" (click)="viewLoadTracking(upload)">
+          Ver seguimiento
+        </button>
+      }
+    </li>
+  </ul>
+</section>

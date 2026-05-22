@@ -1,0 +1,149 @@
+<app-dialog-shell
+  [(visible)]="visible"
+  [title]="title"
+  [description]="description"
+  [loading]="loading || isSubmittingAssignForm() || isSubmmittingRevokeForm()"
+  [showFooter]="false"
+  (cancel)="cancel()"
+>
+  <div class="permission-detail">
+    <p-card>
+      <div class="hd-header">
+        <div class="hd-icon">
+          <i class="pi pi-user" style="font-size: 1.5rem"></i>
+        </div>
+
+        <div class="hd-info">
+          <div class="hd-title">{{ detailDialogData.name }}</div>
+          <div class="hd-subtitle">{{ detailDialogData.email }}</div>
+        </div>
+      </div>
+    </p-card>
+
+    <!-- Contenedor para plantillas asignadas -->
+    <h3 class="hd-section-title">Plantillas asignadas</h3>
+    <div class="templates-container" [ngStyle]="{ 'min-height': loading ? '100px' : 'auto' }">
+      <app-progress-spinner [loading]="loading"></app-progress-spinner>
+
+      @if (!loading) {
+        <ng-container *ngIf="assignedTemplateItems.length; else noAssignedTemplates">
+          <p-carousel
+            [value]="assignedTemplateItems"
+            [numVisible]="1"
+            [numScroll]="1"
+            [circular]="false"
+          >
+            <ng-template pTemplate="item" let-item>
+              <div class="template-card">
+                <div class="template-card__title">{{ item.template.name }}</div>
+                <div class="template-card__description">{{ item.template.description }}</div>
+                <form
+                  class="form"
+                  [formGroup]="item.form"
+                  (ngSubmit)="revokeTemplateAccess(item.template)"
+                >
+                  <div class="form-stack">
+                    <div class="form-grid">
+                      <app-date-field
+                        [inputId]="'assigned-start-date-' + item.template.id"
+                        label="Fecha de inicio"
+                        [control]="item.form.controls.start_date"
+                      ></app-date-field>
+                      <app-date-field
+                        [inputId]="'assigned-end-date-' + item.template.id"
+                        label="Fecha de fin"
+                        [control]="item.form.controls.end_date"
+                      ></app-date-field>
+                    </div>
+                    <div class="form-footer">
+                      <app-button
+                        [label]="isSubmmittingRevokeForm() ? 'Anulando...' : 'Anular acceso'"
+                        variant="danger"
+                        [outlined]="true"
+                        type="submit"
+                        [loading]="isSubmmittingRevokeForm()"
+                        [disabled]="isSubmmittingRevokeForm() || item.form.invalid"
+                        [fluid]="true"
+                      ></app-button>
+                    </div>
+                  </div>
+                </form>
+              </div>
+            </ng-template>
+          </p-carousel>
+        </ng-container>
+
+        <ng-template #noAssignedTemplates>
+          <p-message
+            icon="pi pi-exclamation-circle"
+            severity="info"
+            text="Este usuario no tiene plantillas asignadas."
+          ></p-message>
+        </ng-template>
+      }
+    </div>
+
+    <p-divider></p-divider>
+
+    <h3 class="hd-section-title">Plantillas disponibles</h3>
+    <div class="templates-container" [ngStyle]="{ 'min-height': loading ? '100px' : 'auto' }">
+      <app-progress-spinner [loading]="loading"></app-progress-spinner>
+
+      @if (!loading) {
+        <ng-container *ngIf="availableTemplateItems.length; else noAvailableTemplates">
+          <p-carousel
+            [value]="availableTemplateItems"
+            [numVisible]="1"
+            [numScroll]="1"
+            [circular]="false"
+          >
+            <ng-template pTemplate="item" let-item>
+              <div class="template-card">
+                <div class="template-card__title">{{ item.template.name }}</div>
+                <div class="template-card__description">{{ item.template.description }}</div>
+                <form
+                  class="form"
+                  [formGroup]="item.form"
+                  (ngSubmit)="assignTemplateById(item.template.id)"
+                >
+                  <div class="form-stack">
+                    <div class="form-grid">
+                      <app-date-field
+                        [inputId]="'available-start-date-' + item.template.id"
+                        label="Fecha de inicio"
+                        [control]="item.form.controls.start_date"
+                      ></app-date-field>
+                      <app-date-field
+                        [inputId]="'available-end-date-' + item.template.id"
+                        label="Fecha de fin"
+                        [control]="item.form.controls.end_date"
+                      ></app-date-field>
+                    </div>
+                    <div class="form-footer">
+                      <app-button
+                        [label]="isSubmittingAssignForm() ? 'Asignando...' : 'Asignar'"
+                        variant="primary"
+                        type="submit"
+                        [loading]="isSubmittingAssignForm()"
+                        [disabled]="isSubmittingAssignForm() || item.form.invalid"
+                        [fluid]="true"
+                      ></app-button>
+                    </div>
+                  </div>
+                </form>
+              </div>
+            </ng-template>
+          </p-carousel>
+        </ng-container>
+
+        <ng-template #noAvailableTemplates>
+          <p-message
+            icon="pi pi-exclamation-circle"
+            severity="info"
+            text="No hay plantillas disponibles para asignar."
+          ></p-message>
+        </ng-template>
+      }
+    </div>
+  </div>
+</app-dialog-shell>

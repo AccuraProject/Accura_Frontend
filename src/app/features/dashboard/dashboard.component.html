@@ -1,0 +1,7 @@
+<ng-container *ngIf="isAdmin$ | async; else clientDashboard">
+  <app-admin-dashboard />
+</ng-container>
+
+<ng-template #clientDashboard>
+  <app-client-dashboard />
+</ng-template>
