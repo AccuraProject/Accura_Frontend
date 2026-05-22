@@ -50,6 +50,7 @@ export class SidebarComponent {
       icon: 'pi pi-question-circle',
       label: 'Manual de usuario',
       route: '/manual-usuario',
+      roles: ['admin'],
     },
     { icon: 'pi pi-cog', label: 'Configuración', route: '/configuracion' },
   ];

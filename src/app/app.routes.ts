@@ -37,7 +37,7 @@ export const routes: Routes = [
         data: { roles: ['admin', 'user'] },
       },
       { path: 'historial', component: HistoryComponent, data: { roles: ['admin', 'user'] } },
-      { path: 'manual-usuario', component: UserManualComponent, data: { roles: ['admin', 'user'] } },
+      { path: 'manual-usuario', component: UserManualComponent, data: { roles: ['admin'] } },
       { path: 'configuracion', component: SettingsComponent, data: { roles: ['admin', 'user'] } },
     ],
   },
