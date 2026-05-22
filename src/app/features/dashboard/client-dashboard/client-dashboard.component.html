@@ -54,12 +54,14 @@
           <ng-container *ngIf="upload.date">{{ upload.date }}</ng-container>
         </p>
       </div>
-      <span class="client-recent__status" [ngClass]="statusClassMap[upload.status]">
-        {{ upload.statusLabel }}
-      </span>
-      <button class="client-recent__link" type="button" (click)="viewLoadTracking(upload)">
-        Ver seguimiento
-      </button>
+      @if (upload.loadId) {
+        <span class="client-recent__status" [ngClass]="statusClassMap[upload.status]">
+          {{ upload.statusLabel }}
+        </span>
+        <button class="client-recent__link" type="button" (click)="viewLoadTracking(upload)">
+          Ver seguimiento
+        </button>
+      }
     </li>
   </ul>
 </section>

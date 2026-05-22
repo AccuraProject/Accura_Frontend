@@ -23,15 +23,19 @@
             <span>{{ column.required ? 'Sí' : 'No' }}</span>
           </td>
           <td style="text-align: center">
-            <p-button
-              type="button"
-              label="Ver detalle"
-              icon="pi pi-eye"
-              [badge]="column.rules.length"
-              severity="secondary"
-              badgeSeverity="contrast"
-              (click)="onRulesButtonClick(column.rules, rowIndex)"
-            ></p-button>
+            @if (column.rules.length) {
+              <p-button
+                type="button"
+                label="Ver detalle"
+                icon="pi pi-eye"
+                [badge]="column.rules.length"
+                severity="secondary"
+                badgeSeverity="contrast"
+                (click)="onRulesButtonClick(column.rules, rowIndex)"
+              ></p-button>
+            }@else {
+              <span>Sin reglas</span>
+            }
           </td>
         </tr>
       </ng-template>
@@ -76,7 +80,7 @@
       </p-carousel>
 
       <!-- Si solo hay una regla, mostramos sin carousel -->
-      <div *ngIf="currentRules.length === 1" class="rule-details" style="padding: 1rem;">
+      <div *ngIf="currentRules.length === 1" class="rule-details" style="padding: 1rem">
         <h3 class="rule-title">{{ currentRules[0].summary.rule_name }}</h3>
         <p><span class="rule-subtitle">Tipo:</span> {{ currentRules[0].summary.technical_type }}</p>
         <p>
