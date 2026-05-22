@@ -2,21 +2,26 @@ import { Component, EventEmitter, Input, Output, ViewChild } from '@angular/core
 import { Table, TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
-import { SelectItem } from 'primeng/api';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
 import { TagModule } from 'primeng/tag';
 import { parseDateString } from '../../../utils/date-util';
+import { SelectModule } from 'primeng/select';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 
 export interface DataTableColumn {
   field: string;
   header: string;
   sortable?: boolean;
   filter?: boolean;
+  filterType?: 'text' | 'number' | 'date' | 'select';
+  filterOptions?: any[];
   isBadge?: boolean;
   badgeSeverityMap?: Record<string, string>;
   align?: 'left' | 'center' | 'right';
   type?: 'string' | 'number' | 'date';
+  dateFormat?: 'dd/MM/yyyy' | 'dd/MM/yyyy h:mm a';
 }
 
 @Component({
@@ -29,6 +34,9 @@ export interface DataTableColumn {
     ButtonModule,
     InputTextModule,
     TagModule,
+    SelectModule,
+    CommonModule,
+    FormsModule,
   ],
   templateUrl: './data-table.html',
   styleUrls: ['./data-table.scss'],
@@ -49,6 +57,7 @@ export class DataTableComponent<T> {
   searchTerm: string = '';
   originalValue: T[] = [];
   isSorted: boolean | null = null;
+  columnFilters: Record<string, any> = {};
 
   ngOnChanges(): void {
     if (this.value && this.value.length > 0) {
@@ -56,8 +65,15 @@ export class DataTableComponent<T> {
     }
   }
 
-  onSearchChange(event: any): void {
-    this.searchChange.emit(this.searchTerm);
+  clear(table: Table) {
+    table.clear();
+    this.searchTerm = '';
+    this.value = [...this.originalValue];
+  }
+
+  onSearch(value: string) {
+    this.searchTerm = value;
+    this.dt.filterGlobal(value, 'contains');
   }
 
   onRowSelect(event: any): void {

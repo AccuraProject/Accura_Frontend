@@ -1,8 +1,7 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, Output, ViewChild, inject, signal } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Component, EventEmitter, Input, Output, ViewChild, signal } from '@angular/core';
+import { ReactiveFormsModule } from '@angular/forms';
 import { DialogShellComponent } from '../../../../shared/components/overlay/dialog/dialog-shell/dialog-shell';
-import { read } from 'xlsx';
 import { CardModule } from 'primeng/card';
 import { TagModule } from 'primeng/tag';
 import { ButtonModule } from 'primeng/button';
@@ -20,9 +19,9 @@ interface DetailDialogData {
   id: number;
   name: string;
   description: string;
-  start_date: string;
-  end_date: string;
-  lastUpdated: string;
+  start_date: Date;
+  end_date: Date;
+  lastUpdated: Date;
   columns: number;
   columnsDetail: TemplateColumnDetail[];
 }
@@ -31,9 +30,9 @@ const EMPTY_DETAIL_DIALOG_DATA: DetailDialogData = {
   id: 0,
   name: '',
   description: '',
-  start_date: '',
-  end_date: '',
-  lastUpdated: '',
+  start_date: new Date(),
+  end_date: new Date(),
+  lastUpdated: new Date(),
   columns: 0,
   columnsDetail: [],
 };

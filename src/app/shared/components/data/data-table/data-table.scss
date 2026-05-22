@@ -1,14 +1,22 @@
-.table-search {
+.table-filter {
   display: flex;
-  justify-content: end;
+  justify-content: space-between;
   // margin-bottom: 1rem;
   // text-align: right;
 }
 
-.table-search input {
-  // width: 200px;
-}
-
 .p-datatable-header {
   background-color: #f7f7f7;
+}
+
+.datatable-header__content{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.datatable-header__actions{
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
 }

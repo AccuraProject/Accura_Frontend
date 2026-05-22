@@ -21,12 +21,12 @@ export interface TemplateResponse {
   status?: string;
   description?: string;
   table_name?: string;
-  created_at?: string;
-  updated_at?: string;
+  created_at?: Date;
+  updated_at?: Date;
   is_active?: boolean;
   deleted?: boolean;
   deleted_by?: number;
-  deleted_at?: string;
+  deleted_at?: Date;
   columns?: TemplateColumnResponse[];
 }
 

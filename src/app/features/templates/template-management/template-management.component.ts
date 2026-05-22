@@ -13,7 +13,6 @@ import {
 } from '../../../shared/components/data/data-table/data-table';
 import { ToastService } from '../../../shared/services/toast.service';
 import { ConfirmService } from '../../../shared/services/confirm.service';
-import { formatDate } from '../../../shared/utils/date-util';
 import {
   SaveTemplateColumnsEvent,
   TemplateDialogData,
@@ -30,8 +29,8 @@ interface TemplateRow {
   description: string;
   version: string;
   status: TemplateStatus;
-  createdAt: string;
-  lastUpdated: string;
+  createdAt: Date;
+  lastUpdated: Date;
   tableName?: string;
   statusCode?: string;
 }
@@ -90,15 +89,23 @@ export class TemplateManagementComponent implements OnInit, OnDestroy {
   protected currentPage = 1;
 
   columns: DataTableColumn[] = [
-    { field: 'name', header: 'Nombre', sortable: true },
-    { field: 'version', header: 'Versión', sortable: true },
-    { field: 'description', header: 'Descripción', sortable: true },
+    { field: 'name', header: 'Nombre', sortable: true, filter: true, filterType: 'text' },
+    { field: 'version', header: 'Versión', sortable: true, filter: true, filterType: 'text' },
+    {
+      field: 'description',
+      header: 'Descripción',
+      sortable: true,
+      filter: true,
+      filterType: 'text',
+    },
     {
       field: 'createdAt',
       header: 'Fecha de creación',
       align: 'center',
       sortable: true,
       type: 'date',
+      filter: true,
+      filterType: 'date',
     },
     {
       field: 'lastUpdated',
@@ -106,6 +113,8 @@ export class TemplateManagementComponent implements OnInit, OnDestroy {
       align: 'center',
       sortable: true,
       type: 'date',
+      filter: true,
+      filterType: 'date',
     },
     {
       field: 'status',
@@ -116,6 +125,12 @@ export class TemplateManagementComponent implements OnInit, OnDestroy {
         Publicado: 'success',
         Borrador: 'info',
       },
+      filter: true,
+      filterType: 'select',
+      filterOptions: [
+        { label: 'Publicado', value: 'Publicado' },
+        { label: 'Borrador', value: 'Borrador' },
+      ],
     },
   ];
 
@@ -308,7 +323,7 @@ export class TemplateManagementComponent implements OnInit, OnDestroy {
               ...entry,
               status: this.toDisplayStatus(updateState),
               statusCode: template.status,
-              lastUpdated: formatDate(template.updated_at),
+              lastUpdated: template.updated_at ? new Date(template.updated_at) : new Date(),
             };
           });
 
@@ -535,8 +550,8 @@ export class TemplateManagementComponent implements OnInit, OnDestroy {
   }
 
   private mapToTemplateRow(template: TemplateResponse): TemplateRow {
-    const createdAt = formatDate(template.created_at);
-    const updatedAt = formatDate(template.updated_at ?? template.created_at);
+    const createdAt = new Date(template.created_at || new Date());
+    const updatedAt = new Date(template.updated_at || template.created_at || new Date());
     const status = this.toDisplayStatus(template.status);
     const version = template.table_name?.trim().length ? template.table_name : '—';
 

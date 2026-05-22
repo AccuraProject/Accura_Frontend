@@ -19,7 +19,6 @@ import {
 import { ToastService } from '../../shared/services/toast.service';
 import { ConfirmService } from '../../shared/services/confirm.service';
 import { finalize } from 'rxjs';
-import { formatDateOnly } from '../../shared/utils/date-util';
 
 interface UserRow {
   id: number;
@@ -29,7 +28,7 @@ interface UserRow {
   role: string;
   status: string;
   isActive: boolean;
-  createdAt: string;
+  createdAt: Date;
 }
 
 @Component({
@@ -63,9 +62,19 @@ export class UsersComponent implements OnInit {
   protected currentPage = 1;
 
   columns: DataTableColumn[] = [
-    { field: 'name', header: 'Nombre', sortable: true },
-    { field: 'email', header: 'Email', sortable: true },
-    { field: 'role', header: 'Rol', align: 'center' },
+    { field: 'name', header: 'Nombre', sortable: true, filter: true, filterType: 'text' },
+    { field: 'email', header: 'Email', sortable: true, filter: true, filterType: 'text' },
+    {
+      field: 'role',
+      header: 'Rol',
+      align: 'center',
+      filter: true,
+      filterType: 'select',
+      filterOptions: [
+        { label: 'Cliente', value: 'Cliente' },
+        { label: 'Administrador', value: 'Administrador' },
+      ],
+    },
     {
       field: 'status',
       header: 'Estado',
@@ -75,6 +84,12 @@ export class UsersComponent implements OnInit {
         Activo: 'success',
         Inactivo: 'danger',
       },
+      filter: true,
+      filterType: 'select',
+      filterOptions: [
+        { label: 'Activo', value: 'Activo' },
+        { label: 'Inactivo', value: 'Inactivo' },
+      ],
     },
     {
       field: 'createdAt',
@@ -82,6 +97,8 @@ export class UsersComponent implements OnInit {
       align: 'center',
       sortable: true,
       type: 'date',
+      filter: true,
+      filterType: 'date',
     },
   ];
 
@@ -321,7 +338,7 @@ export class UsersComponent implements OnInit {
       user.email,
       user.role?.id ?? null,
       user.is_active,
-      formatDateOnly(user.created_at),
+      new Date(user.created_at),
       this.getRoleDisplayName(user.role),
     );
   }
@@ -332,7 +349,7 @@ export class UsersComponent implements OnInit {
     email: string,
     roleId: number | null,
     isActive: boolean,
-    createdAt: string,
+    createdAt: Date,
     roleLabel?: string,
   ): UserRow {
     return {

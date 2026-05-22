@@ -1,8 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, Input, OnDestroy, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import { MatMenuModule } from '@angular/material/menu';
 import { Subscription, forkJoin } from 'rxjs';
 import { map, switchMap } from 'rxjs/operators';
 import { TemplateDetailDialogComponent } from '../components/template-detail-dialog/template-detail-dialog.component';
@@ -20,7 +18,6 @@ import {
 } from '../../../shared/components/data/data-table/data-table';
 import { ToastService } from '../../../shared/services/toast.service';
 import { ConfirmService } from '../../../shared/services/confirm.service';
-import { formatDate, formatDateOnly } from '../../../shared/utils/date-util';
 import { TemplateUserAccessResponse } from '../models/template-user-access';
 
 type TemplateStatus = 'Activo' | 'En revisión';
@@ -43,9 +40,9 @@ interface TemplateRow {
   name: string;
   description: string;
   status: TemplateStatus;
-  start_date: string;
-  end_date: string;
-  lastUpdated: string;
+  start_date: Date;
+  end_date: Date;
+  lastUpdated: Date;
   columns: number;
   columnsDetail: TemplateColumnDetail[];
 }
@@ -57,9 +54,9 @@ const EMPTY_DETAIL_DIALOG_DATA: DetailDialogData = {
   name: '',
   description: '',
   status: 'Activo',
-  start_date: '',
-  end_date: '',
-  lastUpdated: '',
+  start_date: new Date(),
+  end_date: new Date(),
+  lastUpdated: new Date(),
   columns: 0,
   columnsDetail: [],
 };
@@ -70,8 +67,6 @@ const EMPTY_DETAIL_DIALOG_DATA: DetailDialogData = {
   imports: [
     CommonModule,
     FormsModule,
-    MatDialogModule,
-    MatMenuModule,
     PageActionsComponent,
     DataTableComponent,
     TemplateDetailDialogComponent,
@@ -82,7 +77,6 @@ const EMPTY_DETAIL_DIALOG_DATA: DetailDialogData = {
 export class TemplateClientManagementComponent implements OnInit, OnDestroy {
   protected searchTerm = '';
 
-  private readonly dialog = inject(MatDialog);
   private readonly templatesService = inject(TemplatesService);
 
   @Input() sessionUserId: number = 0;
@@ -108,22 +102,42 @@ export class TemplateClientManagementComponent implements OnInit, OnDestroy {
   protected isEditingClient = false;
 
   clientColumns: DataTableColumn[] = [
-    { field: 'name', header: 'Nombre', sortable: true },
-    { field: 'description', header: 'Descripción', sortable: true },
+    { field: 'name', header: 'Nombre', sortable: true, filter: true, filterType: 'text' },
+    {
+      field: 'description',
+      header: 'Descripción',
+      sortable: true,
+      filter: true,
+      filterType: 'text',
+    },
     {
       field: 'start_date',
       header: 'Fecha de inicio',
       align: 'center',
       sortable: true,
       type: 'date',
+      filter: true,
+      filterType: 'date',
+      dateFormat: 'dd/MM/yyyy'
     },
-    { field: 'end_date', header: 'Fecha de fin', align: 'center', sortable: true, type: 'date' },
+    {
+      field: 'end_date',
+      header: 'Fecha de fin',
+      align: 'center',
+      sortable: true,
+      type: 'date',
+      filter: true,
+      filterType: 'date',
+      dateFormat: 'dd/MM/yyyy'
+    },
     {
       field: 'lastUpdated',
       header: 'Última actualización',
       align: 'center',
       sortable: true,
       type: 'date',
+      filter: true,
+      filterType: 'date',
     },
   ];
 
@@ -216,22 +230,19 @@ export class TemplateClientManagementComponent implements OnInit, OnDestroy {
     template: TemplateResponse,
     access: TemplateUserAccessResponse,
   ): TemplateRow {
-    const updatedAt = formatDate(template.updated_at ?? template.created_at);
+    const updatedAt = new Date(template.updated_at || template.created_at || new Date());
     const status = this.toDisplayStatus(template.status);
 
     const columns: TemplateColumnResponse[] = template.columns ?? [];
     const columnsDetail = this.mapColumnsToDetail(columns);
-
-    const startDate = formatDateOnly(access.start_date);
-    const endDate = formatDateOnly(access.end_date);
 
     return {
       id: template.id,
       name: template.name ?? 'Nueva plantilla',
       description: template.description ?? '',
       status,
-      start_date: startDate,
-      end_date: endDate,
+      start_date: new Date(access.start_date),
+      end_date: new Date(access.end_date),
       lastUpdated: updatedAt,
       columns: columns.length,
       columnsDetail,

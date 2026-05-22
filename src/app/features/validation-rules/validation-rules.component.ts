@@ -19,19 +19,13 @@ import {
 import { finalize } from 'rxjs';
 import { ToastService } from '../../shared/services/toast.service';
 import { capitalizeFirstLetter } from '../../shared/utils/text-utils';
-import { formatDateOnly } from '../../shared/utils/date-util';
-
-interface AiRuleOption {
-  id: string;
-  payload: RulePayload;
-}
 
 interface RuleRow {
   id: number;
   name: string;
   dataType: string;
   mandatory: string;
-  createdAt: string;
+  createdAt: Date;
   status: string;
   statusAssigned: string;
   description: string;
@@ -66,15 +60,44 @@ export class ValidationRulesComponent implements OnInit {
   protected currentPage = 1;
 
   columns: DataTableColumn[] = [
-    { field: 'name', header: 'Nombre', sortable: true },
-    { field: 'dataType', header: 'Tipo de dato', sortable: true },
-    { field: 'mandatory', header: 'Obligatoria', align: 'center' },
+    { field: 'name', header: 'Nombre', sortable: true, filter: true, filterType: 'text' },
+    {
+      field: 'dataType',
+      header: 'Tipo de dato',
+      sortable: true,
+      filter: true,
+      filterType: 'select',
+      filterOptions: [
+        { label: 'Texto', value: 'Texto' },
+        { label: 'Número', value: 'Número' },
+        { label: 'Documento', value: 'Documento' },
+        { label: 'Lista', value: 'Lista' },
+        { label: 'Lista compleja', value: 'Lista compleja' },
+        { label: 'Teléfono', value: 'Teléfono' },
+        { label: 'Correo', value: 'Correo' },
+        { label: 'Fecha', value: 'Fecha' },
+        { label: 'Dependencia', value: 'Dependencia' },
+      ],
+    },
+    {
+      field: 'mandatory',
+      header: 'Obligatoria',
+      align: 'center',
+      filter: true,
+      filterType: 'select',
+      filterOptions: [
+        { label: 'Sí', value: 'Sí' },
+        { label: 'No', value: 'No' },
+      ],
+    },
     {
       field: 'createdAt',
       header: 'Fecha de creación',
       align: 'center',
       sortable: true,
       type: 'date',
+      filter: true,
+      filterType: 'date',
     },
     {
       field: 'status',
@@ -85,6 +108,12 @@ export class ValidationRulesComponent implements OnInit {
         Activo: 'success',
         Inactivo: 'danger',
       },
+      filter: true,
+      filterType: 'select',
+      filterOptions: [
+        { label: 'Activo', value: 'Activo' },
+        { label: 'Inactivo', value: 'Inactivo' },
+      ],
     },
     {
       field: 'statusAssigned',
@@ -95,6 +124,12 @@ export class ValidationRulesComponent implements OnInit {
         Asignada: 'info',
         Borrador: 'secondary',
       },
+      filter: true,
+      filterType: 'select',
+      filterOptions: [
+        { label: 'Asignada', value: 'Asignada' },
+        { label: 'Borrador', value: 'Borrador' },
+      ],
     },
   ];
 
@@ -274,7 +309,7 @@ export class ValidationRulesComponent implements OnInit {
       payload['Nombre de la regla'],
       payload['Tipo de dato'],
       payload['Campo obligatorio'],
-      ruleResponse.created_at,
+      new Date(ruleResponse.created_at),
       ruleResponse.is_active,
       ruleResponse.status,
       payload['Descripción'],
@@ -291,7 +326,7 @@ export class ValidationRulesComponent implements OnInit {
     name: string,
     dataType: string,
     mandatory: boolean,
-    createdAt: string,
+    createdAt: Date,
     isActive: boolean,
     statusAssigned: string,
     description: string,
@@ -306,7 +341,7 @@ export class ValidationRulesComponent implements OnInit {
       name,
       dataType,
       mandatory: this.getMandatoryLabel(mandatory),
-      createdAt: formatDateOnly(createdAt),
+      createdAt,
       status: this.getStatusLabel(isActive),
       statusAssigned: capitalizeFirstLetter(statusAssigned),
       description,

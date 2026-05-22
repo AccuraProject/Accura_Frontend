@@ -39,7 +39,7 @@ interface HistoryRecord {
   fileName: string;
   templateName: string;
   uploadedBy: string;
-  uploadedAt: string;
+  uploadedAt: Date;
   status: HistoryStatus;
   totalRows: number;
   validatedRows: number;
@@ -94,7 +94,7 @@ export class HistoryComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
 
-  private displayActiveUsersMetric = true;
+  private displayActiveUsersMetric = false;
   private pendingLoadId: string | null = null;
   private shouldOpenPendingLoad = false;
 
@@ -109,15 +109,29 @@ export class HistoryComponent implements OnInit {
   protected currentPage = 1;
 
   columns: DataTableColumn[] = [
-    { field: 'fileName', header: 'Archivo', sortable: true },
-    { field: 'templateName', header: 'Plantilla', sortable: true },
-    { field: 'uploadedBy', header: 'Cargado por', sortable: true },
+    { field: 'fileName', header: 'Archivo', sortable: true, filter: true, filterType: 'text' },
+    {
+      field: 'templateName',
+      header: 'Plantilla',
+      sortable: true,
+      filter: true,
+      filterType: 'text',
+    },
+    {
+      field: 'uploadedBy',
+      header: 'Cargado por',
+      sortable: true,
+      filter: true,
+      filterType: 'text',
+    },
     {
       field: 'uploadedAt',
       header: 'Fecha de carga',
       align: 'center',
       sortable: true,
       type: 'date',
+      filter: true,
+      filterType: 'date',
     },
     {
       field: 'validatedRows',
@@ -125,6 +139,8 @@ export class HistoryComponent implements OnInit {
       align: 'center',
       sortable: true,
       type: 'number',
+      filter: true,
+      filterType: 'number',
     },
     {
       field: 'totalRows',
@@ -132,6 +148,8 @@ export class HistoryComponent implements OnInit {
       align: 'center',
       sortable: true,
       type: 'number',
+      filter: true,
+      filterType: 'number',
     },
     {
       field: 'status',
@@ -144,6 +162,14 @@ export class HistoryComponent implements OnInit {
         'Validado con errores': 'warn',
         Fallido: 'danger',
       },
+      filter: true,
+      filterType: 'select',
+      filterOptions: [
+        { label: 'Procesando', value: 'Procesandoí' },
+        { label: 'Validado exitosamente', value: 'Validado exitosamente' },
+        { label: 'Validado con errores', value: 'Validado con errores' },
+        { label: 'Fallido', value: 'Fallido' },
+      ],
     },
   ];
 
@@ -172,6 +198,15 @@ export class HistoryComponent implements OnInit {
     this.loadRecords();
   }
 
+  get visibleColumns(): DataTableColumn[] {
+  return this.columns.filter((col) => {
+    if (col.field === 'uploadedBy') {
+      return this.displayActiveUsersMetric;
+    }
+    return true;
+  });
+}
+
   get isViewDetailDisabled(): boolean {
     return !this.selectedRecord || this.selectedRecord.status == 'Procesando';
   }
@@ -184,7 +219,7 @@ export class HistoryComponent implements OnInit {
       fileName: this.selectedRecord.fileName,
       templateName: this.selectedRecord.templateName,
       status: this.selectedRecord.status,
-      uploadedAt: this.selectedRecord.uploadedAt,
+      uploadedAt: formatDate(this.selectedRecord.uploadedAt),
       processedBy: this.selectedRecord.uploadedBy,
       totalRows: this.selectedRecord.totalRows,
       validatedRows: this.selectedRecord.validatedRows,
@@ -323,7 +358,7 @@ export class HistoryComponent implements OnInit {
       fileName: load.file_name,
       templateName: template?.name ?? 'Plantilla desconocida',
       uploadedBy: user?.name ?? 'Usuario desconocido',
-      uploadedAt: formatDate(load.created_at),
+      uploadedAt: new Date(load.created_at),
       status: this.mapStatus(load.status),
       totalRows,
       validatedRows,

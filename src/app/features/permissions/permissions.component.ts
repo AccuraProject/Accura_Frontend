@@ -18,13 +18,12 @@ import {
 } from './components/permission-form-dialog/permission-form-dialog.component';
 import { ToastService } from '../../shared/services/toast.service';
 import { TemplateUserAccessResponse } from '../templates/models/template-user-access';
-import { formatDate } from '../../shared/utils/date-util';
 
 interface PermissionUser {
   id: number;
   name: string;
   email: string;
-  lastUpdated: string;
+  lastUpdated: Date;
   templates: string;
 }
 
@@ -49,14 +48,22 @@ export class PermissionsComponent implements OnInit, OnDestroy {
   protected usersLoadError: string | null = null;
 
   columns: DataTableColumn[] = [
-    { field: 'name', header: 'Usuario', sortable: true },
-    { field: 'templates', header: 'Plantillas asignadas', sortable: true },
+    { field: 'name', header: 'Usuario', sortable: true, filter: true, filterType: 'text' },
+    {
+      field: 'templates',
+      header: 'Plantillas asignadas',
+      sortable: true,
+      filter: true,
+      filterType: 'text',
+    },
     {
       field: 'lastUpdated',
       header: 'Última actualización',
       align: 'center',
       sortable: true,
       type: 'date',
+      filter: true,
+      filterType: 'date',
     },
   ];
 
@@ -248,7 +255,7 @@ export class PermissionsComponent implements OnInit, OnDestroy {
       id: user.id,
       name: user.name,
       email: user.email,
-      lastUpdated: formatDate(user.updated_at ?? user.created_at),
+      lastUpdated: new Date(user.updated_at ?? user.created_at),
       templates: concatenatedTemplateNames,
     };
   }

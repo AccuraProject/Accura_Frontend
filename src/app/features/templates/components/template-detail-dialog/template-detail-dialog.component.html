@@ -17,13 +17,14 @@
       <p-card>
         <div class="hd-label">Fecha de asignación</div>
         <div class="hd-value">
-          {{ detailDialogData.start_date }} - {{ detailDialogData.end_date }}
+          {{ detailDialogData.start_date | date: 'dd/MM/yyyy' }} -
+          {{ detailDialogData.end_date | date: 'dd/MM/yyyy' }}
         </div>
       </p-card>
 
       <p-card>
         <div class="hd-label">Última actualización</div>
-        <div class="hd-value">{{ detailDialogData.lastUpdated }}</div>
+        <div class="hd-value">{{ detailDialogData.lastUpdated | date: 'dd/MM/yyyy h:mm a' }}</div>
       </p-card>
     </div>
 
