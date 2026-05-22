@@ -1,51 +1,58 @@
-:host {
-  display: block;
-  min-width: 340px;
+.dialog__title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.dialog__description {
+  margin: 0.5rem 0 0;
+  color: var(--p-text-muted-color);
+  font-size: 0.95rem;
+  line-height: 1.5;
 }
 
 .session-expired-dialog__content {
-  padding: 1.5rem;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.session-expired-dialog__alert {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .session-expired-dialog__status {
   display: flex;
   align-items: center;
   gap: 1.25rem;
-  padding: 1.25rem 1.5rem;
-  border-radius: 18px;
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(79, 70, 229, 0.1));
-  border: 1px solid rgba(99, 102, 241, 0.18);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px dashed var(--p-primary-300);
+  background-color: var(--p-primary-100);
+
+  i{
+    font-size: 2rem;
+    color: var(--p-primary-color);
+  }
 }
 
 .session-expired-dialog__status-text {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
-  color: #312e81;
-}
+  gap: 0.5rem;
 
-.session-expired-dialog__status-text p {
-  margin: 0;
-  font-weight: 600;
-}
-
-.session-expired-dialog__status-text span {
-  font-size: 0.9rem;
-  color: #4338ca;
-}
-
-@media (max-width: 480px) {
-  :host {
-    min-width: 0;
+  p {
+    margin: 0;
+    color: var(--p-surface-700);
   }
 
-  .session-expired-dialog__status {
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
+  span {
+    font-size: 1.1rem;
+    font-weight: var(--font-weight-semibold);
+    color: var(--p-surface-900);
   }
 }

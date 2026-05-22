@@ -1,0 +1,73 @@
+<div class="login-page">
+  <div class="login-wrapper">
+    <section class="branding">
+      <h1 class="branding__title">Accura</h1>
+      <p class="branding__subtitle">Gestión de Plantillas y Cargas de Datos</p>
+    </section>
+
+    <section class="login-card">
+      <header class="login-card__header">
+        <h2>Iniciar Sesión</h2>
+        <p>Ingresa tus credenciales para acceder a la plataforma</p>
+      </header>
+
+      <form class="form" [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+        <div class="form-stack">
+          <app-text-field
+            inputId="email"
+            type="email"
+            icon="pi pi-user"
+            label="Correo electrónico"
+            [control]="loginForm.controls.email"
+            autocomplete="on"
+            errorMessage="Ingresa un correo electrónico válido."
+          >
+          </app-text-field>
+
+          <app-password-field
+            inputId="password"
+            icon="pi pi-lock"
+            label="Contraseña"
+            [control]="loginForm.controls.password"
+            errorMessage="La contraseña es requerida."
+          >
+          </app-password-field>
+        </div>
+
+        <div style="text-align: end; margin-bottom: 1rem">
+          <a class="link-primary" routerLink="/recuperar-contrasena"> ¿Olvidaste tu contraseña? </a>
+        </div>
+
+        <app-button
+          [label]="isSubmitting() ? 'Iniciando...' : 'Iniciar sesión'"
+          type="submit"
+          [loading]="isSubmitting()"
+          [disabled]="loginForm.invalid || isSubmitting()"
+          [fluid]="true"
+        ></app-button>
+      </form>
+
+      @if (serverError() || successMessage()) {
+        <div style="margin-top: 1rem">
+          @if (serverError()) {
+            <app-message-feedback
+              [text]="serverError()!"
+              severity="error"
+              icon="pi pi-times-circle"
+              styleClass="message-center"
+            />
+          }
+
+          @if (successMessage()) {
+            <app-message-feedback
+              [text]="successMessage()!"
+              severity="success"
+              icon="pi pi-check-circle"
+              styleClass="message-center"
+            />
+          }
+        </div>
+      }
+    </section>
+  </div>
+</div>

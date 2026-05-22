@@ -1,0 +1,45 @@
+<section class="page-header">
+  <div>
+    <p class="page-header__pretitle">Gestión de Usuarios</p>
+    <h1 class="page-header__title">Administra los usuarios de la plataforma</h1>
+    <p class="page-header__subtitle">
+      Administra los accesos, roles y estados de los colaboradores desde un único lugar.
+    </p>
+  </div>
+</section>
+
+<div class="card">
+  <app-page-actions
+    [showCreate]="true"
+    [showEdit]="true"
+    [showDelete]="true"
+    [showExtraAction]="true"
+    extraActionIcon="pi pi-refresh"
+    extraActionLabel="Restablecer contraseña"
+    [disableEdit]="!selectedUser"
+    [disableDelete]="!selectedUser"
+    [disableExtraAction]="isResetPasswordDisabled"
+    (create)="onCreateUser()"
+    (edit)="onEditUser()"
+    (delete)="onDeleteUsers()"
+    (extraAction)="onResetPassword()"
+  ></app-page-actions>
+
+  <!-- Tabla de usuarios -->
+  <app-data-table
+    [columns]="columns"
+    [value]="users"
+    [selection]="selectedUser"
+    [loading]="usersLoading"
+    (rowSelect)="onRowSelect($event)"
+    (rowUnselect)="onRowUnselect()"
+  ></app-data-table>
+</div>
+
+<app-user-form-dialog
+  [(visible)]="userDialogVisible"
+  [data]="userDialogData"
+  [loading]="userDialogLoading"
+  (saveUser)="handleSaveUser($event)"
+  (cancelDialog)="closeUserDialog()"
+/>

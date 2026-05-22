@@ -1,0 +1,72 @@
+<p-toolbar class="page-actions">
+  <ng-template pTemplate="start">
+    <div class="page-actions__group">
+      @if (showCreate) {
+        <app-button
+          [label]="createLabel"
+          [icon]="createIcon"
+          variant="secondary"
+          [disabled]="disableCreate"
+          (clicked)="onCreate()"
+        ></app-button>
+      }
+
+      @if (showEdit) {
+        <app-button
+          [label]="editLabel"
+          [icon]="editIcon"
+          variant="secondary"
+          [outlined]="true"
+          [disabled]="disableEdit"
+          (clicked)="onEdit()"
+        ></app-button>
+      }
+
+      @if (showDelete) {
+        <app-button
+          [label]="deleteLabel"
+          [icon]="deleteIcon"
+          variant="secondary"
+          [outlined]="true"
+          [disabled]="disableDelete"
+          [styleClass]="'btn-delete'"
+          (clicked)="onDelete()"
+        ></app-button>
+      }
+
+      @if (showExtraAction) {
+        <app-button
+          [label]="extraActionLabel"
+          [icon]="extraActionIcon"
+          variant="secondary"
+          [outlined]="true"
+          [disabled]="disableExtraAction"
+          (clicked)="onExtraAction()"
+        ></app-button>
+      }
+
+      @if (showExtraAction2) {
+        <app-button
+          [label]="extraActionLabel2"
+          [icon]="extraActionIcon2"
+          variant="secondary"
+          [outlined]="true"
+          [disabled]="disableExtraAction2"
+          (clicked)="onExtraAction2()"
+        ></app-button>
+      }
+    </div>
+  </ng-template>
+
+  <ng-template pTemplate="end">
+    @if (showExport) {
+      <app-button
+        [label]="exportLabel"
+        [icon]="exportIcon"
+        variant="secondary"
+        [disabled]="disableExport"
+        (clicked)="onExport()"
+      ></app-button>
+    }
+  </ng-template>
+</p-toolbar>

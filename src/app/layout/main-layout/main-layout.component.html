@@ -1,18 +1,14 @@
-<div class="layout">
-  <app-toolbar (menuToggle)="toggleMobileNav()"></app-toolbar>
-  <div class="layout__body">
-    <app-sidebar
-      [mobileNavOpen]="mobileNavOpen"
-      (requestClose)="closeMobileNav()"
-    ></app-sidebar>
-    <div
-      class="layout__backdrop"
-      [class.layout__backdrop--visible]="mobileNavOpen"
-      (click)="closeMobileNav()"
-    ></div>
+<div class="layout-container layout-colorscheme-menu">
+  <app-sidebar
+    [mobileNavOpen]="mobileNavOpen"
+    [collapsed]="sidebarCollapsed"
+    (requestClose)="closeMobileNav()"
+  ></app-sidebar>
 
-    <main class="layout__content">
+  <div class="layout-content-wrapper">
+    <app-toolbar (menuToggle)="toggleSidebar()"></app-toolbar>
+    <div class="layout-content">
       <router-outlet></router-outlet>
-    </main>
+    </div>
   </div>
 </div>

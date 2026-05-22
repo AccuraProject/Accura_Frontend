@@ -1,0 +1,85 @@
+<div class="flex flex-col gap-1">
+  @if (label) {
+    <p-floatlabel variant="on">
+      @if (hasIcon) {
+        <p-iconfield [iconPosition]="iconPosition" [ngClass]="{ 'invalid-field': showError }">
+          <p-inputicon [class]="icon"></p-inputicon>
+
+          <textarea
+            pTextarea
+            [id]="computedInputId"
+            [formControl]="control"
+            [placeholder]="placeholder"
+            [required]="required"
+            [readonly]="readonly"
+            [rows]="rows"
+            [cols]="cols"
+            [autoResize]="autoResize"
+            [fluid]="fluid"
+            [invalid]="showError"
+          ></textarea>
+        </p-iconfield>
+      } @else {
+        <textarea
+          pTextarea
+          [id]="computedInputId"
+          [formControl]="control"
+          [placeholder]="placeholder"
+          [required]="required"
+          [readonly]="readonly"
+          [rows]="rows"
+          [cols]="cols"
+          [autoResize]="autoResize"
+          [fluid]="fluid"
+          [invalid]="showError"
+        ></textarea>
+      }
+
+      <label [for]="computedInputId">
+        {{ label }}
+      </label>
+    </p-floatlabel>
+  }
+
+  @if (!label) {
+    @if (hasIcon) {
+      <p-iconfield [iconPosition]="iconPosition">
+        <p-inputicon [class]="icon"></p-inputicon>
+
+        <textarea
+          pTextarea
+          [id]="computedInputId"
+          [formControl]="control"
+          [placeholder]="placeholder"
+          [required]="required"
+          [readonly]="readonly"
+          [rows]="rows"
+          [cols]="cols"
+          [autoResize]="autoResize"
+          [fluid]="fluid"
+          [invalid]="showError"
+        ></textarea>
+      </p-iconfield>
+    } @else {
+      <textarea
+        pTextarea
+        [id]="computedInputId"
+        [formControl]="control"
+        [placeholder]="placeholder"
+        [required]="required"
+        [readonly]="readonly"
+        [rows]="rows"
+        [cols]="cols"
+        [autoResize]="autoResize"
+        [fluid]="fluid"
+        [invalid]="showError"
+      ></textarea>
+    }
+  }
+
+  @if (showError) {
+    <p-message severity="error" variant="simple" size="small" styleClass="field-error-message">
+      {{ errorText }}
+    </p-message>
+  }
+</div>

@@ -1,0 +1,30 @@
+.spinner-overlay {
+  display: block;
+  text-align: center;
+  margin: 0 auto;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 12px;
+  z-index: 1000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Fondo semi-transparente */
+.transparent-background {
+  background-color: rgba(0, 0, 0, 0.3);
+}
+
+/* Fondo blanco */
+.white-background {
+  background-color: white;
+}
+
+/* Sin fondo */
+.no-background {
+  background-color: transparent;
+}

@@ -1,0 +1,41 @@
+.template-columns-editor__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  .toolbar__left {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+}
+
+.rules-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  .rules-cell__item {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+  }
+
+  .rules-cell__inputs {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.5rem;
+
+    &.with-header-rule {
+      background-color: var(--p-surface-100);
+      border-radius: var(--p-content-border-radius);
+    }
+  }
+
+  .rules-cell__item app-select-field {
+    flex: 1;
+    min-width: 0;
+  }
+}

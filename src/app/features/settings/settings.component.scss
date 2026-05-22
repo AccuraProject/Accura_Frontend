@@ -1,0 +1,51 @@
+:host {
+  display: grid;
+  gap: 2.75rem;
+  padding-bottom: 3rem;
+}
+
+.grid {
+  display: grid;
+  gap: 2rem;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+
+  .card {
+    background: var(--surface-card);
+    border: 1px solid var(--surface-border);
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: var(--card-shadow);
+    border-radius: 12px;
+
+    .card__header {
+      display: flex;
+      align-items: flex-start;
+      gap: 1.25rem;
+      margin-bottom: 2rem;
+
+      .card__icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        background: var(--p-primary-200);
+        color: var(--p-primary-600);
+      }
+
+      h2 {
+        margin: 0;
+        font-weight: var(--font-weight-semibold);
+        font-size: 1.25rem;
+        color: var(--p-surface-900);
+      }
+
+      p {
+        margin: 0.35rem 0 0;
+        color: var(--p-surface-600);
+        font-size: 0.95rem;
+      }
+    }
+  }
+}

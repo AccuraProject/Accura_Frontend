@@ -1,0 +1,97 @@
+.history-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* HEADER */
+.hd-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.hd-icon {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--p-primary-50);
+  color: var(--p-primary-color);
+}
+
+.hd-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.hd-title {
+  font-weight: var(--font-weight-semibold);
+  font-size: 1rem;
+  color: var(--p-text-color);
+  word-break: break-word;
+}
+
+.hd-subtitle {
+  font-size: 0.9rem;
+  color: var(--p-text-muted-color);
+  margin-top: 0.25rem;
+}
+
+/* GRID */
+.hd-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+.hd-grid--summary {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+/* CARD CONTENT */
+.hd-label {
+  font-weight: var(--font-weight-semibold);
+  color: var(--p-text-muted-color);
+  margin-bottom: 0.4rem;
+}
+
+.hd-value {
+  color: var(--p-text-color);
+}
+
+.hd-value--strong {
+  font-size: 1.5rem;
+  font-weight: var(--font-weight-semibold);
+}
+
+/* SECTION */
+.hd-section-title {
+  font-weight: var(--font-weight-semibold);
+  color: var(--p-text-color);
+  margin: 0;
+}
+
+/* ACTIONS */
+.hd-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+  .hd-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hd-grid--summary {
+    grid-template-columns: 1fr;
+  }
+
+  .hd-actions {
+    flex-direction: column;
+  }
+}

@@ -1,0 +1,9 @@
+<ng-container *ngIf="isAdmin; else clientTemplates">
+  <app-template-management></app-template-management>
+</ng-container>
+
+<ng-template #clientTemplates>
+  <app-template-client-management
+    [sessionUserId]="(sessionUser$ | async)?.id ?? 0"
+  ></app-template-client-management>
+</ng-template>

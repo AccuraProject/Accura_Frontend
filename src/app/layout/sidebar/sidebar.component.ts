@@ -1,65 +1,65 @@
 import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { RouterModule } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
+import { RippleModule } from 'primeng/ripple';
+import { TooltipModule } from 'primeng/tooltip';
+
 import { selectSessionRole } from '../../core/store/session/session.selectors';
+
+type NavigationRole = 'admin' | 'user';
 
 interface NavigationItem {
   icon: string;
   label: string;
-  route?: string;
+  route: string;
   exact?: boolean;
   roles?: NavigationRole[];
 }
 
-type NavigationRole = 'admin' | 'user';
-
 @Component({
   selector: 'app-sidebar',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterModule, RippleModule, TooltipModule],
   templateUrl: './sidebar.component.html',
-  styleUrl: './sidebar.component.scss'
+  styleUrl: './sidebar.component.scss',
 })
 export class SidebarComponent {
   @Input() mobileNavOpen = false;
+  @Input() collapsed = false;
   @Output() requestClose = new EventEmitter<void>();
 
   private readonly store = inject(Store);
+
+  protected readonly navigation: NavigationItem[] = [
+    { icon: 'pi pi-home', label: 'Inicio', route: '/', exact: true },
+    { icon: 'pi pi-users', label: 'Usuarios', route: '/usuarios', roles: ['admin'] },
+    {
+      icon: 'pi pi-check-square',
+      label: 'Reglas de Validación',
+      route: '/reglas-validacion',
+      roles: ['admin'],
+    },
+    { icon: 'pi pi-file', label: 'Plantillas', route: '/plantillas' },
+    { icon: 'pi pi-shield', label: 'Permisos', route: '/permisos', roles: ['admin'] },
+    { icon: 'pi pi-history', label: 'Historial', route: '/historial' },
+    {
+      icon: 'pi pi-question-circle',
+      label: 'Manual de usuario',
+      route: '/manual-usuario',
+      roles: ['admin'],
+    },
+    { icon: 'pi pi-cog', label: 'Configuración', route: '/configuracion' },
+  ];
 
   protected readonly filteredNavigation$: Observable<NavigationItem[]> = this.store
     .select(selectSessionRole)
     .pipe(map((role) => this.filterNavigation(role)));
 
-  constructor(private readonly router: Router) {}
-
-  protected readonly navigation: NavigationItem[] = [
-    { icon: 'home', label: 'Inicio', route: '/', exact: true },
-    { icon: 'group', label: 'Usuarios', route: '/usuarios', roles: ['admin'] },
-    {
-      icon: 'check_box',
-      label: 'Reglas de Validación',
-      route: '/reglas-validacion',
-      roles: ['admin'],
-    },
-    { icon: 'docs', label: 'Plantillas', route: '/plantillas' },
-    { icon: 'shield', label: 'Permisos', route: '/permisos', roles: ['admin'] },
-    { icon: 'history', label: 'Historial', route: '/historial' },
-    { icon: 'settings', label: 'Configuración', route: '/configuracion' }
-  ];
-
-  protected trackByLabel(_: number, item: NavigationItem): string {
-    return item.label;
-  }
-
-  protected navigate(item: NavigationItem): void {
-    if (item.route) {
-      this.router.navigateByUrl(item.route);
-    }
-
+  protected onNavigate(): void {
     this.requestClose.emit();
   }
 
@@ -67,23 +67,11 @@ export class SidebarComponent {
     const normalizedRole: NavigationRole = role === 'admin' ? 'admin' : 'user';
 
     return this.navigation.filter((item) => {
-      if (!item.roles || item.roles.length === 0) {
+      if (!item.roles?.length) {
         return true;
       }
 
       return item.roles.includes(normalizedRole);
     });
-  }
-
-  protected isActive(item: NavigationItem): boolean {
-    if (!item.route) {
-      return false;
-    }
-
-    if (item.exact) {
-      return this.router.url === item.route;
-    }
-
-    return this.router.url.startsWith(item.route);
   }
 }

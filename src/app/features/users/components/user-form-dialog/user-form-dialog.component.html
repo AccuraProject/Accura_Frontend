@@ -1,0 +1,56 @@
+<app-dialog-shell
+  [(visible)]="visible"
+  [title]="title"
+  [description]="description"
+  [saveDisabled]="userForm.invalid"
+  [saveLabel]="actionLabel"
+  [loading]="loading"
+  (cancel)="cancel()"
+  (save)="submit()"
+>
+  <form class="form" [formGroup]="userForm" (ngSubmit)="submit()">
+    <div class="form-stack">
+      <app-text-field
+        inputId="name"
+        type="text"
+        label="Nombre completo"
+        [control]="userForm.controls.name"
+        autocomplete="name"
+        errorMessage="Ingresa al menos 3 caracteres."
+      >
+      </app-text-field>
+
+      <app-text-field
+        inputId="email"
+        type="email"
+        label="Correo electrónico"
+        [control]="userForm.controls.email"
+        autocomplete="email"
+        errorMessage="Ingresa un correo electrónico válido."
+      >
+      </app-text-field>
+
+      <app-select-field
+        inputId="role"
+        label="Rol"
+        [control]="userForm.controls.roleId"
+        [options]="roles"
+        optionLabel="label"
+        optionValue="id"
+      >
+      </app-select-field>
+
+      @if (isEditMode) {
+        <app-select-field
+          inputId="status"
+          label="Estado"
+          [control]="userForm.controls.status"
+          [options]="statusOptions"
+          optionLabel="label"
+          optionValue="value"
+        >
+        </app-select-field>
+      }
+    </div>
+  </form>
+</app-dialog-shell>

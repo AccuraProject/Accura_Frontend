@@ -1,0 +1,13 @@
+<button 
+  [type]="type" 
+  [disabled]="disabled" 
+  class="notification-badge" 
+  (click)="onClick($event)">
+  @if (showBadge) {
+    <p-overlaybadge [value]="value" [severity]="severity">
+      <i [class]="icon" aria-hidden="true" style="font-size: 1.25rem"></i>
+    </p-overlaybadge>
+  } @else {
+    <i [class]="icon" aria-hidden="true" style="font-size: 1.25rem"></i>
+  }
+</button>

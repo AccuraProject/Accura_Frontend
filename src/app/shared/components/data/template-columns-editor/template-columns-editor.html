@@ -1,0 +1,142 @@
+<div class="template-columns-editor__toolbar">
+  <div class="toolbar__left">
+    <app-button
+      label="Descargar plantilla"
+      icon="pi pi-download"
+      variant="secondary"
+      [outlined]="true"
+      type="button"
+      (clicked)="downloadTemplate.emit()"
+    ></app-button>
+
+    <input #fileInput type="file" accept=".xlsx,.xls" hidden (change)="onFileSelected($event)" />
+
+    <app-button
+      label="Importar desde Excel"
+      icon="pi pi-upload"
+      variant="primary"
+      [outlined]="true"
+      type="button"
+      [loading]="isImporting"
+      (clicked)="fileInput.click()"
+    ></app-button>
+  </div>
+
+  <div class="toolbar__right">
+    <app-button
+      label="Añadir fila"
+      icon="pi pi-plus"
+      type="button"
+      (clicked)="addRow()"
+    ></app-button>
+  </div>
+</div>
+<div class="template-columns-editor__wrapper" [formGroup]="form">
+  <div formArrayName="columns">
+    <p-table
+      [value]="columnControls"
+      scrollable="true"
+      scrollHeight="220px"
+      [tableStyle]="{ 'min-width': '100%', 'table-layout': 'fixed' }"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th style="width: 24%">Nombre</th>
+          <th style="width: 28%">Descripción</th>
+          <th style="width: 38%">Reglas</th>
+          <th style="width: 10%; text-align: center">Acciones</th>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="body" let-column let-rowIndex="rowIndex">
+        <tr [formGroupName]="rowIndex">
+          <td>
+            <app-text-field
+              inputId="column-name-{{ rowIndex }}"
+              type="text"
+              label=""
+              placeholder="Nombre de la columna"
+              [control]="column.controls.name"
+            ></app-text-field>
+          </td>
+
+          <td>
+            <app-textarea-field
+              inputId="column-description-{{ rowIndex }}"
+              label=""
+              placeholder="Descripción de la columna"
+              [control]="column.controls.description"
+              [rows]="2"
+              [autoResize]="true"
+            ></app-textarea-field>
+          </td>
+
+          <td>
+            <div class="rules-cell" formArrayName="rules">
+              @for (
+                rule of rulesAt(rowIndex).controls;
+                track trackByRule($index, rule);
+                let ruleIndex = $index
+              ) {
+                <div class="rules-cell__item" [formGroupName]="ruleIndex">
+                  <div
+                    class="rules-cell__inputs"
+                    [class.with-header-rule]="shouldShowHeaderRuleSelect(rule.controls.id.value)"
+                  >
+                    <app-select-field
+                      inputId="rule-{{ rowIndex }}-{{ ruleIndex }}"
+                      [control]="rule.controls.id"
+                      [options]="ruleOptions"
+                      optionLabel="name"
+                      optionValue="id"
+                      [filter]="true"
+                      [showClear]="true"
+                      label="Regla principal"
+                      (valueChange)="onRuleSelectionChange(rule)"
+                    ></app-select-field>
+
+                    @if (shouldShowHeaderRuleSelect(rule.controls.id.value)) {
+                      <app-select-field
+                        inputId="header-rule-{{ rowIndex }}-{{ ruleIndex }}"
+                        [control]="rule.controls.headerRule"
+                        [options]="getHeaderRuleOptions(rule.controls.id.value)"
+                        [showClear]="true"
+                        label="Header rule"
+                      ></app-select-field>
+                    }
+                  </div>
+
+                  <button
+                    pButton
+                    type="button"
+                    icon="pi pi-times"
+                    class="p-button-text p-button-rounded p-button-danger"
+                    (click)="removeRule(rowIndex, ruleIndex)"
+                  ></button>
+                </div>
+              }
+            </div>
+          </td>
+
+          <td style="text-align: center">
+            <button
+              pButton
+              type="button"
+              icon="pi pi-plus"
+              class="p-button-text"
+              severity="secondary"
+              (click)="addRule(rowIndex)"
+            ></button>
+            <button
+              pButton
+              type="button"
+              icon="pi pi-trash"
+              class="p-button-text p-button-danger"
+              (click)="removeRow(rowIndex)"
+            ></button>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>

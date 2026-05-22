@@ -27,6 +27,7 @@
   "private": true,
   "dependencies": {
     "@angular/cdk": "~20.2.10",
+    "@angular/cli": "^20.3.7",
     "@angular/common": "^20.3.0",
     "@angular/compiler": "^20.3.0",
     "@angular/core": "^20.3.0",
@@ -36,11 +37,13 @@
     "@angular/router": "^20.3.0",
     "@ngrx/store": "^20.1.0",
     "@ngrx/store-devtools": "^20.1.0",
+    "@primeuix/themes": "^2.0.3",
+    "primeicons": "^7.0.0",
+    "primeng": "^20.4.0",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
     "xlsx": "^0.18.5",
-    "zone.js": "~0.15.0",
-    "@angular/cli": "^20.3.7"
+    "zone.js": "~0.15.0"
   },
   "devDependencies": {
     "@angular/build": "^20.3.7",

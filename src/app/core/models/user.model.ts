@@ -25,8 +25,8 @@ export interface UserDetail {
   email: string;
   must_change_password: boolean;
   last_login: string;
-  created_at: string;
-  updated_at: string;
+  created_at: Date;
+  updated_at: Date;
   is_active: boolean;
   role: UserRole;
 }
@@ -39,6 +39,7 @@ export interface UpdateUserPayload {
   email?: string;
   password?: string;
   current_password?: string;
+  new_password?: string;
   role_id?: number;
   is_active?: boolean;
 }
