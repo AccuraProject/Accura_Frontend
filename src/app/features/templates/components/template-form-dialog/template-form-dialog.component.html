@@ -53,6 +53,8 @@
 
               <app-button
                 [label]="isSubmittingStep1() ? 'Guardando...' : 'Continuar'"
+                icon="pi pi-arrow-right"
+                [iconPos]="isSubmittingStep1() ? 'left' : 'right'"
                 type="submit"
                 [loading]="isSubmittingStep1()"
                 [disabled]="step1Form.invalid || isSubmittingStep1()"
@@ -78,6 +80,7 @@
             <div class="form-footer">
               <app-button
                 label="Atrás"
+                icon="pi pi-arrow-left"
                 variant="secondary"
                 [outlined]="true"
                 type="button"

@@ -16,6 +16,33 @@
     <p-step-panels>
       <p-step-panel [value]="1">
         <ng-template #content>
+          <div class="ai-help-card">
+            <div class="ai-help-card__content">
+              <div class="ai-help-card__icon">
+                <i class="pi pi-info-circle"></i>
+              </div>
+
+              <div>
+                <h4 class="ai-help-card__title">Antes de generar una regla</h4>
+                <p class="ai-help-card__description">
+                  Redacta una descripción clara indicando el campo, tipo de dato, condición, mensaje
+                  de error y ejemplos. Revisa el manual si necesitas una guía para escribir
+                  correctamente el prompt.
+                </p>
+              </div>
+            </div>
+
+            <div class="ai-help-card__action">
+              <app-button
+                icon="pi pi-arrow-up-right"
+                label="Ver manual"
+                [outlined]="true"
+                type="button"
+                (clicked)="goToUserManual()"
+                style="text-wrap: nowrap"
+              ></app-button>
+            </div>
+          </div>
           <form class="form" [formGroup]="aiForm" (ngSubmit)="submitAiForm()">
             <div class="form-body">
               <app-textarea-field
@@ -40,6 +67,8 @@
 
               <app-button
                 [label]="isSubmittingAi() ? 'Generando...' : 'Continuar'"
+                icon="pi pi-arrow-right"
+                [iconPos]="isSubmittingAi() ? 'left' : 'right'"
                 type="submit"
                 [loading]="isSubmittingAi()"
                 [disabled]="aiForm.invalid || isSubmittingAi()"
@@ -285,6 +314,7 @@
             <div class="form-footer">
               <app-button
                 label="Atrás"
+                icon="pi pi-arrow-left"
                 variant="secondary"
                 [outlined]="true"
                 type="button"

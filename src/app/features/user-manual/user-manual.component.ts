@@ -1,12 +1,11 @@
 import { Component } from '@angular/core';
-import { ButtonComponent } from '../../shared/components/ui/button/button';
 import { AccordionModule } from 'primeng/accordion';
 import { TableModule } from 'primeng/table';
 import { MANUAL_DATA_TYPES, PROMPT_ELEMENTS } from './data/user-manual.data';
 
 @Component({
   selector: 'app-user-manual',
-  imports: [AccordionModule, ButtonComponent, TableModule],
+  imports: [AccordionModule, TableModule],
   templateUrl: './user-manual.component.html',
   styleUrl: './user-manual.component.scss',
 })
