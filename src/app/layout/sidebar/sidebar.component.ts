@@ -25,7 +25,7 @@ interface NavigationItem {
   standalone: true,
   imports: [CommonModule, RouterModule, RippleModule, TooltipModule],
   templateUrl: './sidebar.component.html',
-  styleUrl: './sidebar.component.scss'
+  styleUrl: './sidebar.component.scss',
 })
 export class SidebarComponent {
   @Input() mobileNavOpen = false;
@@ -41,12 +41,17 @@ export class SidebarComponent {
       icon: 'pi pi-check-square',
       label: 'Reglas de Validación',
       route: '/reglas-validacion',
-      roles: ['admin']
+      roles: ['admin'],
     },
     { icon: 'pi pi-file', label: 'Plantillas', route: '/plantillas' },
     { icon: 'pi pi-shield', label: 'Permisos', route: '/permisos', roles: ['admin'] },
     { icon: 'pi pi-history', label: 'Historial', route: '/historial' },
-    { icon: 'pi pi-cog', label: 'Configuración', route: '/configuracion' }
+    {
+      icon: 'pi pi-question-circle',
+      label: 'Manual de usuario',
+      route: '/manual-usuario',
+    },
+    { icon: 'pi pi-cog', label: 'Configuración', route: '/configuracion' },
   ];
 
   protected readonly filteredNavigation$: Observable<NavigationItem[]> = this.store

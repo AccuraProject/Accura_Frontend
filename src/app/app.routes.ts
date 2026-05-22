@@ -14,6 +14,7 @@ import { passwordUpdateGuard } from './core/guards/password-update.guard';
 import { loginRedirectGuard } from './core/guards/login-redirect.guard';
 import { ForgotPasswordComponent } from './features/forgot-password/forgot-password.component';
 import { TemplateLayoutComponent } from './features/templates/template-layout.component';
+import { UserManualComponent } from './features/user-manual/user-manual.component';
 
 export const routes: Routes = [
   {
@@ -30,10 +31,15 @@ export const routes: Routes = [
         data: { roles: ['admin'] },
       },
       { path: 'permisos', component: PermissionsComponent, data: { roles: ['admin'] } },
-      { path: 'plantillas', component: TemplateLayoutComponent, data: { roles: ['admin', 'user'] } },
+      {
+        path: 'plantillas',
+        component: TemplateLayoutComponent,
+        data: { roles: ['admin', 'user'] },
+      },
       { path: 'historial', component: HistoryComponent, data: { roles: ['admin', 'user'] } },
+      { path: 'manual-usuario', component: UserManualComponent, data: { roles: ['admin', 'user'] } },
       { path: 'configuracion', component: SettingsComponent, data: { roles: ['admin', 'user'] } },
-    ]
+    ],
   },
   {
     path: 'login',
@@ -52,6 +58,6 @@ export const routes: Routes = [
   },
   {
     path: '**',
-    redirectTo: ''
-  }
+    redirectTo: '',
+  },
 ];

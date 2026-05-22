@@ -1,0 +1,495 @@
+<section class="page-header">
+  <div>
+    <p class="page-header__pretitle">Manual de usuario</p>
+    <h1 class="page-header__title">Guía para crear reglas de validación con IA</h1>
+    <p class="page-header__subtitle">
+      Aprende a redactar instrucciones claras para que la IA genere reglas de validación precisas,
+      consistentes y listas para aplicar en tus plantillas de datos.
+    </p>
+  </div>
+
+  <!-- <div class="page-header__actions">
+    <app-button icon="pi pi-download" label="Descargar PDF" [outlined]="true"></app-button>
+  </div> -->
+</section>
+
+<section class="manual-layout">
+  <div class="manual-sidebar card">
+    <div class="manual-sidebar__header">Contenido</div>
+
+    <ul class="manual-sidebar__index">
+      <li class="manual-sidebar__index-item">
+        <a
+          class="p-ripple"
+          [class.active]="activeSection === 'prompt'"
+          href="javascript:void(0)"
+          (click)="scrollToSection('prompt')"
+        >
+          ¿Qué es un prompt?
+        </a>
+      </li>
+      <li class="manual-sidebar__index-item">
+        <a
+          class="p-ripple"
+          [class.active]="activeSection === 'estructura'"
+          href="javascript:void(0)"
+          (click)="scrollToSection('estructura')"
+        >
+          Estructura recomendada
+        </a>
+      </li>
+      <li class="manual-sidebar__index-item">
+        <a
+          class="p-ripple"
+          [class.active]="activeSection === 'tipos-'"
+          href="javascript:void(0)"
+          (click)="scrollToSection('tipos-dato')"
+        >
+          Tipos de dato
+        </a>
+      </li>
+      <li class="manual-sidebar__index-item">
+        <a
+          class="p-ripple"
+          [class.active]="activeSection === 'texto'"
+          href="javascript:void(0)"
+          (click)="scrollToSection('texto')"
+        >
+          Texto
+        </a>
+      </li>
+      <li class="manual-sidebar__index-item">
+        <a
+          class="p-ripple"
+          [class.active]="activeSection === 'numero'"
+          href="javascript:void(0)"
+          (click)="scrollToSection('numero')"
+        >
+          Número
+        </a>
+      </li>
+      <li class="manual-sidebar__index-item">
+        <a
+          class="p-ripple"
+          [class.active]="activeSection === 'fecha'"
+          href="javascript:void(0)"
+          (click)="scrollToSection('fecha')"
+        >
+          Fecha
+        </a>
+      </li>
+      <li class="manual-sidebar__index-item">
+        <a
+          class="p-ripple"
+          [class.active]="activeSection === 'correo'"
+          href="javascript:void(0)"
+          (click)="scrollToSection('correo')"
+        >
+          Correo
+        </a>
+      </li>
+      <li class="manual-sidebar__index-item">
+        <a
+          class="p-ripple"
+          [class.active]="activeSection === 'telefono'"
+          href="javascript:void(0)"
+          (click)="scrollToSection('telefono')"
+        >
+          Teléfono
+        </a>
+      </li>
+      <li class="manual-sidebar__index-item">
+        <a
+          class="p-ripple"
+          [class.active]="activeSection === 'documento'"
+          href="javascript:void(0)"
+          (click)="scrollToSection('documento')"
+        >
+          Documento
+        </a>
+      </li>
+      <li class="manual-sidebar__index-item">
+        <a
+          class="p-ripple"
+          [class.active]="activeSection === 'lista'"
+          href="javascript:void(0)"
+          (click)="scrollToSection('lista')"
+        >
+          Lista
+        </a>
+      </li>
+      <li class="manual-sidebar__index-item">
+        <a
+          class="p-ripple"
+          [class.active]="activeSection === 'lista-compleja'"
+          href="javascript:void(0)"
+          (click)="scrollToSection('lista-compleja')"
+        >
+          Lista compleja
+        </a>
+      </li>
+      <li class="manual-sidebar__index-item">
+        <a
+          class="p-ripple"
+          [class.active]="activeSection === 'dependencia'"
+          href="javascript:void(0)"
+          (click)="scrollToSection('dependencia')"
+        >
+          Dependencia
+        </a>
+      </li>
+    </ul>
+  </div>
+
+  <div class="manual-content card">
+    <p-accordion [(value)]="activeAccordionValue" (valueChange)="onAccordionValueChange($event)">
+      <p-accordion-panel value="0" id="prompt">
+        <p-accordion-header>¿Qué es un prompt para generar una regla?</p-accordion-header>
+        <p-accordion-content>
+          <p style="margin-top: 0">
+            Un prompt es la instrucción que el usuario escribe para solicitar a la IA la creación de
+            una regla de validación.
+          </p>
+
+          <p>
+            Mientras más claro y específico sea el prompt, mejor será la regla generada por la IA.
+          </p>
+
+          <div>
+            <p-table [value]="promptElements" [showGridlines]="true" stripedRows>
+              <ng-template pTemplate="header">
+                <tr>
+                  <th>Elemento</th>
+                  <th>Descripción</th>
+                </tr>
+              </ng-template>
+
+              <ng-template pTemplate="body" let-row>
+                <tr>
+                  <td>
+                    <span class="font-weight-semibold">{{ row.elemento }}</span>
+                  </td>
+                  <td>
+                    {{ row.descripcion }}
+                  </td>
+                </tr>
+              </ng-template>
+            </p-table>
+          </div>
+        </p-accordion-content>
+      </p-accordion-panel>
+
+      <p-accordion-panel value="1" id="estructura">
+        <p-accordion-header>Estructura recomendada</p-accordion-header>
+        <p-accordion-content>
+          <p style="margin-top: 0">
+            Para crear una regla de validación, se recomienda redactar el prompt con la siguiente
+            estructura:
+          </p>
+
+          <div class="manual-example manual-example--template">
+            <p>
+              Validar que el campo <strong>"[Nombre del campo]"</strong> sea de tipo
+              <strong>[Tipo de dato]</strong> y cumpla con <strong>[Condición]</strong>; en caso
+              contrario, mostrar el mensaje: <strong>"[Mensaje de error]"</strong>.
+            </p>
+            <p>Ejemplo válido: <strong>[Valor válido]</strong>.</p>
+            <p>Ejemplo inválido: <strong>[Valor inválido]</strong>.</p>
+          </div>
+        </p-accordion-content>
+      </p-accordion-panel>
+
+      <p-accordion-panel value="2" id="tipos-dato">
+        <p-accordion-header>Tipos de dato disponibles</p-accordion-header>
+        <p-accordion-content>
+          <p-table [value]="dataTypes" [showGridlines]="true" stripedRows>
+            <ng-template pTemplate="header">
+              <tr>
+                <th>Tipo de dato</th>
+                <th>Descripción</th>
+                <th>Ejemplo</th>
+              </tr>
+            </ng-template>
+
+            <ng-template pTemplate="body" let-row>
+              <tr>
+                <td>
+                  <span class="font-weight-semibold">{{ row.tipo }}</span>
+                </td>
+                <td>
+                  {{ row.descripcion }}
+                </td>
+                <td>
+                  {{ row.ejemplo }}
+                </td>
+              </tr>
+            </ng-template>
+          </p-table>
+        </p-accordion-content>
+      </p-accordion-panel>
+
+      <p-accordion-panel value="3" id="texto">
+        <p-accordion-header>Regla de tipo Texto</p-accordion-header>
+        <p-accordion-content>
+          <p style="margin-top: 0">
+            Se utiliza cuando el campo debe contener texto, como nombres, apellidos, códigos o
+            descripciones.
+          </p>
+
+          <div class="manual-example">
+            <p>
+              Validar que el campo <strong>"Nombre"</strong> sea de tipo texto y contenga solo
+              letras; en caso contrario, mostrar el mensaje:
+              <strong>"El nombre solo debe contener letras"</strong>.
+            </p>
+            <p>Ejemplo válido: <strong>Carlos</strong>.</p>
+            <p>Ejemplo inválido: <strong>Carlos123</strong>.</p>
+          </div>
+        </p-accordion-content>
+      </p-accordion-panel>
+
+      <p-accordion-panel value="4" id="numero">
+        <p-accordion-header>Regla de tipo Número</p-accordion-header>
+        <p-accordion-content>
+          <p style="margin-top: 0">
+            Se utiliza cuando el campo debe contener valores numéricos, como montos, porcentajes,
+            edades, cantidades, tasas o importes.
+          </p>
+
+          <div class="manual-example">
+            <p>
+              Validar que el campo <strong>"Porcentaje"</strong> sea de tipo número y tenga un valor
+              entre 0 y 100; en caso contrario, mostrar el mensaje:
+              <strong>"El porcentaje debe estar entre 0 y 100"</strong>.
+            </p>
+            <p>Ejemplo válido: <strong>80</strong>.</p>
+            <p>Ejemplo inválido: <strong>150</strong>.</p>
+          </div>
+        </p-accordion-content>
+      </p-accordion-panel>
+
+      <p-accordion-panel value="5" id="fecha">
+        <p-accordion-header>Regla de tipo Fecha</p-accordion-header>
+        <p-accordion-content>
+          <p style="margin-top: 0">
+            Se utiliza cuando el campo debe contener una fecha con un formato específico.
+          </p>
+
+          <div class="manual-example">
+            <p>
+              Validar que el campo <strong>"Fecha de nacimiento"</strong> sea de tipo fecha y tenga
+              el formato DD/MM/AAAA; en caso contrario, mostrar el mensaje:
+              <strong>"La fecha de nacimiento debe tener el formato DD/MM/AAAA"</strong>.
+            </p>
+            <p>Ejemplo válido: <strong>15/08/1995</strong>.</p>
+            <p>Ejemplo inválido: <strong>1995-08-15</strong>.</p>
+          </div>
+        </p-accordion-content>
+      </p-accordion-panel>
+
+      <p-accordion-panel value="6" id="correo">
+        <p-accordion-header>Regla de tipo Correo</p-accordion-header>
+        <p-accordion-content>
+          <p style="margin-top: 0">Se utiliza para validar direcciones de correo electrónico.</p>
+
+          <div class="manual-example">
+            <p>
+              Validar que el campo <strong>"Correo electrónico"</strong> sea de tipo correo y tenga
+              un formato válido; en caso contrario, mostrar el mensaje:
+              <strong>"El correo electrónico no tiene un formato válido"</strong>.
+            </p>
+            <p>Ejemplo válido: <strong>usuario@empresa.com</strong>.</p>
+            <p>Ejemplo inválido: <strong>usuarioempresa.com</strong>.</p>
+          </div>
+        </p-accordion-content>
+      </p-accordion-panel>
+
+      <p-accordion-panel value="7" id="telefono">
+        <p-accordion-header>Regla de tipo Teléfono</p-accordion-header>
+        <p-accordion-content>
+          <p style="margin-top: 0">Se utiliza para validar números telefónicos.</p>
+
+          <div class="manual-example">
+            <p>
+              Validar que el campo <strong>"Teléfono"</strong> sea de tipo teléfono y tenga
+              exactamente 9 dígitos numéricos; en caso contrario, mostrar el mensaje:
+              <strong>"El teléfono debe tener exactamente 9 dígitos"</strong>.
+            </p>
+            <p>Ejemplo válido: <strong>987654321</strong>.</p>
+            <p>Ejemplo inválido: <strong>98765ABC</strong>.</p>
+          </div>
+        </p-accordion-content>
+      </p-accordion-panel>
+
+      <p-accordion-panel value="8" id="documento">
+        <p-accordion-header>Regla de tipo Documento</p-accordion-header>
+        <p-accordion-content>
+          <p style="margin-top: 0">
+            Se utiliza para validar documentos de identidad o identificación tributaria, como DNI,
+            RUC, Carnet de Extranjería o Pasaporte.
+          </p>
+
+          <div class="manual-example">
+            <p>
+              Validar que el campo <strong>"Número de documento"</strong> sea de tipo documento y
+              tenga exactamente 8 dígitos numéricos; en caso contrario, mostrar el mensaje:
+              <strong>"El número de documento debe tener exactamente 8 dígitos"</strong>.
+            </p>
+            <p>Ejemplo válido: <strong>12345678</strong>.</p>
+            <p>Ejemplo inválido: <strong>ABC12345</strong>.</p>
+          </div>
+        </p-accordion-content>
+      </p-accordion-panel>
+
+      <p-accordion-panel value="9" id="lista">
+        <p-accordion-header>Regla de tipo Lista</p-accordion-header>
+        <p-accordion-content>
+          <p style="margin-top: 0">
+            Se utiliza cuando un campo solo puede aceptar ciertos valores definidos.
+          </p>
+
+          <div class="manual-example manual-example--template">
+            <p>
+              Validar que el campo <strong>"[Nombre del campo]"</strong> sea de tipo lista y solo
+              permita los valores: <strong>[Valor 1], [Valor 2], [Valor 3]</strong>; en caso
+              contrario, mostrar el mensaje: <strong>"[Mensaje de error]"</strong>.
+            </p>
+            <p>Ejemplo válido: <strong>[Valor permitido]</strong>.</p>
+            <p>Ejemplo inválido: <strong>[Valor no permitido]</strong>.</p>
+          </div>
+
+          <div class="manual-example">
+            <p>
+              Validar que el campo <strong>"Estado de póliza"</strong> sea de tipo lista y solo
+              permita los valores: Activa, Anulada, Vencida; en caso contrario, mostrar el mensaje:
+              <strong>"El estado de póliza ingresado no es válido"</strong>.
+            </p>
+            <p>Ejemplo válido: <strong>Activa</strong>.</p>
+            <p>Ejemplo inválido: <strong>Pendiente</strong>.</p>
+          </div>
+        </p-accordion-content>
+      </p-accordion-panel>
+
+      <p-accordion-panel value="10" id="lista-compleja">
+        <p-accordion-header>Regla de tipo Lista compleja</p-accordion-header>
+
+        <p-accordion-content>
+          <p style="margin-top: 0">
+            Se utiliza cuando la validación no depende de un solo campo, sino de la combinación
+            válida entre varios campos relacionados.
+          </p>
+
+          <p>
+            Este tipo de regla permite verificar que una combinación de columnas exista o sea
+            correcta dentro de un catálogo definido. Por ejemplo, para los campos
+            <strong>Departamento</strong>, <strong>Provincia</strong> y <strong>Distrito</strong>,
+            no basta con que cada valor exista por separado; también debe validarse que la relación
+            entre ellos sea correcta.
+          </p>
+
+          <div class="manual-example manual-example--template">
+            <p>
+              Validar que la lista compleja de los campos
+              <strong>"[Campo 1]"</strong>, <strong>"[Campo 2]"</strong> y
+              <strong>"[Campo 3]"</strong> sea válida según
+              <strong>[Catálogo o referencia]</strong>; en caso contrario, mostrar el mensaje:
+              <strong>"[Mensaje de error]"</strong>.
+            </p>
+
+            <p>
+              Ejemplo válido:
+              <strong>[Campo 1]: [Valor], [Campo 2]: [Valor], [Campo 3]: [Valor]</strong>.
+            </p>
+
+            <p>
+              Ejemplo inválido:
+              <strong>[Campo 1]: [Valor], [Campo 2]: [Valor], [Campo 3]: [Valor]</strong>.
+            </p>
+          </div>
+
+          <div class="manual-example">
+            <p>
+              Validar que la lista compleja de los campos
+              <strong>"Departamento"</strong>, <strong>"Provincia"</strong> y
+              <strong>"Distrito"</strong> sea válida según el catálogo de ubicación geográfica; en
+              caso contrario, mostrar el mensaje:
+              <strong>"La combinación de departamento, provincia y distrito no es válida"</strong>.
+            </p>
+
+            <p>
+              Ejemplo válido:
+              <strong>Departamento: Lima, Provincia: Lima, Distrito: Lima</strong>.
+            </p>
+
+            <p>
+              Ejemplo inválido:
+              <strong>Departamento: Áncash, Provincia: Lima, Distrito: San Miguel</strong>.
+            </p>
+          </div>
+        </p-accordion-content>
+      </p-accordion-panel>
+
+      <p-accordion-panel value="11" id="dependencia">
+        <p-accordion-header>Regla de tipo Dependencia</p-accordion-header>
+        <p-accordion-content>
+          <p style="margin-top: 0">
+            Una regla de dependencia se utiliza cuando la validación de un campo cambia según el
+            valor de otro campo.
+          </p>
+
+          <p>
+            A diferencia de la lista compleja, en una dependencia un campo condiciona la regla que
+            debe cumplir otro campo.
+          </p>
+
+          <div class="manual-example manual-example--template">
+            <p>
+              Validar que el campo <strong>"[Campo dependiente]"</strong> dependa del campo
+              <strong>"[Campo condicionante]"</strong>.
+            </p>
+            <p>
+              Si <strong>"[Campo condicionante]"</strong> es <strong>"[Valor]"</strong>, entonces
+              <strong>"[Campo dependiente]"</strong> debe cumplir con <strong>[Condición]</strong>.
+            </p>
+            <p>
+              En caso contrario, mostrar el mensaje:
+              <strong>"[Mensaje de error]"</strong>.
+            </p>
+            <p>Ejemplo válido: <strong>[Combinación válida]</strong>.</p>
+            <p>Ejemplo inválido: <strong>[Combinación inválida]</strong>.</p>
+          </div>
+
+          <div class="manual-example">
+            <p>
+              Validar que el campo <strong>"Número de documento"</strong> dependa del campo
+              <strong>"Tipo de documento"</strong>.
+            </p>
+            <p>
+              Si <strong>"Tipo de documento"</strong> es <strong>"DNI"</strong>, entonces
+              <strong>"Número de documento"</strong> debe tener exactamente 8 dígitos numéricos.
+            </p>
+            <p>
+              Si <strong>"Tipo de documento"</strong> es <strong>"RUC"</strong>, entonces
+              <strong>"Número de documento"</strong> debe tener exactamente 11 dígitos numéricos.
+            </p>
+            <p>
+              En caso contrario, mostrar el mensaje:
+              <strong>
+                "El número de documento no cumple con el formato requerido según el tipo de
+                documento" </strong
+              >.
+            </p>
+            <p>
+              Ejemplo válido:
+              <strong>Tipo de documento: DNI, Número de documento: 12345678</strong>.
+            </p>
+            <p>
+              Ejemplo inválido:
+              <strong>Tipo de documento: DNI, Número de documento: 1234</strong>.
+            </p>
+          </div>
+        </p-accordion-content>
+      </p-accordion-panel>
+    </p-accordion>
+  </div>
+</section>

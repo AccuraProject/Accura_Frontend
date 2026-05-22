@@ -178,6 +178,10 @@ a {
   color: #dc2626;
 }
 
+.font-weight-semibold {
+  font-weight: var(--font-weight-semibold);
+}
+
 .page-header {
   display: flex;
   align-items: center;
