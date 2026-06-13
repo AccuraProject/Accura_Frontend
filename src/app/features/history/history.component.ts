@@ -405,7 +405,7 @@ export class HistoryComponent implements OnInit {
       {
         label: 'Total de Cargas',
         value: formatNumber(totalLoads),
-        description: 'Archivos procesados este mes',
+        description: 'Archivos procesados',
         trend: totalLoads > 0 ? 'Actividad reciente' : 'Sin registros',
         isPositive: totalLoads > 0,
         icon: 'pi-file-arrow-up',
@@ -440,7 +440,7 @@ export class HistoryComponent implements OnInit {
       {
         label: 'Total de Cargas',
         value: '0',
-        description: 'Archivos procesados este mes',
+        description: 'Archivos procesados',
         trend: 'Sin registros',
         isPositive: false,
         icon: 'pi-file-arrow-up',
