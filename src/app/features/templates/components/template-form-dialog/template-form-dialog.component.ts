@@ -95,11 +95,13 @@ export class TemplateFormDialogComponent {
       Validators.required,
       Validators.minLength(3),
       Validators.maxLength(50),
+      Validators.pattern(/^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ _-]+$/),
     ]),
     tableName: this.fb.control<string | null>(null, [
       Validators.required,
       Validators.minLength(3),
       Validators.maxLength(50),
+      Validators.pattern(/^[a-zA-Z_][a-zA-Z0-9_]*$/),
     ]),
     description: this.fb.control<string | null>(null, [Validators.maxLength(200)]),
   });
